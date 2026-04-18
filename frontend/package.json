@@ -1,0 +1,46 @@
+{
+    "name": "autorent-frontend",
+    "homepage": "https://gabwowce.github.io/car-rental-frontend",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --turbopack",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "docs": "typedoc",
+        "gen:api": "cross-env rtk-query-codegen --config openapi.config.js"
+    },
+    "dependencies": {
+        "@headlessui/react": "^2.2.4",
+        "@heroicons/react": "^2.2.0",
+        "@react-pdf/renderer": "^4.5.1",
+        "@reduxjs/toolkit": "^2.8.2",
+        "clsx": "^2.1.1",
+        "leaflet": "^1.9.4",
+        "lucide-react": "^0.514.0",
+        "next": "15.3.1",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-icons": "^5.5.0",
+        "react-leaflet": "^5.0.0",
+        "react-redux": "^9.2.0",
+        "recharts": "^2.15.3"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3",
+        "@fontsource/roboto": "^5.2.10",
+        "@rtk-query/codegen-openapi": "^2.0.0",
+        "@tailwindcss/postcss": "^4",
+        "@types/leaflet": "^1.9.18",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "cross-env": "^10.1.0",
+        "eslint": "^9",
+        "eslint-config-next": "15.3.1",
+        "tailwindcss": "^4",
+        "typedoc": "^0.28.5",
+        "typescript": "^5"
+    }
+}
