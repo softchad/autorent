@@ -1,0 +1,26 @@
+{
+  "entryPoints": [
+    "src/app/components",
+    "src/app/components/modals",
+    "src/app/cars",
+    "src/app/clients",
+    "src/app/guards",
+    "src/app/invoices",
+    "src/app/login",
+    "src/app/orders",
+    "src/app/profile",
+    "src/app/providers",
+    "src/app/reservations",
+    "src/app/support",
+    "src/hooks",
+    "src/store",
+    "src/middleware.ts"
+  ],
+  "out": "docs",
+  "tsconfig": "tsconfig.json",
+  "entryPointStrategy": "expand",
+  "skipErrorChecking": true,
+  "name": "AutoRent Frontend",
+  "readme": "README.md",
+  "excludeTags": ["file"]
+}
