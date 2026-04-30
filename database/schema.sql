@@ -90,6 +90,48 @@ CREATE TABLE `Automobiliai` (
 -- Veikla: užsakymai, rezervacijos, sąskaitos, mokėjimai
 -- ----------------------------------------------------------------
 
+-- Uzsakymai — aktyvios nuomos su kaina, statusu ir papildomomis paslaugomis
+CREATE TABLE `Uzsakymai` (
+  `uzsakymo_id`              INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`               INTEGER       NOT NULL,
+  `automobilio_id`           INTEGER       NOT NULL,
+  `darbuotojo_id`            INTEGER       NOT NULL,
+  `nuomos_data`              DATE          NOT NULL,
+  `grazinimo_data`           DATE          NOT NULL,
+  `paemimo_vietos_id`        INTEGER       NOT NULL,
+  `grazinimo_vietos_id`      INTEGER       NOT NULL,
+  `bendra_kaina`             DECIMAL(10,2) NOT NULL,
+  `uzsakymo_busena`          ENUM('laukiama', 'patvirtinta', 'vykdoma', 'užbaigta', 'atšaukta') NOT NULL,
+  `turi_papildomas_paslaugas` BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
+-- Rezervavimas — išankstinės rezervacijos prieš patvirtinant užsakymą
+CREATE TABLE `Rezervavimas` (
+  `rezervacijos_id`     INTEGER PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`          INTEGER NOT NULL,
+  `automobilio_id`      INTEGER NOT NULL,
+  `rezervacijos_pradzia` DATE   NOT NULL,
+  `rezervacijos_pabaiga` DATE   NOT NULL,
+  `busena`              ENUM('patvirtinta', 'atšaukta', 'laukia') NOT NULL
+);
+
+-- Saskaitos — finansiniai dokumentai susieti su užsakymais
+CREATE TABLE `Saskaitos` (
+  `saskaitos_id`  INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `uzsakymo_id`   INTEGER       NOT NULL,
+  `suma`          DECIMAL(10,2) NOT NULL,
+  `saskaitos_data` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Mokejimai — mokėjimų įrašai su mokėjimo būdu
+CREATE TABLE `Mokejimai` (
+  `mokejimo_id`   INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `uzsakymo_id`   INTEGER       NOT NULL,
+  `suma`          DECIMAL(10,2) NOT NULL,
+  `mokejimo_data` TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `mokejimo_tipas` ENUM('grynieji', 'kortele', 'bankinis pavedimas', 'paypal') NOT NULL
+);
+
 -- ----------------------------------------------------------------
 -- Klientų aptarnavimas ir atsiliepimai
 -- ----------------------------------------------------------------
@@ -112,3 +154,20 @@ CREATE TABLE `Automobiliai` (
 
 ALTER TABLE `Automobiliai`
   ADD FOREIGN KEY (`dabartine_vieta_id`) REFERENCES `Pristatymo_Vietos` (`vietos_id`);
+
+ALTER TABLE `Uzsakymai`
+  ADD FOREIGN KEY (`kliento_id`)          REFERENCES `Klientai`          (`kliento_id`),
+  ADD FOREIGN KEY (`automobilio_id`)      REFERENCES `Automobiliai`      (`automobilio_id`),
+  ADD FOREIGN KEY (`darbuotojo_id`)       REFERENCES `Darbuotojai`       (`darbuotojo_id`),
+  ADD FOREIGN KEY (`paemimo_vietos_id`)   REFERENCES `Pristatymo_Vietos` (`vietos_id`),
+  ADD FOREIGN KEY (`grazinimo_vietos_id`) REFERENCES `Pristatymo_Vietos` (`vietos_id`);
+
+ALTER TABLE `Rezervavimas`
+  ADD FOREIGN KEY (`kliento_id`)     REFERENCES `Klientai`     (`kliento_id`),
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Saskaitos`
+  ADD FOREIGN KEY (`uzsakymo_id`) REFERENCES `Uzsakymai` (`uzsakymo_id`);
+
+ALTER TABLE `Mokejimai`
+  ADD FOREIGN KEY (`uzsakymo_id`) REFERENCES `Uzsakymai` (`uzsakymo_id`);
