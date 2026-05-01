@@ -136,9 +136,98 @@ CREATE TABLE `Mokejimai` (
 -- Klientų aptarnavimas ir atsiliepimai
 -- ----------------------------------------------------------------
 
+-- Klientu_Palaikymas — klientų užklausos ir darbuotojų atsakymai
+CREATE TABLE `Klientu_Palaikymas` (
+  `uzklausos_id`   INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`     INTEGER      NOT NULL,
+  `darbuotojo_id`  INTEGER,
+  `tema`           VARCHAR(255) NOT NULL,
+  `pranesimas`     TEXT         NOT NULL,
+  `atsakymas`      TEXT,
+  `pateikimo_data` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `atsakymo_data`  TIMESTAMP
+);
+
+-- Automobilio_Atsiliepimai — klientų įvertinimai (1–5) po nuomos
+CREATE TABLE `Automobilio_Atsiliepimai` (
+  `atsiliepimo_id` INTEGER   PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`     INTEGER   NOT NULL,
+  `automobilio_id` INTEGER   NOT NULL,
+  `ivertinimas`    INTEGER   NOT NULL CHECK (`ivertinimas` BETWEEN 1 AND 5),
+  `komentaras`     TEXT,
+  `data`           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ----------------------------------------------------------------
 -- Aptarnavimas: servisas, remontas, kuras, draudimas, baudos
 -- ----------------------------------------------------------------
+
+-- Automobiliu_Servisas — planiniai techniniai aptarnavimai
+CREATE TABLE `Automobiliu_Servisas` (
+  `serviso_id`           INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`       INTEGER       NOT NULL,
+  `serviso_pradzios_data` DATE         NOT NULL,
+  `serviso_pabaigos_data` DATE,
+  `plovimas`             BOOLEAN       NOT NULL DEFAULT FALSE,
+  `salono_valymas`       BOOLEAN       NOT NULL DEFAULT FALSE,
+  `technine_apziura`     BOOLEAN       NOT NULL DEFAULT FALSE,
+  `tepalai_pakeisti`     BOOLEAN       NOT NULL DEFAULT FALSE,
+  `kaina`                DECIMAL(10,2) NOT NULL,
+  `busena`               ENUM('laukia', 'vyksta', 'baigtas') NOT NULL
+);
+
+-- Remonto_Darbai — remonto įrašai su dalimis, garantija ir meistru
+CREATE TABLE `Remonto_Darbai` (
+  `remonto_id`            INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`        INTEGER       NOT NULL,
+  `remonto_pradzios_data` DATE          NOT NULL,
+  `remonto_pabaigos_data` DATE,
+  `aprasymas`             TEXT          NOT NULL,
+  `detales_pakeistos`     TEXT,
+  `garantija_menesiais`   INTEGER,
+  `meistras`              VARCHAR(255)  NOT NULL,
+  `serviso_pavadinimas`   VARCHAR(255)  NOT NULL,
+  `kaina`                 DECIMAL(10,2) NOT NULL,
+  `busena`                ENUM('laukia', 'vyksta', 'baigtas') NOT NULL
+);
+
+-- Kuro_Sanaudos — kuro sunaudojimo žurnalas pagal datą
+CREATE TABLE `Kuro_Sanaudos` (
+  `sanaudu_id`     INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id` INTEGER       NOT NULL,
+  `data`           DATE          NOT NULL,
+  `kuro_kiekis`    DECIMAL(10,2) NOT NULL,
+  `kaina`          DECIMAL(10,2) NOT NULL
+);
+
+-- Kuro_Korteles — automobiliams priskirtos kuro kortelės
+CREATE TABLE `Kuro_Korteles` (
+  `korteles_id`      INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`   INTEGER      NOT NULL,
+  `korteles_numeris` VARCHAR(255) NOT NULL UNIQUE,
+  `galiojimo_pabaiga` DATE        NOT NULL
+);
+
+-- Draudimai — automobilio draudimo polisai su galiojimo laikotarpiu
+CREATE TABLE `Draudimai` (
+  `draudimo_id`       INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`    INTEGER       NOT NULL,
+  `draudimo_tipas`    ENUM('civilinis', 'kasko', 'kita') NOT NULL,
+  `galiojimo_pradzia` DATE          NOT NULL,
+  `galiojimo_pabaiga` DATE          NOT NULL,
+  `suma`              DECIMAL(10,2) NOT NULL
+);
+
+-- Baudu_Registras — eismo pažeidimų baudos su pažeidimo laiku
+CREATE TABLE `Baudu_Registras` (
+  `baudos_id`        INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`   INTEGER       NOT NULL,
+  `baudos_priezastis` VARCHAR(255) NOT NULL,
+  `data`             DATE          NOT NULL,
+  `laikas`           TIME          NOT NULL DEFAULT '00:00:00',
+  `suma`             DECIMAL(10,2) NOT NULL,
+  `kliento_id`       INTEGER       NOT NULL
+);
 
 -- ----------------------------------------------------------------
 -- Ryšių lentelės: paslaugos, nuolaidos, bonusai
@@ -171,3 +260,30 @@ ALTER TABLE `Saskaitos`
 
 ALTER TABLE `Mokejimai`
   ADD FOREIGN KEY (`uzsakymo_id`) REFERENCES `Uzsakymai` (`uzsakymo_id`);
+
+ALTER TABLE `Klientu_Palaikymas`
+  ADD FOREIGN KEY (`kliento_id`)    REFERENCES `Klientai`    (`kliento_id`),
+  ADD FOREIGN KEY (`darbuotojo_id`) REFERENCES `Darbuotojai` (`darbuotojo_id`);
+
+ALTER TABLE `Automobilio_Atsiliepimai`
+  ADD FOREIGN KEY (`kliento_id`)     REFERENCES `Klientai`     (`kliento_id`),
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Automobiliu_Servisas`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Remonto_Darbai`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Kuro_Sanaudos`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Kuro_Korteles`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Draudimai`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Baudu_Registras`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`),
+  ADD FOREIGN KEY (`kliento_id`)     REFERENCES `Klientai`     (`kliento_id`);
