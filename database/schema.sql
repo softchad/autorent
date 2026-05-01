@@ -233,9 +233,49 @@ CREATE TABLE `Baudu_Registras` (
 -- Ryšių lentelės: paslaugos, nuolaidos, bonusai
 -- ----------------------------------------------------------------
 
+-- Uzsakymo_Paslaugos — ryšys tarp užsakymų ir pasirinktų papildomų paslaugų
+CREATE TABLE `Uzsakymo_Paslaugos` (
+  `uzsakymo_paslaugos_id` INTEGER PRIMARY KEY AUTO_INCREMENT,
+  `uzsakymo_id`           INTEGER NOT NULL,
+  `paslaugos_id`          INTEGER NOT NULL
+);
+
+-- Uzsakymo_Nuolaidos — pritaikytos nuolaidos konkretiems užsakymams
+CREATE TABLE `Uzsakymo_Nuolaidos` (
+  `uzsakymo_nuolaidos_id` INTEGER PRIMARY KEY AUTO_INCREMENT,
+  `uzsakymo_id`           INTEGER NOT NULL,
+  `nuolaidos_id`          INTEGER NOT NULL
+);
+
+-- Bonusu_Naudojimas — klientų bonus taškų panaudojimo istorija
+CREATE TABLE `Bonusu_Naudojimas` (
+  `naudojimo_id`    INTEGER   PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`      INTEGER   NOT NULL,
+  `uzsakymo_id`     INTEGER   NOT NULL,
+  `panaudoti_taskai` INTEGER  NOT NULL,
+  `nuolaidos_id`    INTEGER   NOT NULL,
+  `data`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ----------------------------------------------------------------
 -- Darbuotojų ir automobilių priskyrimas
 -- ----------------------------------------------------------------
+
+-- Atsakingi_Automobiliai — kuris automobilis priskirtas kuriam darbuotojui
+CREATE TABLE `Atsakingi_Automobiliai` (
+  `atsakomybes_id` INTEGER PRIMARY KEY AUTO_INCREMENT,
+  `darbuotojo_id`  INTEGER NOT NULL,
+  `automobilio_id` INTEGER NOT NULL,
+  `pradzios_data`  DATE    NOT NULL,
+  `pabaigos_data`  DATE
+);
+
+-- Automobilio_Grazinimo_Vieta — leistinos grąžinimo vietos kiekvienam automobiliui
+CREATE TABLE `Automobilio_Grazinimo_Vieta` (
+  `grazinimo_vietos_id` INTEGER PRIMARY KEY AUTO_INCREMENT,
+  `automobilio_id`      INTEGER NOT NULL,
+  `vietos_id`           INTEGER NOT NULL
+);
 
 -- ================================================================
 -- Užsienio raktai (sugrupuoti pagal lentelę)
@@ -287,3 +327,24 @@ ALTER TABLE `Draudimai`
 ALTER TABLE `Baudu_Registras`
   ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`),
   ADD FOREIGN KEY (`kliento_id`)     REFERENCES `Klientai`     (`kliento_id`);
+
+ALTER TABLE `Uzsakymo_Paslaugos`
+  ADD FOREIGN KEY (`uzsakymo_id`)  REFERENCES `Uzsakymai`          (`uzsakymo_id`),
+  ADD FOREIGN KEY (`paslaugos_id`) REFERENCES `Papildomos_Paslaugos` (`paslaugos_id`);
+
+ALTER TABLE `Uzsakymo_Nuolaidos`
+  ADD FOREIGN KEY (`uzsakymo_id`)  REFERENCES `Uzsakymai` (`uzsakymo_id`),
+  ADD FOREIGN KEY (`nuolaidos_id`) REFERENCES `Nuolaidos` (`nuolaidos_id`);
+
+ALTER TABLE `Bonusu_Naudojimas`
+  ADD FOREIGN KEY (`kliento_id`)  REFERENCES `Klientai`  (`kliento_id`),
+  ADD FOREIGN KEY (`uzsakymo_id`) REFERENCES `Uzsakymai` (`uzsakymo_id`),
+  ADD FOREIGN KEY (`nuolaidos_id`) REFERENCES `Nuolaidos` (`nuolaidos_id`);
+
+ALTER TABLE `Atsakingi_Automobiliai`
+  ADD FOREIGN KEY (`darbuotojo_id`)  REFERENCES `Darbuotojai`  (`darbuotojo_id`),
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai` (`automobilio_id`);
+
+ALTER TABLE `Automobilio_Grazinimo_Vieta`
+  ADD FOREIGN KEY (`automobilio_id`) REFERENCES `Automobiliai`    (`automobilio_id`),
+  ADD FOREIGN KEY (`vietos_id`)      REFERENCES `Pristatymo_Vietos` (`vietos_id`);
