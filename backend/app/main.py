@@ -13,7 +13,7 @@ from utils.config import settings
 from app.db.base import Base
 from app.db.session import engine
 from app.api.v1.endpoints import (
-    auth, employee, car
+    auth, employee, car, reservation
 )
 
 #Base.metadata.create_all(bind=engine)
@@ -56,6 +56,7 @@ app.openapi = custom_openapi
 app.include_router(auth.router,          prefix="/api/v1", tags=["Authentication"])
 app.include_router(employee.router,      prefix="/api/v1", tags=["Employees"])
 app.include_router(car.router,           prefix="/api/v1", tags=["Cars"])
+app.include_router(reservation.router,   prefix="/api/v1", tags=["Reservations"])
 
 # 500 klaidos atveju grąžiname bendrą klaidos pranešimą
 @app.exception_handler(Exception)
