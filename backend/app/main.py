@@ -13,7 +13,7 @@ from utils.config import settings
 from app.db.base import Base
 from app.db.session import engine
 from app.api.v1.endpoints import (
-    auth, employee, car, reservation, order, client, client_support, invoice
+    auth, employee, car, reservation, order, geocode, client, client_support, invoice
 )
 
 #Base.metadata.create_all(bind=engine)
@@ -61,6 +61,7 @@ app.include_router(order.router,         prefix="/api/v1", tags=["Orders"])
 app.include_router(client.router,        prefix="/api/v1", tags=["Client"])
 app.include_router(client_support.router,prefix="/api/v1", tags=["Client Support"])
 app.include_router(invoice.router,       prefix="/api/v1", tags=["Invoices"])
+app.include_router(geocode.router,       prefix="/api/v1", tags=["Geo Code"])
 
 # 500 klaidos atveju grąžiname bendrą klaidos pranešimą
 @app.exception_handler(Exception)
