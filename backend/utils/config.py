@@ -19,10 +19,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_REDIRECT_URL: AnyHttpUrl = "http://localhost:8000/api/v1/google/callback"
 
-       # GitHub
+    # GitHub
     GITHUB_CLIENT_ID: str | None = None
     GITHUB_CLIENT_SECRET: str | None = None
-    GITHUB_REDIRECT_URL: AnyHttpUrl | None = None
+    GITHUB_REDIRECT_URL: str | None = None
 
 settings = Settings()
 

@@ -17,7 +17,7 @@ router = APIRouter()
 
 FRONTEND_URL = str(settings.FRONTEND_URL).rstrip("/")
 GOOGLE_REDIRECT_URL = str(settings.GOOGLE_REDIRECT_URL)
-GITHUB_REDIRECT_URL = str(settings.GITHUB_REDIRECT_URL) if settings.GITHUB_REDIRECT_URL else None
+GITHUB_REDIRECT_URL = settings.GITHUB_REDIRECT_URL or None
 
 oauth = OAuth()
 
@@ -42,15 +42,15 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
     )
 
 # ---------- GitHub ----------
+
 @router.get("/github/login")
 async def github_login(request: Request):
     if not (GITHUB_REDIRECT_URL and settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET):
         raise HTTPException(status_code=503, detail="GitHub OAuth neaktyvus: trūksta konfigūracijos.")
     return await oauth.github.authorize_redirect(
-    request, GITHUB_REDIRECT_URL,
-    allow_signup="true",
-    login="kitas_vartotojas"
-)
+        request, GITHUB_REDIRECT_URL,
+        allow_signup="true",
+    )
 
 @router.get("/github/callback", name="github_callback")
 async def github_callback(request: Request, db: Session = Depends(get_db)):
