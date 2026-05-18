@@ -20,7 +20,7 @@
 |-----------|-------------|
 | **Backend** | FastAPI · SQLAlchemy · MySQL · Pydantic v2 |
 | **Frontend** | Next.js 15 · TypeScript · Redux Toolkit (RTK Query) · Tailwind CSS |
-| **Autentifikacija** | JWT · bcrypt |
+| **Autentifikacija** | JWT · bcrypt · OAuth 2.0 (Google, GitHub) |
 | **Kiti** | Leaflet · react-pdf · OpenCage Geocoding |
 
 ---
@@ -73,6 +73,15 @@ SECRET_KEY=bet_koks_ilgas_raktas
 DATABASE_URL=mysql+pymysql://root:tavo_slaptazodis@localhost:3306/autorent
 SESSION_SECRET_KEY=bet_koks_ilgas_raktas
 OPENCAGE_API_KEY=raktas_is_opencage.com
+
+# OAuth (neprivaloma — be šių veikia tik paprastas prisijungimas)
+GOOGLE_CLIENT_ID=raktas_is_google_cloud_console
+GOOGLE_CLIENT_SECRET=raktas_is_google_cloud_console
+GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/google/callback
+
+GITHUB_CLIENT_ID=raktas_is_github_developer_settings
+GITHUB_CLIENT_SECRET=raktas_is_github_developer_settings
+GITHUB_REDIRECT_URL=http://localhost:8000/api/v1/github/callback
 ```
 
 **Kiekvieną kartą:**
