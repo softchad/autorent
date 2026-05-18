@@ -6,7 +6,11 @@ import { useAppDispatch } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 const logo = require("@/assets/autorentLOGO.png");
+
+const BACKEND = "http://localhost:8000/api/v1";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -125,6 +129,31 @@ export default function LoginPage() {
               </span>
             ) : "Prisijungti"}
           </button>
+
+          {/* OAuth divider */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-[#1C2B3A]" />
+            <span className="text-[#3D4F63] text-xs">arba</span>
+            <div className="flex-1 h-px bg-[#1C2B3A]" />
+          </div>
+
+          {/* OAuth buttons */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => { window.location.href = `${BACKEND}/google/login`; }}
+              className="w-full flex items-center justify-center gap-3 bg-[#1A2238] hover:bg-[#1E2A47] border border-[#1C2B3A] hover:border-[#0F597B]/40 text-[#F7F7F7] text-sm font-medium py-2.5 rounded-lg transition"
+            >
+              <FcGoogle size={18} />
+              Prisijungti su Google
+            </button>
+            <button
+              onClick={() => { window.location.href = `${BACKEND}/github/login`; }}
+              className="w-full flex items-center justify-center gap-3 bg-[#1A2238] hover:bg-[#1E2A47] border border-[#1C2B3A] hover:border-[#0F597B]/40 text-[#F7F7F7] text-sm font-medium py-2.5 rounded-lg transition"
+            >
+              <FaGithub size={18} />
+              Prisijungti su GitHub
+            </button>
+          </div>
 
           {/* Footer */}
           <p className="text-[#3D4F63] text-xs text-center mt-6">
