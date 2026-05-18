@@ -30,6 +30,5 @@ node_modules/
 next-env.d.ts
 
 # Generated
-docs/
 coverage/
 dist/
