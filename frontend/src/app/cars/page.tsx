@@ -123,6 +123,7 @@ export default function CarsPage() {
           <option value="laisvas">Laisvas</option>
           <option value="isnuomotas">Išnuomotas</option>
           <option value="servise">Servise</option>
+          <option value="remonte">Remonte</option>
         </select>
       </div>
 

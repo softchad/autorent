@@ -78,6 +78,7 @@ export function useCarsData() {
         { value: "laisvas", label: "Laisvas" },
         { value: "isnuomotas", label: "Išnuomotas" },
         { value: "servise", label: "Servise" },
+        { value: "remonte", label: "Remonte" },
       ],
       required: true,
     },
