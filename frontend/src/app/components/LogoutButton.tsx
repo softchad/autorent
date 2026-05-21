@@ -29,7 +29,7 @@ export default function LogoutButton() {
       dispatch(setToken(null as unknown as string));
       deleteCookie("token");
       deleteCookie("session");
-      if (typeof localStorage !== "undefined") localStorage.removeItem("accessToken");
+      if (typeof localStorage !== "undefined") localStorage.removeItem("token");
       router.replace("/login");
     } finally {
       setLoading(false);
