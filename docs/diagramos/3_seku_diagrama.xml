@@ -1,0 +1,257 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="920" pageHeight="840" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- TITLE -->
+    <mxCell id="title" value="Darbuotojo prisijungimo sekų diagrama" parent="1" vertex="1"
+      style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontStyle=1;">
+      <mxGeometry x="180" y="5" width="500" height="24" as="geometry" />
+    </mxCell>
+
+    <!-- ===== PARTICIPANT HEADERS ===== -->
+    <mxCell id="pD" value="Darbuotojas" parent="1" vertex="1"
+      style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=11;fontColor=#333333;">
+      <mxGeometry x="20" y="32" width="110" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="pN" value="Naršyklė&lt;br&gt;(Next.js)" parent="1" vertex="1"
+      style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;">
+      <mxGeometry x="195" y="32" width="120" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="pF" value="FastAPI Backend" parent="1" vertex="1"
+      style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;">
+      <mxGeometry x="422" y="32" width="140" height="45" as="geometry" />
+    </mxCell>
+
+    <mxCell id="pM" value="MySQL DB" parent="1" vertex="1"
+      style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;">
+      <mxGeometry x="682" y="32" width="110" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- ===== LIFELINES (dashed vertical lines) ===== -->
+    <mxCell id="llD" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=none;strokeColor=#aaaaaa;dashed=1;dashPattern=6 4;strokeWidth=1;">
+      <mxGeometry x="73" y="77" width="4" height="720" as="geometry" />
+    </mxCell>
+
+    <mxCell id="llN" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=none;strokeColor=#aaaaaa;dashed=1;dashPattern=6 4;strokeWidth=1;">
+      <mxGeometry x="253" y="77" width="4" height="720" as="geometry" />
+    </mxCell>
+
+    <mxCell id="llF" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=none;strokeColor=#aaaaaa;dashed=1;dashPattern=6 4;strokeWidth=1;">
+      <mxGeometry x="490" y="77" width="4" height="720" as="geometry" />
+    </mxCell>
+
+    <mxCell id="llM" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=none;strokeColor=#aaaaaa;dashed=1;dashPattern=6 4;strokeWidth=1;">
+      <mxGeometry x="735" y="77" width="4" height="720" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ACTIVATION BARS ===== -->
+    <!-- Narsykle aktyvi per visa sesija -->
+    <mxCell id="actN" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1;">
+      <mxGeometry x="251" y="77" width="10" height="580" as="geometry" />
+    </mxCell>
+
+    <!-- FastAPI aktyvus kol apdoroja uzklausą -->
+    <mxCell id="actF" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1;">
+      <mxGeometry x="488" y="147" width="10" height="305" as="geometry" />
+    </mxCell>
+
+    <!-- MySQL aktyvus kol vykdo uzklausą -->
+    <mxCell id="actM" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=#ffe6cc;strokeColor=#d6b656;strokeWidth=1;">
+      <mxGeometry x="733" y="188" width="10" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ALT COMBINED FRAGMENT ===== -->
+    <mxCell id="altFrame" value="" parent="1" vertex="1"
+      style="rounded=0;fillColor=none;strokeColor=#333333;strokeWidth=1.5;">
+      <mxGeometry x="170" y="280" width="576" height="180" as="geometry" />
+    </mxCell>
+    <mxCell id="altLabel" value="alt" parent="1" vertex="1"
+      style="rounded=0;fillColor=#ffffff;strokeColor=#333333;fontStyle=1;fontSize=11;">
+      <mxGeometry x="170" y="280" width="32" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="guard1txt" value="[ darbuotojas nerastas arba slaptažodis neteisingas ]" parent="1" vertex="1"
+      style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontStyle=2;">
+      <mxGeometry x="206" y="281" width="320" height="14" as="geometry" />
+    </mxCell>
+    <!-- Alt separator -->
+    <mxCell id="altSep" style="endArrow=none;html=1;dashed=1;dashPattern=4 4;startArrow=none;strokeColor=#333333;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="170" y="372" />
+        <mxPoint as="targetPoint" x="746" y="372" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="guard2txt" value="[ prisijungimas sėkmingas ]" parent="1" vertex="1"
+      style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=9;fontStyle=2;">
+      <mxGeometry x="206" y="373" width="210" height="14" as="geometry" />
+    </mxCell>
+
+    <!-- ===== MESSAGES ===== -->
+
+    <!-- 1: Darbuotojas → Narsykle (vartotojas įveda duomenis) -->
+    <mxCell id="m1" value="1. Įveda el. paštą ir slaptažodį, spaudžia mygtuką [Prisijungti]"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="75" y="110" />
+        <mxPoint as="targetPoint" x="251" y="110" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 2: Narsykle → FastAPI (HTTP POST) -->
+    <mxCell id="m2" value="2. POST /api/v1/login — { el_pastas: ..., slaptazodis: ... }"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="261" y="150" />
+        <mxPoint as="targetPoint" x="488" y="150" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 3: FastAPI → MySQL (DB uzklausa) -->
+    <mxCell id="m3" value="3. SELECT * FROM Darbuotojai WHERE el_pastas = :email"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="498" y="190" />
+        <mxPoint as="targetPoint" x="733" y="190" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 4: MySQL → FastAPI (grazina rezultata, punktyrine linija = return) -->
+    <mxCell id="m4" value="4. Darbuotojo įrašas (arba None — jei el. paštas nerastas duomenų bazėje)"
+      parent="1" style="endArrow=open;endFill=0;html=1;dashed=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="733" y="225" />
+        <mxPoint as="targetPoint" x="498" y="225" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 5: FastAPI self-call — verify_password (bcrypt) -->
+    <mxCell id="m5" value="5. verify_password() — bcrypt maiša tikrinama su pateiktu slaptažodžiu"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="548" y="253" />
+          <mxPoint x="548" y="272" />
+        </Array>
+        <mxPoint as="sourcePoint" x="498" y="253" />
+        <mxPoint as="targetPoint" x="498" y="272" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ALT BRANCH 1: klaida -->
+
+    <!-- 6a: FastAPI → Narsykle (401 klaida, punktyrine) -->
+    <mxCell id="m6a" value="6a. 401 Unauthorized — Neteisingi prisijungimo duomenys"
+      parent="1" style="endArrow=open;endFill=0;html=1;dashed=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="488" y="310" />
+        <mxPoint as="targetPoint" x="261" y="310" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 6b: Narsykle → Darbuotojas (rodo klaida) -->
+    <mxCell id="m6b" value="6b. Klaidos pranešimas rodomas prisijungimo formoje"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="251" y="344" />
+        <mxPoint as="targetPoint" x="75" y="344" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ALT BRANCH 2: sekme -->
+
+    <!-- 7a: FastAPI self-call — create_access_token -->
+    <mxCell id="m7a" value="7a. create_access_token({ sub: el_pastas }, galioja 60 min) — JWT žetonas sukuriamas"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="548" y="390" />
+          <mxPoint x="548" y="410" />
+        </Array>
+        <mxPoint as="sourcePoint" x="498" y="390" />
+        <mxPoint as="targetPoint" x="498" y="410" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 7b: FastAPI → Narsykle (200 OK su tokenu, punktyrine = return) -->
+    <mxCell id="m7b" value="7b. 200 OK — { access_token: JWT žetonas, token_type: bearer }"
+      parent="1" style="endArrow=open;endFill=0;html=1;dashed=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="488" y="432" />
+        <mxPoint as="targetPoint" x="261" y="432" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- POST-ALT: Tokeno issaugojimas -->
+
+    <!-- 8: Narsykle self — Redux dispatch -->
+    <mxCell id="m8" value="8. dispatch(setToken(token)) — žetonas išsaugomas Redux store (authSlice)"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="310" y="475" />
+          <mxPoint x="310" y="495" />
+        </Array>
+        <mxPoint as="sourcePoint" x="261" y="475" />
+        <mxPoint as="targetPoint" x="261" y="495" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 9: Narsykle self — Cookie -->
+    <mxCell id="m9" value="9. document.cookie = 'token=...' — žetonas saugomas naršyklės cookie"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="310" y="512" />
+          <mxPoint x="310" y="532" />
+        </Array>
+        <mxPoint as="sourcePoint" x="261" y="512" />
+        <mxPoint as="targetPoint" x="261" y="532" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 10: Narsykle self — localStorage -->
+    <mxCell id="m10" value="10. localStorage.setItem('token', ...) — žetonas saugomas naršyklės vietinėje atmintyje"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="310" y="548" />
+          <mxPoint x="310" y="568" />
+        </Array>
+        <mxPoint as="sourcePoint" x="261" y="548" />
+        <mxPoint as="targetPoint" x="261" y="568" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 11: Narsykle self — AuthGuard -->
+    <mxCell id="m11" value="11. AuthGuard: token aptiktas → prieiga prie apsaugotų puslapių suteikiama"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=left;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="310" y="583" />
+          <mxPoint x="310" y="603" />
+        </Array>
+        <mxPoint as="sourcePoint" x="261" y="583" />
+        <mxPoint as="targetPoint" x="261" y="603" />
+      </mxGeometry>
+    </mxCell>
+
+    <!-- 12: Narsykle → Darbuotojas (nukreipimas i Dashboard) -->
+    <mxCell id="m12" value="12. router.replace('/') — naršyklė nukreipiama į Dashboard puslapį"
+      parent="1" style="endArrow=block;endFill=1;html=1;fontSize=10;verticalAlign=bottom;align=center;" edge="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="sourcePoint" x="251" y="630" />
+        <mxPoint as="targetPoint" x="75" y="630" />
+      </mxGeometry>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

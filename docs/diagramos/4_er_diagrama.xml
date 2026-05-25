@@ -1,0 +1,275 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <!-- https://dbdiagram.io/d/Autorent-6a1ae349f15b4b0452368d56 
+    // AUTORENT DBML schema
+
+Table Klientai {
+  kliento_id integer [primary key]
+  vardas varchar
+  pavarde varchar
+  el_pastas varchar [unique]
+  telefono_nr varchar
+  gimimo_data date
+  registracijos_data timestamp
+  bonus_taskai integer
+}
+
+Table Darbuotojai {
+  darbuotojo_id integer [primary key]
+  vardas varchar
+  pavarde varchar
+  el_pastas varchar [unique]
+  telefono_nr varchar
+  pareigos varchar
+  atlyginimas decimal
+  isidarbinimo_data date
+  slaptazodis varchar
+}
+
+Table Pristatymo_Vietos {
+  vietos_id integer [primary key]
+  pavadinimas varchar
+  adresas varchar
+  miestas varchar
+}
+
+Table Automobiliai {
+  automobilio_id integer [primary key]
+  marke varchar
+  modelis varchar
+  metai integer
+  numeris varchar [unique]
+  vin_kodas varchar [unique]
+  spalva varchar
+  kebulo_tipas varchar
+  pavarų_deze varchar
+  variklio_turis decimal
+  galia_kw integer
+  kuro_tipas varchar
+  rida integer
+  sedimos_vietos integer
+  klimato_kontrole boolean
+  navigacija boolean
+  kaina_parai decimal
+  automobilio_statusas varchar
+  technikines_galiojimas date
+  dabartine_vieta_id integer
+  pastabos text
+}
+
+Table Uzsakymai {
+  uzsakymo_id integer [primary key]
+  kliento_id integer
+  automobilio_id integer
+  darbuotojo_id integer
+  nuomos_data date
+  grazinimo_data date
+  paemimo_vietos_id integer
+  grazinimo_vietos_id integer
+  bendra_kaina decimal
+  uzsakymo_busena varchar
+  turi_papildomas_paslaugas boolean
+}
+
+Table Rezervavimas {
+  rezervacijos_id integer [primary key]
+  kliento_id integer
+  automobilio_id integer
+  rezervacijos_pradzia date
+  rezervacijos_pabaiga date
+  busena varchar
+}
+
+Table Saskaitos {
+  saskaitos_id integer [primary key]
+  uzsakymo_id integer
+  suma decimal
+  saskaitos_data timestamp
+}
+
+Table Mokejimai {
+  mokejimo_id integer [primary key]
+  uzsakymo_id integer
+  suma decimal
+  mokejimo_data timestamp
+  mokejimo_tipas varchar
+}
+
+Table Klientu_Palaikymas {
+  uzklausos_id integer [primary key]
+  kliento_id integer
+  darbuotojo_id integer
+  tema varchar
+  pranesimas text
+  atsakymas text
+  pateikimo_data timestamp
+  atsakymo_data timestamp
+}
+
+Table Automobilio_Atsiliepimai {
+  atsiliepimo_id integer [primary key]
+  kliento_id integer
+  automobilio_id integer
+  ivertinimas integer
+  komentaras text
+  data timestamp
+}
+
+Table Automobiliu_Servisas {
+  serviso_id integer [primary key]
+  automobilio_id integer
+  serviso_pradzios_data date
+  serviso_pabaigos_data date
+  plovimas boolean
+  salono_valymas boolean
+  technine_apziura boolean
+  tepalai_pakeisti boolean
+  kaina decimal
+  busena varchar
+}
+
+Table Remonto_Darbai {
+  remonto_id integer [primary key]
+  automobilio_id integer
+  remonto_pradzios_data date
+  remonto_pabaigos_data date
+  aprasymas text
+  detales_pakeistos text
+  garantija_menesiais integer
+  meistras varchar
+  serviso_pavadinimas varchar
+  kaina decimal
+  busena varchar
+}
+
+Table Kuro_Sanaudos {
+  sanaudu_id integer [primary key]
+  automobilio_id integer
+  data date
+  kuro_kiekis decimal
+  kaina decimal
+}
+
+Table Kuro_Korteles {
+  korteles_id integer [primary key]
+  automobilio_id integer
+  korteles_numeris varchar [unique]
+  galiojimo_pabaiga date
+}
+
+Table Draudimai {
+  draudimo_id integer [primary key]
+  automobilio_id integer
+  draudimo_tipas varchar
+  galiojimo_pradzia date
+  galiojimo_pabaiga date
+  suma decimal
+}
+
+Table Baudu_Registras {
+  baudos_id integer [primary key]
+  automobilio_id integer
+  baudos_priezastis varchar
+  data date
+  laikas time
+  suma decimal
+  kliento_id integer
+}
+
+Table Atsakingi_Automobiliai {
+  atsakomybes_id integer [primary key]
+  darbuotojo_id integer
+  automobilio_id integer
+  pradzios_data date
+  pabaigos_data date
+}
+
+Table Papildomos_Paslaugos {
+  paslaugos_id integer [primary key]
+  pavadinimas varchar
+  aprasymas text
+  kaina decimal
+}
+
+Table Uzsakymo_Paslaugos {
+  uzsakymo_paslaugos_id integer [primary key]
+  uzsakymo_id integer
+  paslaugos_id integer
+}
+
+Table Nuolaidos {
+  nuolaidos_id integer [primary key]
+  pavadinimas varchar
+  procentas decimal
+  galiojimo_pradzia date
+  galiojimo_pabaiga date
+}
+
+Table Uzsakymo_Nuolaidos {
+  uzsakymo_nuolaidos_id integer [primary key]
+  uzsakymo_id integer
+  nuolaidos_id integer
+}
+
+Table Bonusu_Naudojimas {
+  naudojimo_id integer [primary key]
+  kliento_id integer
+  uzsakymo_id integer
+  panaudoti_taskai integer
+  nuolaidos_id integer
+  data timestamp
+}
+
+Table Automobilio_Grazinimo_Vieta {
+  grazinimo_vietos_id integer [primary key]
+  automobilio_id integer
+  vietos_id integer
+}
+
+Ref: Automobiliai.dabartine_vieta_id > Pristatymo_Vietos.vietos_id
+
+Ref: Uzsakymai.kliento_id > Klientai.kliento_id
+Ref: Uzsakymai.automobilio_id > Automobiliai.automobilio_id
+Ref: Uzsakymai.darbuotojo_id > Darbuotojai.darbuotojo_id
+Ref: Uzsakymai.paemimo_vietos_id > Pristatymo_Vietos.vietos_id
+Ref: Uzsakymai.grazinimo_vietos_id > Pristatymo_Vietos.vietos_id
+
+Ref: Rezervavimas.kliento_id > Klientai.kliento_id
+Ref: Rezervavimas.automobilio_id > Automobiliai.automobilio_id
+
+Ref: Saskaitos.uzsakymo_id > Uzsakymai.uzsakymo_id
+Ref: Mokejimai.uzsakymo_id > Uzsakymai.uzsakymo_id
+
+Ref: Klientu_Palaikymas.kliento_id > Klientai.kliento_id
+Ref: Klientu_Palaikymas.darbuotojo_id > Darbuotojai.darbuotojo_id
+
+Ref: Automobilio_Atsiliepimai.kliento_id > Klientai.kliento_id
+Ref: Automobilio_Atsiliepimai.automobilio_id > Automobiliai.automobilio_id
+
+Ref: Automobiliu_Servisas.automobilio_id > Automobiliai.automobilio_id
+Ref: Remonto_Darbai.automobilio_id > Automobiliai.automobilio_id
+Ref: Kuro_Sanaudos.automobilio_id > Automobiliai.automobilio_id
+Ref: Kuro_Korteles.automobilio_id > Automobiliai.automobilio_id
+Ref: Draudimai.automobilio_id > Automobiliai.automobilio_id
+Ref: Baudu_Registras.automobilio_id > Automobiliai.automobilio_id
+Ref: Baudu_Registras.kliento_id > Klientai.kliento_id
+
+Ref: Atsakingi_Automobiliai.darbuotojo_id > Darbuotojai.darbuotojo_id
+Ref: Atsakingi_Automobiliai.automobilio_id > Automobiliai.automobilio_id
+
+Ref: Uzsakymo_Paslaugos.uzsakymo_id > Uzsakymai.uzsakymo_id
+Ref: Uzsakymo_Paslaugos.paslaugos_id > Papildomos_Paslaugos.paslaugos_id
+
+Ref: Uzsakymo_Nuolaidos.uzsakymo_id > Uzsakymai.uzsakymo_id
+Ref: Uzsakymo_Nuolaidos.nuolaidos_id > Nuolaidos.nuolaidos_id
+
+Ref: Bonusu_Naudojimas.kliento_id > Klientai.kliento_id
+Ref: Bonusu_Naudojimas.uzsakymo_id > Uzsakymai.uzsakymo_id
+Ref: Bonusu_Naudojimas.nuolaidos_id > Nuolaidos.nuolaidos_id
+
+Ref: Automobilio_Grazinimo_Vieta.automobilio_id > Automobiliai.automobilio_id
+Ref: Automobilio_Grazinimo_Vieta.vietos_id > Pristatymo_Vietos.vietos_id-->
+  </root>
+</mxGraphModel>
