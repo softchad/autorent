@@ -73,6 +73,7 @@ SECRET_KEY=bet_koks_ilgas_raktas
 DATABASE_URL=mysql+pymysql://root:tavo_slaptazodis@localhost:3306/autorent
 SESSION_SECRET_KEY=bet_koks_ilgas_raktas
 OPENCAGE_API_KEY=raktas_is_opencage.com
+FRONTEND_URL=http://localhost:3000
 
 # OAuth (neprivaloma — be šių veikia tik paprastas prisijungimas)
 GOOGLE_CLIENT_ID=raktas_is_google_cloud_console
@@ -117,7 +118,7 @@ npm run dev
 |---------|-----------|
 | **Automobiliai** | CRUD, statusų valdymas, žemėlapis |
 | **Rezervacijos** | Datų rezervavimas |
-| **Užsakymai** | Nuomos valdymas, automatinis kainos skaičiavimas |
+| **Užsakymai** | Nuomos valdymas, kainos įvedimas, būsenų valdymas |
 | **Klientai** | Registras, bonus taškai |
 | **Sąskaitos** | Generavimas, PDF atsisiuntimas |
 | **Darbuotojai** | Valdymas, rolės, prisijungimo paskyros |
