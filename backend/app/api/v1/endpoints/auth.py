@@ -73,7 +73,7 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
         random_pwd = secrets.token_urlsafe(24)
         user = employee_repo.create_employee(db, {
             "vardas": first, "pavarde": last, "el_pastas": email,
-            "telefono_nr": "", "pareigos": "Guest", "atlyginimas": 0.0,
+            "telefono_nr": "", "pareigos": "Svečias", "atlyginimas": 0.0,
             "isidarbinimo_data": date.today(), "slaptazodis": get_password_hash(random_pwd),
         })
 
@@ -116,7 +116,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             "pavarde": userinfo.get("family_name") or "User",
             "el_pastas": email,
             "telefono_nr": "",
-            "pareigos": "Guest",
+            "pareigos": "Svečias",
             "atlyginimas": 0.0,
             "isidarbinimo_data": date.today(),
             "slaptazodis": get_password_hash(random_pwd),
