@@ -26,6 +26,7 @@ class UserInfo(BaseModel):
     telefono_nr: str
     el_pastas: str
     pareigos: str
+    atlyginimas: float
     isidarbinimo_data: date
 
 class ChangePasswordRequest(BaseModel):
