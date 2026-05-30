@@ -18,7 +18,7 @@ from app.api.v1.endpoints import (
 
 #Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Car Rental API", version="1.0.0")
+app = FastAPI(title="AutoRent API", version="1.0.0")
 
 # Sesija reikalinga OAuth prisijungimui
 app.add_middleware(
@@ -40,9 +40,9 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Car Rental API",
+        title="AutoRent API",
         version="1.0.0",
-        description="API documentation",
+        description="AutoRent automobilių nuomos valdymo sistema",
         routes=app.routes,
     )
     components = openapi_schema.setdefault("components", {}).setdefault("securitySchemes", {})
