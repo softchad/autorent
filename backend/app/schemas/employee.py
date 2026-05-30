@@ -22,8 +22,8 @@ class EmployeeBase(BaseModel):
     @field_validator("atlyginimas")
     @classmethod
     def validate_atlyginimas(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError("Atlyginimas turi būti teigiamas skaičius")
+        if v < 0:
+            raise ValueError("Atlyginimas negali būti neigiamas")
         return v
 
     @field_validator("pareigos")
@@ -58,8 +58,8 @@ class EmployeeUpdate(BaseModel):
     @field_validator("atlyginimas")
     @classmethod
     def validate_atlyginimas(cls, v: Optional[float]) -> Optional[float]:
-        if v is not None and v <= 0:
-            raise ValueError("Atlyginimas turi būti teigiamas skaičius")
+        if v is not None and v < 0:
+            raise ValueError("Atlyginimas negali būti neigiamas")
         return v
 
     @field_validator("slaptazodis")
