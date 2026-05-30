@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from app.api.deps import get_db
 from app.models.car import Car
+from app.models.location import Location
 from app.schemas.car import CarOut, CarCreate, CarUpdate, CarStatusUpdate
 from utils.hateoas import generate_links
 from app.api.deps import get_current_user
@@ -276,3 +277,8 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
     db.delete(car)
     db.commit()
     return {"message": "Car deleted successfully"}
+
+@router.get("/locations/all", operation_id="getLocations", dependencies=[Depends(require_perm(Perm.VIEW))])
+def get_locations(db: Session = Depends(get_db)):
+    locations = db.query(Location).order_by(Location.vietos_id).all()
+    return [{"vietos_id": l.vietos_id, "pavadinimas": l.pavadinimas, "adresas": l.adresas, "miestas": l.miestas} for l in locations]
