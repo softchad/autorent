@@ -8,11 +8,15 @@ async def geocode_address(adresas: str) -> tuple[float, float] | None:
     query = f"{adresas}, Lietuva"
     url = f"https://api.opencagedata.com/geocode/v1/json?q={query}&key={OPENCAGE_API_KEY}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
-        data = response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+    except Exception:
+        return None
 
-    if not data["results"]:
+    if not data.get("results"):
         return None
 
     geometry = data["results"][0]["geometry"]
