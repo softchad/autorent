@@ -137,7 +137,7 @@ npm run dev
 
 ## DB diagrama
 
-[dbdiagram.io](https://dbdiagram.io/d/67bd9bc3263d6cf9a060b0e7)
+[dbdiagram.io](https://dbdiagram.io/d/Autorent-6a1ae349f15b4b0452368d56)
 
 ---
 
@@ -146,22 +146,179 @@ npm run dev
 ```
 autorent/
 ├── backend/
+│   ├── .env.example
+│   ├── requirements.txt
 │   ├── app/
-│   │   ├── api/          # Endpoint'ai ir prieigos kontrolė
-│   │   ├── models/       # SQLAlchemy modeliai
-│   │   ├── repositories/ # DB operacijos
-│   │   └── schemas/      # Pydantic schemos
-│   └── tests/            # pytest testai
+│   │   ├── main.py
+│   │   ├── api/
+│   │   │   ├── deps.py
+│   │   │   ├── permissions.py
+│   │   │   └── v1/
+│   │   │       └── endpoints/
+│   │   │           ├── auth.py
+│   │   │           ├── car.py
+│   │   │           ├── client.py
+│   │   │           ├── client_support.py
+│   │   │           ├── employee.py
+│   │   │           ├── geocode.py
+│   │   │           ├── invoice.py
+│   │   │           ├── order.py
+│   │   │           └── reservation.py
+│   │   ├── db/
+│   │   │   ├── base.py
+│   │   │   └── session.py
+│   │   ├── models/
+│   │   │   ├── car.py
+│   │   │   ├── client.py
+│   │   │   ├── client_support.py
+│   │   │   ├── employee.py
+│   │   │   ├── invoice.py
+│   │   │   ├── location.py
+│   │   │   ├── order.py
+│   │   │   └── reservation.py
+│   │   ├── repositories/
+│   │   │   ├── car.py
+│   │   │   ├── client.py
+│   │   │   ├── client_support.py
+│   │   │   ├── employee.py
+│   │   │   ├── geocode.py
+│   │   │   ├── invoice.py
+│   │   │   ├── order.py
+│   │   │   └── reservation.py
+│   │   ├── schemas/
+│   │   │   ├── auth.py
+│   │   │   ├── car.py
+│   │   │   ├── client.py
+│   │   │   ├── client_support.py
+│   │   │   ├── employee.py
+│   │   │   ├── geocode.py
+│   │   │   ├── invoice.py
+│   │   │   ├── location.py
+│   │   │   ├── order.py
+│   │   │   └── reservation.py
+│   │   └── services/
+│   │       └── auth_service.py
+│   ├── tests/
+│   │   ├── conftest.py
+│   │   ├── init_test_db.sql
+│   │   ├── api/
+│   │   │   ├── test_auth.py
+│   │   │   ├── test_car.py
+│   │   │   ├── test_car_extended.py
+│   │   │   ├── test_client.py
+│   │   │   ├── test_client_extended.py
+│   │   │   ├── test_client_support.py
+│   │   │   ├── test_employee.py
+│   │   │   ├── test_geocode.py
+│   │   │   ├── test_invoice.py
+│   │   │   ├── test_order.py
+│   │   │   ├── test_reservation.py
+│   │   │   ├── test_reservation_extended.py
+│   │   │   ├── test_roles_permissions.py
+│   │   │   └── test_validation.py
+│   │   ├── services/
+│   │   │   ├── test_auth_service.py
+│   │   │   └── test_permissions.py
+│   │   └── utils/
+│   │       └── test_hateoas.py
+│   └── utils/
+│       ├── config.py
+│       └── hateoas.py
 ├── frontend/
+│   ├── next.config.ts
+│   ├── package.json
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── openapi.config.js
+│   ├── public/
+│   │   └── fonts/
+│   │       ├── Roboto-Bold.ttf
+│   │       └── Roboto-Regular.ttf
 │   └── src/
-│       ├── app/          # Next.js puslapiai ir komponentai
-│       ├── hooks/        # React hooks
-│       └── store/        # Redux + RTK Query
+│       ├── middleware.ts
+│       ├── app/
+│       │   ├── layout.tsx
+│       │   ├── page.tsx
+│       │   ├── globals.css
+│       │   ├── login/
+│       │   │   └── page.tsx
+│       │   ├── oauth/
+│       │   │   ├── page.tsx
+│       │   │   └── OAuthClient.tsx
+│       │   ├── profile/
+│       │   │   └── page.tsx
+│       │   ├── cars/
+│       │   │   └── page.tsx
+│       │   ├── clients/
+│       │   │   └── page.tsx
+│       │   ├── employees/
+│       │   │   └── page.tsx
+│       │   ├── invoices/
+│       │   │   └── page.tsx
+│       │   ├── orders/
+│       │   │   └── page.tsx
+│       │   ├── reservations/
+│       │   │   └── page.tsx
+│       │   ├── support/
+│       │   │   └── page.tsx
+│       │   ├── components/
+│       │   │   ├── ActionButtons.tsx
+│       │   │   ├── BarChartBox.tsx
+│       │   │   ├── BaseModal.tsx
+│       │   │   ├── ClientProvider.tsx
+│       │   │   ├── CreateEntityButton.tsx
+│       │   │   ├── DataTable.tsx
+│       │   │   ├── InvoicePdfDocument.tsx
+│       │   │   ├── InvoicePdfModal.tsx
+│       │   │   ├── Layout.tsx
+│       │   │   ├── LogoutButton.tsx
+│       │   │   ├── MapComponent.tsx
+│       │   │   ├── PieChartBox.tsx
+│       │   │   ├── Sidebar.tsx
+│       │   │   ├── StatCard.tsx
+│       │   │   ├── StatusBadge.tsx
+│       │   │   ├── loadingScreen.tsx
+│       │   │   └── modals/
+│       │   │       └── EntityModal.tsx
+│       │   ├── guards/
+│       │   │   └── AuthGuard.tsx
+│       │   └── providers/
+│       │       └── AuthHydrate.tsx
+│       ├── assets/
+│       │   ├── autorentLOGO.png
+│       │   └── autorenttext.png
+│       ├── hooks/
+│       │   ├── useCarsData.ts
+│       │   ├── useClientsData.ts
+│       │   ├── useDashboardStats.ts
+│       │   ├── useEmployeesData.ts
+│       │   ├── useInvoiceModals.ts
+│       │   ├── useInvoicesData.ts
+│       │   ├── useOrdersData.ts
+│       │   ├── useReservationData.ts
+│       │   └── useSupportData.ts
+│       ├── store/
+│       │   ├── authSlice.ts
+│       │   ├── baseApi.ts
+│       │   ├── carRentalApi.ts
+│       │   ├── enhanceEndpoints.ts
+│       │   ├── hooks.ts
+│       │   ├── index.ts
+│       │   └── store.ts
+│       └── utils/
+│           └── formatApiError.ts
 ├── database/
 │   ├── schema.sql
 │   ├── seed.sql
 │   ├── triggers.sql
-│   └── transactions.sql
+│   ├── transactions.sql
+│   └── queries.sql
 └── docs/
     └── screenshots/
+        ├── login.png
+        ├── dashboard.png
+        ├── reservations.png
+        ├── clients.png
+        ├── invoice.png
+        └── support.png
 ```
