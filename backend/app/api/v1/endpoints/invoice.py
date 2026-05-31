@@ -47,9 +47,12 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
 
     created = crud_invoice.create_invoice(db, invoice)
 
-    # Papildoma kliento informacija reikalinga atsakymui
     order = db.query(Order).filter(Order.uzsakymo_id == created.uzsakymo_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     client = db.query(klientas_model.Client).filter(klientas_model.Client.kliento_id == order.kliento_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
 
     return {
         "invoice_id": created.saskaitos_id,
@@ -77,7 +80,11 @@ def update_status(invoice_id: int, status: InvoiceStatusUpdate, db: Session = De
     if not updated:
         raise HTTPException(status_code=404, detail="Invoice not found")
     order = db.query(Order).filter(Order.uzsakymo_id == updated.uzsakymo_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     client = db.query(klientas_model.Client).filter(klientas_model.Client.kliento_id == order.kliento_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
     return {
         "invoice_id": updated.saskaitos_id,
         "order_id": updated.uzsakymo_id,
@@ -98,7 +105,11 @@ def get_invoice_by_id(invoice_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Invoice not found")
 
     order = db.query(Order).filter(Order.uzsakymo_id == invoice.uzsakymo_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     client = db.query(klientas_model.Client).filter(klientas_model.Client.kliento_id == order.kliento_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
 
     return {
         "invoice_id": invoice.saskaitos_id,
