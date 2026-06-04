@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { baseApi as api } from "./baseApi";
 const injectedRtkApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -92,6 +93,9 @@ const injectedRtkApi = api.injectEndpoints({
     }),
     getAllCars: build.query<GetAllCarsApiResponse, GetAllCarsApiArg>({
       query: () => ({ url: `/api/v1/cars/` }),
+    }),
+    getLocations: build.query<{ vietos_id: number; pavadinimas: string; adresas: string; miestas: string }[], void>({
+      query: () => ({ url: `/api/v1/cars/locations/all` }),
     }),
     createCar: build.mutation<CreateCarApiResponse, CreateCarApiArg>({
       query: (queryArg) => ({
@@ -640,6 +644,7 @@ export type UserInfo = {
   telefono_nr: string;
   el_pastas: string;
   pareigos: string;
+  atlyginimas: number;
   isidarbinimo_data: string;
 };
 export type ChangePasswordRequest = {
@@ -937,6 +942,7 @@ export const {
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
   useGetAllCarsQuery,
+  useGetLocationsQuery,
   useCreateCarMutation,
   useSearchCarsQuery,
   useGetCarByIdQuery,

@@ -1,13 +1,20 @@
-import { useUpdateCarMutation } from "@/store/carRentalApi";
 import { useGetAllCarsQuery } from "@/store/enhanceEndpoints";
-import { useState } from "react";
-import EntityModal, { FieldConfig } from "@/app/components/modals/EntityModal";
+import { useGetLocationsQuery } from "@/store/carRentalApi";
+import { useMemo, useState } from "react";
+import { FieldConfig } from "@/app/components/modals/EntityModal";
 
 type Automobilis = NonNullable<
   ReturnType<typeof useGetAllCarsQuery>["data"]
 >[number];
 
 export function useCarsData() {
+  const { data: locations = [] } = useGetLocationsQuery();
+
+  const locationOptions = locations.map((l) => ({
+    value: l.vietos_id,
+    label: `${l.pavadinimas} (${l.adresas})`,
+  }));
+
   const carFields: FieldConfig<Automobilis>[] = [
     { name: "marke", label: "Markė", required: true },
     { name: "modelis", label: "Modelis", required: true },
@@ -90,9 +97,10 @@ export function useCarsData() {
     },
     {
       name: "dabartine_vieta_id",
-      label: "Vietos ID",
-      type: "number",
+      label: "Dabartinė vieta",
+      type: "select",
       required: true,
+      options: locationOptions,
     },
     {
       name: "pastabos",
@@ -127,7 +135,7 @@ export function useCarsData() {
     const modelis = pick(modeliai[marke] ?? ["Model"]);
     const metai = randInt(2010, 2024);
 
-    const letters = "ABCDEFGHJKLMNPRSTUVWXYZ";
+    const letters = [..."ABCDEFGHJKLMNPRSTUVWXYZ"];
     const numeris =
       pick(letters) + pick(letters) + pick(letters) +
       " " + randInt(100, 999);
@@ -157,9 +165,9 @@ export function useCarsData() {
       klimato_kontrole: Math.random() > 0.3,
       navigacija: Math.random() > 0.5,
       kaina_parai: randInt(30, 180),
-      automobilio_statusas: "laisvas" as any,
-      technikines_galiojimas: technikines_galiojimas as any,
-      dabartine_vieta_id: randInt(1, 3) as any,
+      automobilio_statusas: "laisvas",
+      technikines_galiojimas: technikines_galiojimas,
+      dabartine_vieta_id: randInt(1, 3),
     };
   }
 
@@ -174,14 +182,18 @@ export function useCarsData() {
   const [selectedCar, setSelectedCar] = useState<Automobilis | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
 
-  const filtered = automobiliai.filter((a) => {
-    const matchesStatus =
-      statusFilter === "visi" || a.automobilio_statusas === statusFilter;
-    const matchesSearch = `${a.marke} ${a.modelis} ${a.numeris}`
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const filtered = useMemo(
+    () =>
+      automobiliai.filter((a) => {
+        const matchesStatus =
+          statusFilter === "visi" || a.automobilio_statusas === statusFilter;
+        const matchesSearch = `${a.marke} ${a.modelis} ${a.numeris}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
+        return matchesStatus && matchesSearch;
+      }),
+    [automobiliai, statusFilter, search]
+  );
 
   return {
     automobiliai,

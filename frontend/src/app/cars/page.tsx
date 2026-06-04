@@ -3,7 +3,19 @@
 import { useState } from "react";
 import DataTable from "../components/DataTable";
 import { ActionButtons } from "../components/ActionButtons";
-import MapComponent from "../components/MapComponent";
+import dynamic from "next/dynamic";
+
+const MapComponent = dynamic(() => import("../components/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[500px] mt-6 rounded-lg bg-[#0f172a] text-slate-400">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm">Žemėlapis kraunamas...</span>
+      </div>
+    </div>
+  ),
+});
 import EntityModal from "../components/modals/EntityModal";
 import { useCarsData } from "@/hooks/useCarsData";
 import LoadingScreen from "@/app/components/loadingScreen";
@@ -12,6 +24,7 @@ import {
   useDeleteCarMutation,
   useCreateCarMutation,
 } from "@/store/enhanceEndpoints";
+import type { CarCreate } from "@/store/carRentalApi";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 
@@ -21,7 +34,6 @@ type Automobilis = NonNullable<
 
 export default function CarsPage() {
   const {
-    automobiliai,
     isLoading,
     filtered,
     statusFilter,
@@ -58,6 +70,11 @@ export default function CarsPage() {
       label: "Veiksmai",
       accessor: (a: Automobilis) => (
         <ActionButtons
+          onView={() => {
+            setSelectedCar(a);
+            setEditMode(false);
+            setModalOpen(true);
+          }}
           onEdit={() => {
             setSelectedCar(a);
             setEditMode(true);
@@ -72,8 +89,9 @@ export default function CarsPage() {
             try {
               await deleteCar({ carId: a.automobilio_id }).unwrap();
               setSelectedCar(null);
-            } catch (e: any) {
-              console.error("Klaida trinant automobilį:", e);
+              await refetchCars();
+            } catch {
+              console.error("Klaida trinant automobilį:");
               alert(
                 "Šio automobilio ištrinti negalima, nes jis susijęs su užsakymais ar kita informacija."
               );
@@ -97,9 +115,9 @@ export default function CarsPage() {
           randomize={randomizeCar}
           onCreate={async (data) => {
             try {
-              await createCar({ carCreate: data as any }).unwrap();
+              await createCar({ carCreate: data as unknown as CarCreate }).unwrap();
               await refetchCars();
-            } catch (e: any) {
+            } catch (e) {
               alert(formatApiError(e, "Nepavyko sukurti automobilio. Patikrinkite įvestus duomenis."));
             }
           }}
@@ -131,13 +149,14 @@ export default function CarsPage() {
         columns={columns}
         data={filtered}
         rowKey={(a) => a.automobilio_id}
-        itemsPerPage={5}
+        itemsPerPage={10}
       />
 
       <MapComponent cars={filtered} />
 
       {selectedCar && (
         <EntityModal
+          key={`${selectedCar.automobilio_id}-${editMode}`}
           title={`${selectedCar.marke} ${selectedCar.modelis}`}
           entity={selectedCar}
           fields={carFields}
@@ -173,10 +192,10 @@ export default function CarsPage() {
               await refetchCars();
               setModalOpen(false);
             } catch (e) {
-              console.error("Nepavyko atnaujinti automobilio:", e);
+              alert(formatApiError(e, "Nepavyko atnaujinti automobilio. Patikrinkite įvestus duomenis."));
             }
           }}
-          startInEdit={false}
+          startInEdit={editMode}
         />
       )}
     </div>

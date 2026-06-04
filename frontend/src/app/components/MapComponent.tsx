@@ -2,15 +2,15 @@
 
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { LatLngExpression } from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { useGeoCodeMutation } from "@/store/carRentalApi";
 
 // Koordinačių talpykla — neleidžia to paties adreso geokuoduoti kelis kartus
 const coordCache = new Map<string, LatLngExpression>();
 
 // Leaflet nesugebą rasti ikonų pats, kai naudojamas Next.js — nurodome rankiniu būdu
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -39,7 +39,22 @@ type MapComponentProps = { cars: Automobilis[] };
 
 // Rodo automobilių žymenis žemėlapyje — naudoja koordinates iš DB arba geokuduoja adresą
 export default function MapComponent({ cars }: MapComponentProps) {
+  const LOADING_MESSAGES = [
+    "Gaunami automobilių adresai...",
+    "Siunčiama užklausa į geocoding servisą...",
+    "Konvertuojami adresai į koordinates...",
+    "Tikrinamas koordinačių tikslumas...",
+    "Paruošiami žymekliai žemėlapiui...",
+    "Apskaičiuojamos žymeklių pozicijos...",
+    "Įkeliami žemėlapio sluoksniai...",
+    "Sinchronizuojami duomenys su žemėlapiu...",
+    "Baigiamas žymeklių kėlimas...",
+  ];
+
   const [carsWithCoords, setCarsWithCoords] = useState<AutoWithCoords[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const msgIndexRef = useRef(0);
   const [geoCode] = useGeoCodeMutation();
 
   useEffect(() => {
@@ -57,44 +72,72 @@ export default function MapComponent({ cars }: MapComponentProps) {
         withCoords.push({ ...car, coords: [loc.latitude, loc.longitude] });
       } else if (loc?.adresas) {
         const cached = coordCache.get(loc.adresas);
-        cached
-          ? withCoords.push({ ...car, coords: cached })
-          : needGeocode.push(car);
+        if (cached) {
+          withCoords.push({ ...car, coords: cached });
+        } else {
+          needGeocode.push(car);
+        }
       }
     });
 
+    setCarsWithCoords(withCoords);
+
     if (!needGeocode.length) {
-      setCarsWithCoords(withCoords);
       return;
     }
 
-    const fetchCoords = async () => {
-      const geocoded: AutoWithCoords[] = [];
+    setIsLoading(true);
+    msgIndexRef.current = 0;
+    setLoadingMsg(LOADING_MESSAGES[0]);
+    const interval = setInterval(() => {
+      msgIndexRef.current = (msgIndexRef.current + 1) % LOADING_MESSAGES.length;
+      setLoadingMsg(LOADING_MESSAGES[msgIndexRef.current]);
+    }, 2000);
 
-      for (const car of needGeocode) {
-        const adresas = car.lokacija!.adresas;
-        try {
-          const { lat, lng } = await geoCode({
-            geocodeRequest: { adresas },
-          }).unwrap();
-          const coords: LatLngExpression | null =
-            lat && lng ? [lat, lng] : null;
-          if (coords) coordCache.set(adresas, coords);
-          geocoded.push({ ...car, coords });
-        } catch (e) {
-          console.warn("Geocode failed:", adresas, e);
-          geocoded.push({ ...car, coords: null });
-        }
+    let completed = 0;
+    let cancelled = false;
+
+    // Kiekvienas automobilis pridedamas prie žemėlapio iškart, kai jam atsako
+    // geokodavimas — nereikia laukti, kol atsakys visi
+    needGeocode.forEach(async (car) => {
+      const adresas = car.lokacija!.adresas;
+      let coords: LatLngExpression | null = null;
+      try {
+        const { lat, lng } = await geoCode({
+          geocodeRequest: { adresas },
+        }).unwrap();
+        coords = lat && lng ? [lat, lng] : null;
+        if (coords) coordCache.set(adresas, coords);
+      } catch (e) {
+        console.warn("Geocode failed:", adresas, e);
       }
 
-      setCarsWithCoords([...withCoords, ...geocoded]);
-    };
+      if (cancelled) return;
+      setCarsWithCoords((prev) => [...prev, { ...car, coords }]);
 
-    fetchCoords();
+      completed++;
+      if (completed === needGeocode.length) {
+        clearInterval(interval);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [cars]); // geoCode mutation reference kinta kiekviename render'e — jos nereikia čia
 
   return (
     <div className="relative z-0 p-4 mt-6 h-[500px]">
+      {isLoading && (
+        <div className="absolute inset-4 z-[1000] flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg pointer-events-none">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-7 h-7 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-white/80">{loadingMsg}</span>
+          </div>
+        </div>
+      )}
       <MapContainer
         center={[55.1694, 23.8813]}
         zoom={7}
