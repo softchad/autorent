@@ -3,19 +3,21 @@
 import { useEffect, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import InvoicePdfDocument from "./InvoicePdfDocument";
+import type { OrderInfo } from "./InvoicePdfDocument";
 import type { InvoiceOut } from "@/store/carRentalApi";
 
 interface Props {
   invoice: InvoiceOut;
+  orderInfo?: OrderInfo;
   onClose: () => void;
 }
 
-export default function InvoicePdfModal({ invoice, onClose }: Props) {
+export default function InvoicePdfModal({ invoice, orderInfo, onClose }: Props) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let url: string;
-    pdf(<InvoicePdfDocument invoice={invoice} />)
+    pdf(<InvoicePdfDocument invoice={invoice} orderInfo={orderInfo} />)
       .toBlob()
       .then((blob) => {
         url = URL.createObjectURL(blob);
@@ -24,7 +26,7 @@ export default function InvoicePdfModal({ invoice, onClose }: Props) {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [invoice]);
+  }, [invoice, orderInfo]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">

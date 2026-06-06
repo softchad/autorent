@@ -11,15 +11,22 @@ import type { InvoiceOut } from "@/store/carRentalApi";
 
 const NAVY = "#05001D";
 const TEAL = "#0F597B";
-const TEAL_LIGHT = "#1A7FA8";
-const WHITE = "#F7F7F7";
-const GRAY = "#888888";
+const WHITE = "#FFFFFF";
+const GRAY = "#2E2E2E";
 const LIGHT_BG = "#F0F4F8";
+const BORDER = "#DDE3EA";
 
-const statusColors: Record<string, { bg: string; text: string }> = {
-  apmokėta:   { bg: "#1A4D2E", text: "#A8E6C0" },
-  vėluojanti: { bg: "#5B1E2A", text: "#FFAAB5" },
-  išrašyta:   { bg: "#2C3A4A", text: "#B0C8E0" },
+// Light-fill badges — readable in B&W (dark text on light bg, explicit border)
+const statusColors: Record<string, { bg: string; text: string; border: string }> = {
+  apmokėta:   { bg: "#DCF5E6", text: "#166534", border: "#166534" },
+  vėluojanti: { bg: "#FEE2E2", text: "#991B1B", border: "#991B1B" },
+  išrašyta:   { bg: "#DBEAFE", text: "#1E3A5F", border: "#1E3A5F" },
+};
+
+export type OrderInfo = {
+  carName: string;
+  nuomos_data: string;
+  grazinimo_data: string;
 };
 
 const s = StyleSheet.create({
@@ -29,11 +36,11 @@ const s = StyleSheet.create({
     paddingBottom: 60,
   },
 
-  // === Header ===
+  // === Header — white bg to save ink; NAVY text stays bold ===
   header: {
-    backgroundColor: NAVY,
+    backgroundColor: WHITE,
     paddingHorizontal: 40,
-    paddingVertical: 28,
+    paddingVertical: 24,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -41,18 +48,18 @@ const s = StyleSheet.create({
   brandName: {
     fontSize: 26,
     fontFamily: "Roboto", fontWeight: "bold",
-    color: WHITE,
+    color: NAVY,
     letterSpacing: 3,
   },
   brandTagline: {
     fontSize: 9,
-    color: "#8899AA",
+    color: GRAY,
     marginTop: 3,
     letterSpacing: 1,
   },
   invoiceLabel: {
     fontSize: 11,
-    color: TEAL_LIGHT,
+    color: TEAL,
     letterSpacing: 3,
     textAlign: "right",
     marginBottom: 4,
@@ -60,11 +67,11 @@ const s = StyleSheet.create({
   invoiceNumber: {
     fontSize: 22,
     fontFamily: "Roboto", fontWeight: "bold",
-    color: WHITE,
+    color: NAVY,
     textAlign: "right",
   },
 
-  // === Teal accent bar ===
+  // === Teal accent bar — single colored stripe, minimal ink ===
   accentBar: {
     height: 4,
     backgroundColor: TEAL,
@@ -75,8 +82,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 40,
     paddingTop: 28,
-    paddingBottom: 24,
-    gap: 0,
+    paddingBottom: 20,
   },
   infoLeft: {
     flex: 1,
@@ -86,7 +92,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingLeft: 20,
     borderLeftWidth: 1,
-    borderLeftColor: "#DDE3EA",
+    borderLeftColor: BORDER,
   },
   infoFieldLabel: {
     fontSize: 7,
@@ -100,22 +106,20 @@ const s = StyleSheet.create({
     color: NAVY,
     fontFamily: "Roboto", fontWeight: "bold",
   },
-  infoFieldValueLight: {
-    fontSize: 11,
-    color: "#333344",
-  },
   clientName: {
     fontSize: 18,
     fontFamily: "Roboto", fontWeight: "bold",
     color: NAVY,
     marginBottom: 2,
   },
+  // Badge: border-only style — visible even without color ink
   statusBadge: {
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     alignSelf: "flex-start",
     marginTop: 4,
+    borderWidth: 1,
   },
   statusText: {
     fontSize: 8,
@@ -123,10 +127,43 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
+  // === Rental info row ===
+  rentalSection: {
+    paddingHorizontal: 40,
+    marginBottom: 16,
+  },
+  rentalSectionTitle: {
+    fontSize: 8,
+    color: GRAY,
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  rentalGrid: {
+    flexDirection: "row",
+    backgroundColor: LIGHT_BG,
+    borderRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  rentalCol: {
+    flex: 1,
+  },
+  rentalLabel: {
+    fontSize: 7,
+    color: GRAY,
+    letterSpacing: 1.5,
+    marginBottom: 3,
+  },
+  rentalValue: {
+    fontSize: 10,
+    color: NAVY,
+    fontFamily: "Roboto", fontWeight: "bold",
+  },
+
   // === Divider ===
   divider: {
     height: 1,
-    backgroundColor: "#DDE3EA",
+    backgroundColor: BORDER,
     marginHorizontal: 40,
     marginVertical: 4,
   },
@@ -142,17 +179,19 @@ const s = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 8,
   },
+  // Table header — white bg, NAVY text, TEAL bottom line only
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: TEAL,
-    borderRadius: 4,
+    backgroundColor: WHITE,
+    borderBottomWidth: 2,
+    borderBottomColor: TEAL,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    marginBottom: 1,
+    marginBottom: 2,
   },
   tableHeaderText: {
     fontSize: 8,
-    color: WHITE,
+    color: NAVY,
     fontFamily: "Roboto", fontWeight: "bold",
     letterSpacing: 1,
   },
@@ -164,15 +203,12 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 2,
   },
-  tableRowAlt: {
-    backgroundColor: "#E8EEF4",
-  },
   colDescription: { flex: 3 },
   colOrder: { flex: 1, textAlign: "center" },
   colAmount: { flex: 1, textAlign: "right" },
   tableRowText: {
     fontSize: 10,
-    color: "#333344",
+    color: NAVY,
   },
   tableRowTextBold: {
     fontSize: 10,
@@ -180,15 +216,23 @@ const s = StyleSheet.create({
     color: NAVY,
   },
 
-  // === Total ===
+  // === Total — white bg with TEAL left accent border ===
   totalSection: {
     paddingHorizontal: 40,
     marginTop: 20,
     alignItems: "flex-end",
   },
   totalBox: {
-    backgroundColor: NAVY,
-    borderRadius: 6,
+    backgroundColor: WHITE,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+    borderLeftWidth: 4,
+    borderLeftColor: TEAL,
+    borderRadius: 4,
     paddingHorizontal: 24,
     paddingVertical: 14,
     minWidth: 200,
@@ -198,16 +242,13 @@ const s = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 9,
-    color: "#8899AA",
+    color: GRAY,
     letterSpacing: 2,
   },
   totalAmount: {
     fontSize: 20,
     fontFamily: "Roboto", fontWeight: "bold",
-    color: WHITE,
-  },
-  totalTeal: {
-    color: TEAL_LIGHT,
+    color: NAVY,
   },
 
   // === Note ===
@@ -225,30 +266,32 @@ const s = StyleSheet.create({
   },
   noteText: {
     fontSize: 8,
-    color: "#445566",
+    color: NAVY,
     lineHeight: 1.5,
   },
 
-  // === Footer ===
+  // === Footer — white bg with TEAL top border ===
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: NAVY,
+    backgroundColor: WHITE,
+    borderTopWidth: 2,
+    borderTopColor: TEAL,
     paddingHorizontal: 40,
-    paddingVertical: 14,
+    paddingVertical: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   footerLeft: {
     fontSize: 8,
-    color: "#8899AA",
+    color: GRAY,
   },
   footerRight: {
     fontSize: 8,
-    color: "#8899AA",
+    color: GRAY,
     textAlign: "right",
   },
 });
@@ -257,10 +300,15 @@ function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("lt-LT");
 }
 
+function rentalDays(start: string, end: string): number {
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
 function StatusBadge({ status }: { status: string }) {
-  const color = statusColors[status] ?? { bg: "#333344", text: "#CCCCCC" };
+  const color = statusColors[status] ?? { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF" };
   return (
-    <View style={[s.statusBadge, { backgroundColor: color.bg }]}>
+    <View style={[s.statusBadge, { backgroundColor: color.bg, borderColor: color.border }]}>
       <Text style={[s.statusText, { color: color.text }]}>
         {status.toUpperCase()}
       </Text>
@@ -268,7 +316,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function InvoicePdfDocument({ invoice }: { invoice: InvoiceOut }) {
+export default function InvoicePdfDocument({
+  invoice,
+  orderInfo,
+}: {
+  invoice: InvoiceOut;
+  orderInfo?: OrderInfo;
+}) {
   return (
     <Document
       title={`AutoRent sąskaita nr. ${invoice.invoice_id}`}
@@ -315,6 +369,31 @@ export default function InvoicePdfDocument({ invoice }: { invoice: InvoiceOut })
           </View>
         </View>
 
+        {/* Rental details — only shown when order data is available */}
+        {orderInfo && (
+          <View style={s.rentalSection}>
+            <Text style={s.rentalSectionTitle}>NUOMOS INFORMACIJA</Text>
+            <View style={s.rentalGrid}>
+              <View style={s.rentalCol}>
+                <Text style={s.rentalLabel}>AUTOMOBILIS</Text>
+                <Text style={s.rentalValue}>{orderInfo.carName}</Text>
+              </View>
+              <View style={s.rentalCol}>
+                <Text style={s.rentalLabel}>NUOMOS LAIKOTARPIS</Text>
+                <Text style={s.rentalValue}>
+                  {formatDate(orderInfo.nuomos_data)} – {formatDate(orderInfo.grazinimo_data)}
+                </Text>
+              </View>
+              <View style={s.rentalCol}>
+                <Text style={s.rentalLabel}>DIENŲ SKAIČIUS</Text>
+                <Text style={s.rentalValue}>
+                  {rentalDays(orderInfo.nuomos_data, orderInfo.grazinimo_data)} d.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         <View style={s.divider} />
 
         {/* Table */}
@@ -329,7 +408,9 @@ export default function InvoicePdfDocument({ invoice }: { invoice: InvoiceOut })
 
           <View style={s.tableRow}>
             <Text style={[s.tableRowText, s.colDescription]}>
-              Automobilio nuoma
+              {orderInfo
+                ? `Automobilio nuoma — ${orderInfo.carName}`
+                : "Automobilio nuoma"}
             </Text>
             <Text style={[s.tableRowText, s.colOrder]}>#{invoice.order_id}</Text>
             <Text style={[s.tableRowTextBold, s.colAmount]}>
@@ -342,10 +423,7 @@ export default function InvoicePdfDocument({ invoice }: { invoice: InvoiceOut })
         <View style={s.totalSection}>
           <View style={s.totalBox}>
             <Text style={s.totalLabel}>IŠ VISO</Text>
-            <Text style={s.totalAmount}>
-              <Text style={s.totalTeal}>{Number(invoice.total).toFixed(2)}</Text>
-              {" €"}
-            </Text>
+            <Text style={s.totalAmount}>{Number(invoice.total).toFixed(2)} €</Text>
           </View>
         </View>
 

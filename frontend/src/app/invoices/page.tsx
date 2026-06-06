@@ -3,16 +3,23 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useInvoicesData } from "@/hooks/useInvoicesData";
+import { useOrdersData } from "@/hooks/useOrdersData";
 import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import StatusBadge from "@/app/components/StatusBadge";
-import type { InvoiceOut } from "@/store/carRentalApi";
-import { useCreateInvoiceMutation, useDeleteInvoiceMutation } from "@/store/carRentalApi";
-import { FiRefreshCw } from "react-icons/fi";
+import EntityModal from "@/app/components/modals/EntityModal";
+import CreateInvoiceButton from "@/app/components/CreateInvoiceButton";
+import type { InvoiceOut, OrderOut } from "@/store/carRentalApi";
+import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllOrdersQuery } from "@/store/carRentalApi";
+import { FiRefreshCw, FiClipboard } from "react-icons/fi";
 
 // PDF biblioteka neveikia SSR — kraunama tik kliente
 const InvoicePdfModal = dynamic(
   () => import("@/app/components/InvoicePdfModal"),
+  { ssr: false }
+);
+const InvoiceDownloadButton = dynamic(
+  () => import("@/app/components/InvoiceDownloadButton"),
   { ssr: false }
 );
 
@@ -22,6 +29,7 @@ type Saskaita = NonNullable<
 
 export default function InvoicesPage() {
   const {
+    invoices,
     search,
     setSearch,
     statusFilter,
@@ -33,8 +41,11 @@ export default function InvoicesPage() {
 
   const [createInvoice] = useCreateInvoiceMutation();
   const [deleteInvoice] = useDeleteInvoiceMutation();
+  const { data: orders = [] } = useGetAllOrdersQuery();
+  const { orderFields, getClientName, getCarName } = useOrdersData();
 
   const [pdfInvoice, setPdfInvoice] = useState<InvoiceOut | null>(null);
+  const [orderModalOrder, setOrderModalOrder] = useState<OrderOut | null>(null);
 
   const columns = [
     { label: "Sąskaitos nr.", accessor: "invoice_id" },
@@ -60,6 +71,17 @@ export default function InvoicesPage() {
       accessor: (s: Saskaita) => (
         <div className="flex items-center gap-1">
           <button
+            title="Užsakymo informacija"
+            onClick={() => {
+              const order = orders.find((o) => o.uzsakymo_id === s.order_id);
+              if (order) setOrderModalOrder(order);
+            }}
+            className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-purple-900/30 hover:text-purple-400"
+            aria-label="Užsakymo informacija"
+          >
+            <FiClipboard />
+          </button>
+          <button
             title="Pergeneruoti sąskaitą"
             onClick={async () => {
               if (!window.confirm(`Pergeneruoti sąskaitą nr. ${s.invoice_id}? Esama sąskaita bus ištrinta ir sukurta nauja.`)) return;
@@ -78,21 +100,21 @@ export default function InvoicesPage() {
                 alert("Klaida pergeneruojant sąskaitą.");
               }
             }}
-            className="text-lg text-gray-600 hover:text-teal-500 transition-colors px-1"
+            className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-amber-900/30 hover:text-amber-400"
             aria-label="Pergeneruoti"
           >
             <FiRefreshCw />
           </button>
           <ActionButtons
             onView={() => setPdfInvoice(s as InvoiceOut)}
-            onExtra={() =>
-              window.open(
-                `mailto:buhaltere@autorent.lt?subject=Sąskaita%20nr.%20${s.invoice_id}&body=Gerbiama buhaltere,%0A%0APrašome peržiūrėti sąskaitą nr. ${s.invoice_id}.`,
-                "_blank"
-              )
-            }
-            show={{ view: true, edit: false, delete: false, extra: true }}
-            extraLabel="Rašyti buhalterei"
+            show={{ view: true, edit: false, delete: false }}
+          />
+          <InvoiceDownloadButton
+            invoice={s as InvoiceOut}
+            orderInfo={(() => {
+              const o = orders.find((ord) => ord.uzsakymo_id === s.order_id);
+              return o ? { carName: getCarName(o.automobilio_id), nuomos_data: String(o.nuomos_data), grazinimo_data: String(o.grazinimo_data) } : undefined;
+            })()}
           />
         </div>
       ),
@@ -103,6 +125,15 @@ export default function InvoicesPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-[#F7F7F7]">Sąskaitos</h1>
+        <CreateInvoiceButton
+          orders={orders}
+          invoices={invoices}
+          getClientName={getClientName}
+          getCarName={getCarName}
+          onCreated={() => {
+            refetch();
+          }}
+        />
       </div>
 
       <div className="flex flex-wrap gap-4 mb-6 text-[#707070]">
@@ -138,7 +169,21 @@ export default function InvoicesPage() {
       {pdfInvoice && (
         <InvoicePdfModal
           invoice={pdfInvoice}
+          orderInfo={(() => {
+            const o = orders.find((ord) => ord.uzsakymo_id === pdfInvoice.order_id);
+            return o ? { carName: getCarName(o.automobilio_id), nuomos_data: String(o.nuomos_data), grazinimo_data: String(o.grazinimo_data) } : undefined;
+          })()}
           onClose={() => setPdfInvoice(null)}
+        />
+      )}
+
+      {orderModalOrder && (
+        <EntityModal
+          title={`Užsakymas #${orderModalOrder.uzsakymo_id}`}
+          entity={orderModalOrder}
+          fields={orderFields}
+          isOpen={!!orderModalOrder}
+          onClose={() => setOrderModalOrder(null)}
         />
       )}
     </div>
