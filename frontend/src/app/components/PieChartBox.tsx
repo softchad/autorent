@@ -11,6 +11,7 @@ type PieChartBoxProps = {
   height?: number;
   colors?: string[];
   radius?: number;
+  valueLabel?: string;
 };
 
 export default function PieChartBox({
@@ -19,9 +20,10 @@ export default function PieChartBox({
   height = 200,
   colors = ["#0F597B", "#4089AE", "#8BA5B2", "#BFDBFE"],
   radius = 70,
+  valueLabel = "Kiekis",
 }: PieChartBoxProps) {
   return (
-    <div className="bg-[#0E1525] p-6 rounded shadow text-[#F7F7F7] ">
+    <div className="bg-[#0E1525] p-6 rounded shadow text-[#F7F7F7]">
       <h2 className="text-sm font-semibold text-[#F7F7F7]  mb-4">{title}</h2>
       <ResponsiveContainer width="100%" height={height}>
         <PieChart>
@@ -38,7 +40,14 @@ export default function PieChartBox({
             ))}
           </Pie>
           <Tooltip
-            wrapperStyle={{ backgroundColor: "#1E2B45", color: "white" }}
+            contentStyle={{
+              backgroundColor: "#1A2238",
+              border: "1px solid #1C2B3A",
+              borderRadius: "8px",
+            }}
+            labelStyle={{ color: "#F7F7F7", fontWeight: 600 }}
+            itemStyle={{ color: "#8899AA" }}
+            formatter={(value: number) => [value, valueLabel]}
           />
         </PieChart>
       </ResponsiveContainer>

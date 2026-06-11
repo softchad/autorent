@@ -5,7 +5,6 @@ import {
   useGetAllInvoicesQuery,
   useGetAllSupportsQuery,
   useGetAllClientsQuery,
-  useGetAllReservationsQuery,
   useGetLatestReservationsQuery,
 } from "@/store/carRentalApi";
 

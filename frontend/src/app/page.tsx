@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  FiCalendar,
   FiTruck,
   FiTool,
   FiCreditCard,
@@ -143,8 +142,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 ">
-        <BarChartBox title="Užsakymai pagal būsenas" data={barData} />
-        <PieChartBox title="Automobilių statusai" data={pieData} />
+        <BarChartBox title="Užsakymai pagal būsenas" data={barData} valueLabel="Užsakymų skaičius" />
+        <PieChartBox title="Automobilių statusai" data={pieData} valueLabel="Automobilių skaičius" />
       </div>
 
       <div className="bg-gray">
@@ -155,7 +154,7 @@ export default function DashboardPage() {
           columns={columns}
           data={latestReservations}
           rowKey={(r) => r.rezervacijos_id}
-          itemsPerPage={5}
+          itemsPerPage={10}
         />
       </div>
 
@@ -170,7 +169,7 @@ export default function DashboardPage() {
             setSelected(null);
           }}
           onSave={handleSave}
-          startInEdit={false}
+          startInEdit
         />
       )}
     </div>
