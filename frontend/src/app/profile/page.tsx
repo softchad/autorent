@@ -5,11 +5,18 @@ import {
   useMeApiV1MeGetQuery,
 } from "@/store/carRentalApi";
 import { FormEvent, useState } from "react";
+import { useAppSelector } from "@/store/hooks";
+import { decodeJwt } from "@/utils/jwt";
 
 export default function ProfilePage() {
   const { data: user, isLoading, isError, error } = useMeApiV1MeGetQuery();
   const [changePassword, { isLoading: isChanging }] =
     useChangePasswordMutation();
+
+  const token = useAppSelector((s) => s.auth.token);
+  const tokenPayload = token ? decodeJwt(token) : null;
+  const loginTime = tokenPayload?.iat ? new Date(tokenPayload.iat * 1000) : null;
+  const sessionExpires = tokenPayload?.exp ? new Date(tokenPayload.exp * 1000) : null;
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -41,7 +48,7 @@ export default function ProfilePage() {
 
   if (isLoading) return <p className="text-white">Loading...</p>;
   if (isError)
-    return <p className="text-red-400">Error: {(error as any)?.status}</p>;
+    return <p className="text-red-400">Error: {(error as { status?: number })?.status}</p>;
   if (!user) return <p className="text-white">User data not found.</p>;
 
   return (
@@ -64,13 +71,45 @@ export default function ProfilePage() {
             {user.el_pastas}
           </p>
           <p>
+            <span className="font-medium text-gray-300">Telefono nr.:</span>{" "}
+            {user.telefono_nr || "—"}
+          </p>
+          <p>
             <span className="font-medium text-gray-300">Pareigos:</span>{" "}
             {user.pareigos}
+          </p>
+          <p>
+            <span className="font-medium text-gray-300">Darbuotojo ID:</span>{" "}
+            #{user.darbuotojo_id}
+          </p>
+          <p>
+            <span className="font-medium text-gray-300">Atlyginimas:</span>{" "}
+            {user.atlyginimas} €
+          </p>
+          <p>
+            <span className="font-medium text-gray-300">Įsidarbinimo data:</span>{" "}
+            {new Date(user.isidarbinimo_data).toLocaleDateString("lt-LT")}
           </p>
         </div>
       </section>
 
-      {user.pareigos !== "Guest" && (
+      <section className="bg-[#0E1525] p-6 rounded-xl shadow-xl">
+        <h2 className="text-lg font-semibold mb-4 text-white">
+          Sesijos informacija
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <p>
+            <span className="font-medium text-gray-300">Prisijungimo laikas:</span>{" "}
+            {loginTime ? loginTime.toLocaleString("lt-LT") : "—"}
+          </p>
+          <p>
+            <span className="font-medium text-gray-300">Sesija baigiasi:</span>{" "}
+            {sessionExpires ? sessionExpires.toLocaleString("lt-LT") : "—"}
+          </p>
+        </div>
+      </section>
+
+      {user.pareigos !== "Svečias" && (
         <section className="bg-[#0E1525] p-6 rounded-xl shadow-xl">
           <h2 className="text-lg font-semibold mb-4 text-white">
             Keisti slaptažodį
