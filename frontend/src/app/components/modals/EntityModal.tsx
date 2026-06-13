@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import BaseModal from "@/app/components/BaseModal";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface FieldConfig<T extends Record<string, any>> {
   name?: keyof T & string;
   label: string;
@@ -13,13 +14,14 @@ export interface FieldConfig<T extends Record<string, any>> {
     | "autocomplete"
     | "password"
     | "date";
-  options?: { value: any; label: string }[];
-  format?: (value: any, entity: T) => string;
+  options?: { value: string | number | boolean; label: string }[];
+  format?: (value: unknown, entity: T) => string;
   required?: boolean;
   readonly?: boolean;
   render?: (data: T) => string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface EntityModalProps<T extends Record<string, any>> {
   title: string;
   entity: T;
@@ -30,11 +32,12 @@ export interface EntityModalProps<T extends Record<string, any>> {
   startInEdit?: boolean;
   noCancel?: boolean;
   extraData?: {
-    cars?: any[];
+    cars?: Record<string, unknown>[];
   };
   randomize?: () => Partial<T>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function EntityModal<T extends Record<string, any>>({
   title,
   entity,
@@ -49,39 +52,34 @@ export default function EntityModal<T extends Record<string, any>>({
 }: EntityModalProps<T>) {
   const [form, setForm] = useState<T>(entity);
   const [isEditing, setIsEditing] = useState(startInEdit);
-  const isValidDate = (d: any) => d instanceof Date && !isNaN(d.getTime());
   // Reset form when modal opens or entity changes
   useEffect(() => {
+    if (!isOpen) return;
     setForm(entity);
     setIsEditing(startInEdit);
-  }, [entity, startInEdit]);
+  }, [entity, startInEdit, isOpen]);
 
   // automatiškai skaičiuoja bendra_kaina pagal pasirinktą automobilį ir datas
   useEffect(() => {
     if (!extraData?.cars?.length) return;
     if (!isEditing) return;
-    const automId = Number((form as any).automobilio_id);
-    const car = extraData?.cars?.find((c: any) => c.automobilio_id === automId);
-    const start = new Date((form as any).nuomos_data);
-    const end = new Date((form as any).grazinimo_data);
+    const automId = Number((form as Record<string, unknown>).automobilio_id);
+    const car = extraData?.cars?.find((c) => c.automobilio_id === automId);
+    const start = new Date(String((form as Record<string, unknown>).nuomos_data ?? ""));
+    const end = new Date(String((form as Record<string, unknown>).grazinimo_data ?? ""));
     if (car && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
       const diffDays = Math.max(
         1,
         Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
       );
-      const total = diffDays * car.kaina_parai;
+      const total = diffDays * Number(car.kaina_parai);
 
-      if ((form as any).bendra_kaina !== total) {
+      if ((form as Record<string, unknown>).bendra_kaina !== total) {
         setForm((prev) => ({ ...prev, bendra_kaina: total }));
       }
     }
-  }, [
-    form.automobilio_id,
-    form.nuomos_data,
-    form.grazinimo_data,
-    extraData?.cars,
-    isEditing,
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.automobilio_id, form.nuomos_data, form.grazinimo_data, extraData?.cars, isEditing]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -154,7 +152,17 @@ export default function EntityModal<T extends Record<string, any>>({
     }
 
     const raw = cfg.name ? entity[cfg.name] : "";
-    const display = cfg.format ? cfg.format(raw, entity) : String(raw ?? "—");
+    let display: string;
+    if (cfg.format) {
+      display = cfg.format(raw, entity);
+    } else if (typeof raw === "boolean") {
+      display = raw ? "Taip" : "Ne";
+    } else if (cfg.type === "select" && cfg.options) {
+      const match = cfg.options.find((o) => String(o.value) === String(raw));
+      display = match ? match.label : String(raw ?? "—");
+    } else {
+      display = String(raw ?? "—");
+    }
 
     return (
       <div key={cfg.name} className="flex flex-col gap-1">
@@ -169,9 +177,10 @@ export default function EntityModal<T extends Record<string, any>>({
       return renderFieldView(cfg);
     }
 
+    const rawValue = cfg.name ? String((form as Record<string, unknown>)[cfg.name] ?? "") : "";
     const common = {
       name: cfg.name,
-      value: cfg.name ? ((form as any)[cfg.name] ?? "") : "",
+      value: cfg.type === "date" ? rawValue.slice(0, 10) : rawValue,
       onChange: handleChange,
       className:
         "border border-[#1C2B3A] bg-[#1A2238] text-[#F7F7F7] px-3 py-2 rounded-lg w-full text-sm focus:outline-none focus:border-[#0F597B] focus:ring-1 focus:ring-[#0F597B]/50 placeholder-[#3D4F63] transition",
@@ -189,7 +198,7 @@ export default function EntityModal<T extends Record<string, any>>({
               — Pasirinkite —
             </option>
             {cfg.options?.map((o) => (
-              <option key={o.value} value={o.value}>
+              <option key={String(o.value)} value={String(o.value)}>
                 {o.label}
               </option>
             ))}
@@ -202,7 +211,7 @@ export default function EntityModal<T extends Record<string, any>>({
             <input type="text" list={`${cfg.name}-list`} {...common} />
             <datalist id={`${cfg.name}-list`}>
               {cfg.options?.map((o) => (
-                <option key={o.value} value={o.label} />
+                <option key={String(o.value)} value={o.label} />
               ))}
             </datalist>
           </>

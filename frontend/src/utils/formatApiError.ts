@@ -44,13 +44,15 @@ function translateMsg(msg: string): string {
   return msg;
 }
 
-export function formatApiError(err: any, fallback = "Patikrinkite įvestus duomenis."): string {
-  const detail = err?.data?.detail;
+type ValidationError = { loc?: (string | number)[]; msg: string };
+
+export function formatApiError(err: unknown, fallback = "Patikrinkite įvestus duomenis."): string {
+  const detail = (err as { data?: { detail?: unknown } })?.data?.detail;
   if (Array.isArray(detail)) {
     return detail
-      .map((d: any) => {
+      .map((d: ValidationError) => {
         const field = d.loc?.[d.loc.length - 1];
-        const label = fieldLabels[field] ?? field ?? "?";
+        const label = fieldLabels[String(field)] ?? field ?? "?";
         return `${label}: ${translateMsg(d.msg)}`;
       })
       .join("\n");

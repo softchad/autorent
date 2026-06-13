@@ -5,6 +5,7 @@ import EntityModal, { FieldConfig } from "./modals/EntityModal";
 
 export type { FieldConfig };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Props<T extends Record<string, any>> = {
   buttonLabel: string;
   modalTitle: string;
@@ -12,11 +13,12 @@ type Props<T extends Record<string, any>> = {
   onCreate: (newData: Omit<T, "id" | `${string}_id`>) => Promise<void>;
   initial?: Partial<T>;
   extraData?: {
-    cars?: any[];
+    cars?: Record<string, unknown>[];
   };
   randomize?: () => Partial<T>;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function CreateEntityButton<T extends Record<string, any>>({
   buttonLabel,
   modalTitle,
