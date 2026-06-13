@@ -2,14 +2,17 @@ import { useState, useMemo } from "react";
 import {
   ClientOut,
   ClientUpdate,
+  carRentalApi,
   useGetAllClientsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
 } from "@/store/carRentalApi";
+import { useAppDispatch } from "@/store/hooks";
 import { FieldConfig } from "@/app/components/modals/EntityModal";
 
 export function useClientsData() {
+  const dispatch = useAppDispatch();
   const { data: clients = [], isLoading, refetch } = useGetAllClientsQuery();
   const [createClientMutation, { isLoading: creating }] = useCreateClientMutation();
   const [updateClient, { isLoading: saving }] = useUpdateClientMutation();
@@ -32,7 +35,14 @@ export function useClientsData() {
     { name: "el_pastas", label: "El. paštas", type: "text", required: true },
     { name: "telefono_nr", label: "Telefono nr.", type: "text", required: true },
     { name: "gimimo_data", label: "Gimimo data", type: "date", required: true },
-    { name: "registracijos_data", label: "Registracijos data", type: "date", required: true },
+    {
+      name: "registracijos_data",
+      label: "Registracijos data",
+      type: "date",
+      required: true,
+      format: (value) =>
+        value ? new Date(String(value)).toLocaleDateString("lt-LT") : "—",
+    },
     { name: "bonus_taskai", label: "Bonus taškai", type: "number", required: true },
   ];
 
@@ -63,8 +73,8 @@ export function useClientsData() {
       pavarde,
       el_pastas,
       telefono_nr,
-      gimimo_data: gimimo_data as any,
-      registracijos_data: registracijos_data as any,
+      gimimo_data,
+      registracijos_data,
       bonus_taskai: randInt(0, 500),
     };
   }
@@ -80,8 +90,25 @@ export function useClientsData() {
   };
 
   const removeClient = async (id: number) => {
-    await deleteClient({ klientoId: id }).unwrap();
-    await refetch();
+    try {
+      await deleteClient({ klientoId: id }).unwrap();
+      await refetch();
+    } catch {
+      let message =
+        "Šio kliento ištrinti negalima, nes jis susietas su užsakymais ar kitais įrašais.";
+      try {
+        const orders = await dispatch(
+          carRentalApi.endpoints.getClientOrder.initiate({ klientoId: id })
+        ).unwrap();
+        if (orders.length > 0) {
+          const ids = orders.map((o) => `#${o.uzsakymo_id}`).join(", ");
+          message = `Šio kliento ištrinti negalima – jis susietas su užsakymu(-ais): ${ids}. Pirmiausia ištrinkite arba pakeiskite šiuos užsakymus, tada galėsite ištrinti klientą.`;
+        }
+      } catch {
+        // nepavyko gauti užsakymų sąrašo – paliekam bendrą pranešimą
+      }
+      throw new Error(message);
+    }
   };
 
   return {

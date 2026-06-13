@@ -27,6 +27,7 @@ export default function ClientsPage() {
 
   const [selected, setSelected] = useState<Klientas | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const columns = [
     {
@@ -45,8 +46,14 @@ export default function ClientsPage() {
       label: "Veiksmai",
       accessor: (k: Klientas) => (
         <ActionButtons
+          onView={() => {
+            setSelected(k);
+            setEditMode(false);
+            setModalOpen(true);
+          }}
           onEdit={() => {
             setSelected(k);
+            setEditMode(true);
             setModalOpen(true);
           }}
           onDelete={async () => {
@@ -57,10 +64,11 @@ export default function ClientsPage() {
 
             try {
               await removeClient(k.kliento_id);
-            } catch (e: any) {
-              console.error("Nepavyko ištrinti kliento:", e);
+            } catch (e) {
               alert(
-                "Šio kliento ištrinti negalima, nes jis susietas su užsakymais ar kitais įrašais."
+                e instanceof Error
+                  ? e.message
+                  : "Šio kliento ištrinti negalima, nes jis susietas su užsakymais ar kitais įrašais."
               );
             }
           }}
@@ -101,6 +109,7 @@ export default function ClientsPage() {
 
       {selected && (
         <EntityModal
+          key={`${selected.kliento_id}-${editMode}`}
           title={`#${selected.kliento_id}`}
           entity={selected}
           fields={clientFields}
@@ -114,7 +123,7 @@ export default function ClientsPage() {
             setModalOpen(false);
             setSelected(null);
           }}
-          startInEdit={false}
+          startInEdit={editMode}
         />
       )}
     </div>
