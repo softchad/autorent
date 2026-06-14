@@ -18,6 +18,7 @@ type Rezervacija = NonNullable<
 export default function ReservationsPage() {
   const [selected, setSelected] = useState<Rezervacija | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const {
     filtered,
@@ -52,8 +53,14 @@ export default function ReservationsPage() {
       label: "Veiksmai",
       accessor: (r: Rezervacija) => (
         <ActionButtons
+          onView={() => {
+            setSelected(r);
+            setEditMode(false);
+            setModalOpen(true);
+          }}
           onEdit={() => {
             setSelected(r);
+            setEditMode(true);
             setModalOpen(true);
           }}
           onDelete={() => {
@@ -92,8 +99,9 @@ export default function ReservationsPage() {
             try {
               await saveReservation(null, data);
               alert("Rezervacija sėkmingai išsaugota!");
-            } catch (err: any) {
-              const status = err?.status ?? err?.response?.status;
+            } catch (err) {
+              const e = err as { status?: number; response?: { status?: number } };
+              const status = e.status ?? e.response?.status;
               if (status === 409) {
                 alert("Automobilis šiuo laikotarpiu jau rezervuotas.");
               } else {
@@ -118,13 +126,13 @@ export default function ReservationsPage() {
           value={statusFilter}
           onChange={(e) =>
             setStatusFilter(
-              e.target.value as "visi" | "patvirtinta" | "laukiama" | "atšaukta"
+              e.target.value as "visi" | "patvirtinta" | "laukia" | "atšaukta"
             )
           }
         >
           <option value="visi">Visos</option>
           <option value="patvirtinta">Patvirtintos</option>
-          <option value="laukiama">Laukiančios</option>
+          <option value="laukia">Laukiančios</option>
           <option value="atšaukta">Atšauktos</option>
         </select>
       </div>
@@ -137,6 +145,7 @@ export default function ReservationsPage() {
 
       {selected && (
         <EntityModal
+          key={`${selected.rezervacijos_id}-${editMode}`}
           title={`Rezervacija #${selected.rezervacijos_id}`}
           entity={selected}
           fields={reservationFields}
@@ -146,7 +155,7 @@ export default function ReservationsPage() {
             setSelected(null);
           }}
           onSave={onSave}
-          startInEdit={false}
+          startInEdit={editMode}
         />
       )}
     </div>

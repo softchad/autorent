@@ -3,8 +3,9 @@ import {
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useDeleteReservationMutation,
-  ReservationCreate,
-  ReservationUpdate,
+  type ReservationCreate,
+  type ReservationUpdate,
+  type ReservationOut,
   useGetAllCarsQuery,
 } from "@/store/carRentalApi";
 
@@ -28,12 +29,12 @@ export const useReservationData = () => {
   const { automobiliai } = useCarsData();
 
   const clientMap = useMemo(
-    () => new Map(clients.map((c: any) => [c.kliento_id, `${c.vardas} ${c.pavarde}`])),
+    () => new Map(clients.map((c) => [c.kliento_id, `${c.vardas} ${c.pavarde}`])),
     [clients]
   );
 
   const carMap = useMemo(
-    () => new Map(automobiliai.map((a: any) => [a.automobilio_id, `${a.marke} ${a.modelis}`])),
+    () => new Map(automobiliai.map((a) => [a.automobilio_id, `${a.marke} ${a.modelis}`])),
     [automobiliai]
   );
 
@@ -59,10 +60,10 @@ export const useReservationData = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
-    "visi" | "patvirtinta" | "laukiama" | "atšaukta"
+    "visi" | "patvirtinta" | "laukia" | "atšaukta"
   >("visi");
 
-  const filtered = reservations.filter((r: any) => {
+  const filtered = reservations.filter((r) => {
     const target =
       `${getClientName(r.kliento_id)} ${getCarName(r.automobilio_id)}`.toLowerCase();
     const matchSearch = target.includes(search.toLowerCase());
@@ -71,15 +72,15 @@ export const useReservationData = () => {
     return matchSearch && matchStatus;
   });
 
-  const { data: cars = [], isLoading: loadingCars } = useGetAllCarsQuery();
+  const { data: cars = [] } = useGetAllCarsQuery();
 
-  const reservationFields: FieldConfig<any>[] = [
+  const reservationFields: FieldConfig<ReservationOut>[] = [
     {
       name: "kliento_id",
       label: "Klientas",
       type: "select",
       required: true,
-      options: clients.map((c: any) => ({
+      options: clients.map((c) => ({
         value: c.kliento_id,
         label: `${c.vardas} ${c.pavarde}`,
       })),
@@ -89,7 +90,7 @@ export const useReservationData = () => {
       label: "Automobilis",
       type: "select",
       required: true,
-      options: cars.map((c: any) => ({
+      options: cars.map((c) => ({
         value: c.automobilio_id,
         label: `${c.marke} ${c.modelis}`,
       })),
@@ -113,6 +114,7 @@ export const useReservationData = () => {
       options: [
         { value: "patvirtinta", label: "Patvirtinta" },
         { value: "laukia", label: "Laukiama" },
+        { value: "atšaukta", label: "Atšaukta" },
       ],
       required: true,
     },

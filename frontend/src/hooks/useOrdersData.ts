@@ -3,6 +3,7 @@ import {
   useDeleteOrderMutation,
   useGetAllClientsQuery,
   useGetAllCarsQuery,
+  useGetAllEmployeesQuery,
   useCreateOrderMutation,
   useUpdateOrderMutation,
   useMeApiV1MeGetQuery,
@@ -12,7 +13,7 @@ import { FieldConfig } from "@/app/components/modals/EntityModal";
 import type { OrderCreate, OrderOut } from "@/store/carRentalApi";
 
 export function useOrdersData() {
-  const { data: me, isLoading: loadingMe } = useMeApiV1MeGetQuery();
+  const { data: me } = useMeApiV1MeGetQuery();
   const initialEmployeeId = me?.darbuotojo_id ?? null;
   const {
     data: orders = [],
@@ -23,16 +24,16 @@ export function useOrdersData() {
   const { data: clients = [], isLoading: loadingClients } =
     useGetAllClientsQuery();
   const { data: cars = [], isLoading: loadingCars } = useGetAllCarsQuery();
+  const { data: employees = [], isLoading: loadingEmployees } =
+    useGetAllEmployeesQuery();
 
-  const getClientName = (id: number) =>
-    clients.find((c: any) => c.kliento_id === id)
-      ? `${clients.find((c: any) => c.kliento_id === id)!.vardas} ${
-          clients.find((c: any) => c.kliento_id === id)!.pavarde
-        }`
-      : `Klientas #${id}`;
+  const getClientName = (id: number) => {
+    const client = clients.find((c) => c.kliento_id === id);
+    return client ? `${client.vardas} ${client.pavarde}` : `Klientas #${id}`;
+  };
 
   const getCarName = (id: number) => {
-    const car = cars.find((c: any) => c.automobilio_id === id);
+    const car = cars.find((c) => c.automobilio_id === id);
     return car ? `${car.marke} ${car.modelis}` : `Automobilis #${id}`;
   };
 
@@ -42,10 +43,10 @@ export function useOrdersData() {
 
   const saveOrder = async (id: number | null, data: Partial<OrderOut>) => {
     const selectedCar = cars.find(
-      (c: any) => Number(c.automobilio_id) === Number(data.automobilio_id)
+      (c) => Number(c.automobilio_id) === Number(data.automobilio_id)
     );
     const paemimo = selectedCar?.lokacija?.vietos_id;
-    const toDate = (v: any) => (v && String(v).includes("-") ? String(v).slice(0, 10) : undefined);
+    const toDate = (v: unknown) => (v && String(v).includes("-") ? String(v).slice(0, 10) : undefined);
     const processedData = {
       ...data,
       kliento_id: Number(data.kliento_id),
@@ -55,7 +56,7 @@ export function useOrdersData() {
       bendra_kaina: Number(data.bendra_kaina),
       nuomos_data: toDate(data.nuomos_data),
       grazinimo_data: toDate(data.grazinimo_data),
-      turi_papildomas_paslaugas: data.turi_papildomas_paslaugas === true || (data.turi_papildomas_paslaugas as any) === "true",
+      turi_papildomas_paslaugas: data.turi_papildomas_paslaugas === true || String(data.turi_papildomas_paslaugas) === "true",
       paemimo_vietos_id: paemimo != null ? Number(paemimo) : Number(data.grazinimo_vietos_id),
     };
     if (id === null) {
@@ -78,7 +79,7 @@ export function useOrdersData() {
   const [statusFilter, setStatusFilter] = useState("visi");
 
   const filtered = useMemo(() => {
-    return orders.filter((o: any) => {
+    return orders.filter((o) => {
       const target =
         `${getClientName(o.kliento_id)} ${getCarName(o.automobilio_id)}`.toLowerCase();
       const matchSearch = target.includes(search.toLowerCase());
@@ -90,7 +91,7 @@ export function useOrdersData() {
 
   const returnOptions = useMemo(() => {
     const unique = new Map<number, string>();
-    cars.forEach((c: any) => {
+    cars.forEach((c) => {
       if (c.lokacija && !unique.has(c.lokacija.vietos_id)) {
         unique.set(c.lokacija.vietos_id, c.lokacija.adresas);
       }
@@ -107,7 +108,7 @@ export function useOrdersData() {
       label: "Klientas",
       type: "select",
       required: true,
-      options: clients.map((c: any) => ({
+      options: clients.map((c) => ({
         value: c.kliento_id,
         label: `${c.vardas} ${c.pavarde}`,
       })),
@@ -117,18 +118,20 @@ export function useOrdersData() {
       label: "Automobilis",
       type: "select", // ← vietoj "autocomplete"
       required: true,
-      options: cars.map((c: any) => ({
+      options: cars.map((c) => ({
         value: c.automobilio_id, // ← VALUE = ID (skaičius)
         label: `${c.marke} ${c.modelis}`,
       })),
     },
     {
       name: "darbuotojo_id",
-      label: "Darbuotojo ID",
-      type: "text",
+      label: "Darbuotojas",
+      type: "select",
       required: true,
-      readonly: true,
-      render: () => `${me?.vardas ?? "-"} ${me?.pavarde ?? "-"}`,
+      options: employees.map((e) => ({
+        value: e.darbuotojo_id,
+        label: `${e.vardas} ${e.pavarde}`,
+      })),
     },
     {
       name: "nuomos_data",
@@ -149,7 +152,7 @@ export function useOrdersData() {
       render: (form) => {
         // konvertuojam į number
         const carId = form.automobilio_id ? Number(form.automobilio_id) : null;
-        const car = cars.find((c: any) => c.automobilio_id === carId);
+        const car = cars.find((c) => c.automobilio_id === carId);
         return car?.lokacija?.adresas || "—";
       },
     },
@@ -193,7 +196,12 @@ export function useOrdersData() {
   return {
     filtered,
     isLoading:
-      loadingOrders || loadingClients || loadingCars || updating || deleting,
+      loadingOrders ||
+      loadingClients ||
+      loadingCars ||
+      loadingEmployees ||
+      updating ||
+      deleting,
     search,
     setSearch,
     statusFilter,

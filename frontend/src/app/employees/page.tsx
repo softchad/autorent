@@ -1,7 +1,11 @@
 "use client";
+import { useState } from "react";
 import DataTable, { Column } from "../components/DataTable";
 import { ActionButtons } from "../components/ActionButtons";
 import EntityModal, { FieldConfig } from "../components/modals/EntityModal";
+import type { EmployeeOut } from "@/store/carRentalApi";
+
+type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?: string };
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import LoadingScreen from "@/app/components/loadingScreen";
 import { useEmployeesData } from "@/hooks/useEmployeesData";
@@ -27,7 +31,9 @@ export default function EmployeesPage() {
     randomizeEmployee,
   } = useEmployeesData();
 
-  const creationFields: FieldConfig<any>[] = [
+  const [editMode, setEditMode] = useState(false);
+
+  const creationFields: FieldConfig<EmployeeCreate>[] = [
     ...employeeFields,
     {
       name: "repeat_slaptazodis",
@@ -38,20 +44,26 @@ export default function EmployeesPage() {
   ];
   const updateFields = employeeFields.filter((f) => f.name !== "slaptazodis");
 
-  const columns: Column<any>[] = updateFields.map((f) => ({
+  const columns: Column<EmployeeOut>[] = updateFields.map((f) => ({
     label: f.label,
     accessor:
       f.name === "atlyginimas"
-        ? (row: any) => `${row.atlyginimas.toFixed(2)} €`
+        ? (row: EmployeeOut) => `${row.atlyginimas.toFixed(2)}`
         : (f.name as string),
   }));
 
   columns.push({
     label: "Veiksmai",
-    accessor: (row: any) => (
+    accessor: (row: EmployeeOut) => (
       <ActionButtons
+        onView={() => {
+          setSelectedEmployee(row);
+          setEditMode(false);
+          setModalOpen(true);
+        }}
         onEdit={() => {
           setSelectedEmployee(row);
+          setEditMode(true);
           setModalOpen(true);
         }}
         onDelete={async () => {
@@ -139,16 +151,18 @@ export default function EmployeesPage() {
         columns={columns}
         data={filtered}
         rowKey={(e) => e.darbuotojo_id}
-        itemsPerPage={5}
+        itemsPerPage={10}
       />
 
       {selectedEmployee && (
         <EntityModal
+          key={`${selectedEmployee.darbuotojo_id}-${editMode}`}
           title={`Darbuotojas: ${selectedEmployee.vardas} ${selectedEmployee.pavarde}`}
           entity={selectedEmployee}
           fields={updateFields}
           isOpen={isModalOpen}
           onClose={() => setModalOpen(false)}
+          startInEdit={editMode}
           onSave={async (updated) => {
             try {
               await updateEmployee({

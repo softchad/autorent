@@ -4,8 +4,11 @@ import {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
+  type EmployeeOut,
 } from "@/store/carRentalApi";
 import { FieldConfig } from "@/app/components/modals/EntityModal";
+
+type EmployeeWithPassword = EmployeeOut & { slaptazodis?: string };
 
 export function useEmployeesData() {
   const { data = [], isLoading, refetch } = useGetAllEmployeesQuery();
@@ -16,7 +19,7 @@ export function useEmployeesData() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("visi");
 
-  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeOut | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
 
   const roles = useMemo(
@@ -39,7 +42,7 @@ export function useEmployeesData() {
     });
   }, [data, search, roleFilter]);
 
-  const employeeFields: FieldConfig<any>[] = [
+  const employeeFields: FieldConfig<EmployeeWithPassword>[] = [
     { name: "vardas", label: "Vardas", type: "text", required: true },
     { name: "pavarde", label: "Pavardė", type: "text", required: true },
     { name: "el_pastas", label: "El. paštas", type: "text", required: true },

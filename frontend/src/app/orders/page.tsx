@@ -11,11 +11,12 @@ import type { OrderOut } from "@/store/carRentalApi";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllInvoicesQuery } from "@/store/carRentalApi";
-import { FiFileText } from "react-icons/fi";
+import { FiFile, FiFileText } from "react-icons/fi";
 
 export default function OrdersPage() {
   const [selected, setSelected] = useState<OrderOut | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const [createInvoice] = useCreateInvoiceMutation();
   const [deleteInvoice] = useDeleteInvoiceMutation();
@@ -56,13 +57,14 @@ export default function OrdersPage() {
     },
     {
       label: "Veiksmai",
-      accessor: (o: OrderOut) => (
+      accessor: (o: OrderOut) => {
+        const existing = allInvoices.find((inv) => inv.order_id === o.uzsakymo_id);
+        return (
         <div className="flex items-center gap-1">
         <button
-          title="Išrašyti / pergeneruoti sąskaitą"
+          title={existing ? "Pergeneruoti sąskaitą" : "Išrašyti sąskaitą"}
           onClick={async () => {
             try {
-              const existing = allInvoices.find((inv) => inv.order_id === o.uzsakymo_id);
               if (existing) {
                 await deleteInvoice({ invoiceId: existing.invoice_id }).unwrap();
               }
@@ -75,19 +77,25 @@ export default function OrdersPage() {
               }).unwrap();
               await refetchInvoices();
               alert(`Sąskaita užsakymui #${o.uzsakymo_id} sėkmingai ${existing ? "pergeneruota" : "išrašyta"}!`);
-            } catch (err: any) {
+            } catch (err) {
               alert("Klaida išrašant sąskaitą.");
               console.error(err);
             }
           }}
-          className="text-lg text-gray-600 hover:text-teal-500 transition-colors px-1"
-          aria-label="Išrašyti sąskaitą"
+          className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-amber-900/30 hover:text-amber-400"
+          aria-label={existing ? "Pergeneruoti sąskaitą" : "Išrašyti sąskaitą"}
         >
-          <FiFileText />
+          {existing ? <FiFileText /> : <FiFile />}
         </button>
         <ActionButtons
+          onView={() => {
+            setSelected(o);
+            setEditMode(false);
+            setModalOpen(true);
+          }}
           onEdit={() => {
             setSelected(o);
+            setEditMode(true);
             setModalOpen(true);
           }}
           onDelete={async () => {
@@ -97,7 +105,7 @@ export default function OrdersPage() {
             if (!confirmed) return;
             try {
               await handleDelete(o.uzsakymo_id);
-            } catch (e) {
+            } catch {
               alert(
                 "Nepavyko ištrinti užsakymo. Jis gali būti susietas su kitais įrašais (pvz., sąskaitomis ar mokėjimais)."
               );
@@ -105,7 +113,8 @@ export default function OrdersPage() {
           }}
         />
         </div>
-      ),
+        );
+      },
     },
   ];
 
@@ -126,8 +135,9 @@ export default function OrdersPage() {
       setModalOpen(false);
       setSelected(null);
       alert("Užsakymas sėkmingai išsaugotas!");
-    } catch (err: any) {
-      const status = err?.status ?? err?.response?.status;
+    } catch (err) {
+      const e = err as { status?: number; response?: { status?: number } };
+      const status = e.status ?? e.response?.status;
       if (status === 409) {
         alert("Automobilis šiuo laikotarpiu jau užimtas.");
       } else {
@@ -155,8 +165,9 @@ export default function OrdersPage() {
             try {
               await saveOrder(null, data);
               alert("Užsakymas sėkmingai sukurtas!");
-            } catch (err: any) {
-              const status = err?.status ?? err?.response?.status;
+            } catch (err) {
+              const e = err as { status?: number; response?: { status?: number } };
+              const status = e.status ?? e.response?.status;
               if (status === 409) {
                 alert("Automobilis šiuo laikotarpiu jau užimtas.");
               } else {
@@ -196,6 +207,7 @@ export default function OrdersPage() {
 
       {selected && (
         <EntityModal
+          key={`${selected.uzsakymo_id}-${editMode}`}
           title={`#${selected.uzsakymo_id}`}
           entity={selected}
           fields={orderFields}
@@ -205,7 +217,7 @@ export default function OrdersPage() {
             setSelected(null);
           }}
           onSave={onSave}
-          startInEdit={false}
+          startInEdit={editMode}
           extraData={{ cars }}
         />
       )}
