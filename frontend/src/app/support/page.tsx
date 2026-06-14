@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import DataTable from "@/app/components/DataTable";
 import { useSupportData } from "@/hooks/useSupportData";
 import { useClientsData } from "@/hooks/useClientsData";
+import type { ClientOut, ClientSupportOut } from "@/store/carRentalApi";
 
 export default function SupportPage() {
   const { supports, isLoading, answer } = useSupportData();
@@ -12,7 +13,7 @@ export default function SupportPage() {
   const clientMap = useMemo(
     () =>
       new Map(
-        clients.map((c: any) => [c.kliento_id, `${c.vardas} ${c.pavarde}`])
+        clients.map((c: ClientOut) => [c.kliento_id, `${c.vardas} ${c.pavarde}`])
       ),
     [clients]
   );
@@ -27,7 +28,7 @@ export default function SupportPage() {
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [sendingId, setSendingId] = useState<number | null>(null);
 
-  const filtered = supports.filter((u: any) => {
+  const filtered = supports.filter((u: ClientSupportOut) => {
     const target = `${getClientName(u.kliento_id)} ${u.tema}`.toLowerCase();
     const matchSearch = target.includes(search.toLowerCase());
     const matchStatus =
@@ -38,34 +39,18 @@ export default function SupportPage() {
   });
 
   const columns = [
-    { label: "Klientas", accessor: (u: any) => getClientName(u.kliento_id) },
+    { label: "Klientas", accessor: (u: ClientSupportOut) => getClientName(u.kliento_id) },
     { label: "Tema", accessor: "tema" },
     {
       label: "Pateikta",
-      accessor: (u: any) => new Date(u.pateikimo_data).toLocaleString("lt-LT"),
+      accessor: (u: ClientSupportOut) => u.pateikimo_data ? new Date(u.pateikimo_data).toLocaleString("lt-LT") : "—",
     },
     { label: "Pranešimas", accessor: "pranesimas" },
     {
       label: "Atsakymas",
-      accessor: (u: any) => {
-        if (u.atsakymas && activeReplyId !== u.uzklausos_id) {
-          return (
-            <div className="flex flex-col">
-              <p>{u.atsakymas}</p>
-              <button
-                className="text-sm text-[#0F597B] hover:underline w-max mt-1"
-                onClick={() => {
-                  setActiveReplyId(u.uzklausos_id);
-                  setResponses((prev) => ({
-                    ...prev,
-                    [u.uzklausos_id]: u.atsakymas,
-                  }));
-                }}
-              >
-                Redaguoti
-              </button>
-            </div>
-          );
+      accessor: (u: ClientSupportOut) => {
+        if (u.atsakymas) {
+          return <p>{u.atsakymas}</p>;
         }
 
         if (activeReplyId !== u.uzklausos_id) {
@@ -128,7 +113,7 @@ export default function SupportPage() {
     },
     {
       label: "Atsakyta",
-      accessor: (u: any) =>
+      accessor: (u: ClientSupportOut) =>
         u.atsakymo_data
           ? new Date(u.atsakymo_data).toLocaleString("lt-LT")
           : "—",
@@ -139,7 +124,7 @@ export default function SupportPage() {
     <div className="text-[#707070]">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-[#F7F7F7]">
-          Pagalbos užklausos
+          Užklausos
         </h1>
       </div>
 
