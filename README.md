@@ -1,6 +1,6 @@
 # AutoRent
 
-Žiniatinklinė automobilių nuomos valdymo sistema. Darbuotojai valdo automobilius, klientus, rezervacijas, užsakymus ir sąskaitas per vaidmenimis apsaugotą sąsają.
+Automobilių nuomos valdymo sistema. Darbuotojai valdo automobilius, klientus, rezervacijas, užsakymus ir sąskaitas per vaidmenimis apsaugotą sąsają.
 
 ---
 
