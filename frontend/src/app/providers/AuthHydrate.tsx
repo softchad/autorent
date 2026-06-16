@@ -13,7 +13,7 @@ export default function AuthHydrate() {
     const fromCookie = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? null;
     const t = fromStorage ?? fromCookie;
     if (t) dispatch(setToken(t));
-  }, []);
+  }, [dispatch]);
 
   return null;
 }

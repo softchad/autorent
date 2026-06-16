@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
-const logo = require("@/assets/autorentLOGO.png");
+import logo from "@/assets/autorentLOGO.png";
 
 const BACKEND = "http://localhost:8000/api/v1";
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-[#3D4F63] text-xs text-center mt-6">
-            AutoRent © {new Date().getFullYear()} · Vidinė sistema
+            AutoRent © {new Date().getFullYear()}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { logout as logoutAction, setToken } from "@/store/authSlice";
+import { baseApi } from "@/store/baseApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,6 +28,7 @@ export default function LogoutButton() {
       await fetch(`${API}/api/v1/logout`, { method: "POST", credentials: "include" }).catch(() => {});
       dispatch(logoutAction());
       dispatch(setToken(null as unknown as string));
+      dispatch(baseApi.util.resetApiState());
       deleteCookie("token");
       deleteCookie("session");
       if (typeof localStorage !== "undefined") localStorage.removeItem("token");

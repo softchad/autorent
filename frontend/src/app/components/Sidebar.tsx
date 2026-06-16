@@ -9,16 +9,16 @@ import {
   FiHome, FiTruck, FiCalendar, FiClipboard,
   FiUsers, FiHelpCircle, FiFileText, FiBriefcase, FiUser,
 } from "react-icons/fi";
-const image = require("@/assets/autorenttextLOGO.png");
+import image from "@/assets/autorenttextLOGO.png";
 
 const menu = [
   { label: "Dashboard",          href: "/",            icon: FiHome },
   { label: "Automobiliai",       href: "/cars",        icon: FiTruck },
+  { label: "Klientai",           href: "/clients",     icon: FiUsers },
   { label: "Rezervacijos",       href: "/reservations",icon: FiCalendar },
   { label: "Užsakymai",          href: "/orders",      icon: FiClipboard },
-  { label: "Klientai",           href: "/clients",     icon: FiUsers },
-  { label: "Pagalbos užklausos", href: "/support",     icon: FiHelpCircle },
   { label: "Sąskaitos",          href: "/invoices",    icon: FiFileText },
+  { label: "Užklausos",          href: "/support",     icon: FiHelpCircle },
   { label: "Darbuotojai",        href: "/employees",   icon: FiBriefcase },
   { label: "Profilis",           href: "/profile",     icon: FiUser },
 ];

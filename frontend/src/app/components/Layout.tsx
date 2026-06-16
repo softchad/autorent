@@ -5,8 +5,8 @@ import Sidebar from "./Sidebar";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-const image = require("@/assets/autorentLOGO.png");
-const image2 = require("@/assets/var1.png");
+import image from "@/assets/autorentLOGO.png";
+import image2 from "@/assets/var1.png";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((state) => state.auth.token);
@@ -33,7 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="pointer-events-none absolute top-[-100px] left-[-100px] z-0 opacity-35">
         <Image src={image2} alt="Watermark" width={600} height={600} />
       </div>
-      <main className="flex-1 min-w-0 overflow-x-auto bg-[#0E0B1F] p-6">{children}</main>
+      <main className="flex-1 min-w-0 overflow-x-auto p-6">{children}</main>
     </div>
   );
 }
