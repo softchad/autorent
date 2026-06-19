@@ -4,6 +4,7 @@ import DataTable, { Column } from "../components/DataTable";
 import { ActionButtons } from "../components/ActionButtons";
 import EntityModal, { FieldConfig } from "../components/modals/EntityModal";
 import type { EmployeeOut } from "@/store/carRentalApi";
+import { useMeApiV1MeGetQuery } from "@/store/carRentalApi";
 
 type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?: string };
 import CreateEntityButton from "@/app/components/CreateEntityButton";
@@ -11,6 +12,9 @@ import LoadingScreen from "@/app/components/loadingScreen";
 import { useEmployeesData } from "@/hooks/useEmployeesData";
 
 export default function EmployeesPage() {
+  const { data: currentUser } = useMeApiV1MeGetQuery();
+  const isAdmin = currentUser?.pareigos === "Administratorius" || currentUser?.pareigos === "Admin";
+
   const {
     employees,
     filtered,
@@ -90,39 +94,41 @@ export default function EmployeesPage() {
     <div className="space-y-6 text-[#707070]">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#F7F7F7] ">Darbuotojai</h1>
-        <CreateEntityButton
-          buttonLabel="+ Pridėti darbuotoją"
-          modalTitle="Naujas darbuotojas"
-          fields={creationFields}
-          randomize={randomizeEmployee}
-          onCreate={async (data) => {
-            try {
-              if (data.slaptazodis !== data.repeat_slaptazodis) {
-                alert("Slaptažodžiai nesutampa.");
+        {isAdmin && (
+          <CreateEntityButton
+            buttonLabel="+ Pridėti darbuotoją"
+            modalTitle="Naujas darbuotojas"
+            fields={creationFields}
+            randomize={randomizeEmployee}
+            onCreate={async (data) => {
+              try {
+                if (data.slaptazodis !== data.repeat_slaptazodis) {
+                  alert("Slaptažodžiai nesutampa.");
+                }
+
+                const prepared = {
+                  vardas: data.vardas ?? "",
+                  pavarde: data.pavarde ?? "",
+                  el_pastas: data.el_pastas ?? "",
+                  telefono_nr: data.telefono_nr ?? "",
+                  pareigos: data.pareigos ?? "",
+                  atlyginimas: Number(data.atlyginimas ?? 0),
+                  isidarbinimo_data:
+                    data.isidarbinimo_data ??
+                    new Date().toISOString().slice(0, 10),
+                  slaptazodis: data.slaptazodis ?? "",
+                };
+
+                await createEmployee({ employeeCreate: prepared }).unwrap();
+                await refetch();
+                alert("Darbuotojas sukurtas sėkmingai!");
+              } catch (e) {
+                alert("Nepavyko sukurti darbuotojo.");
+                console.error("Create error:", e);
               }
-
-              const prepared = {
-                vardas: data.vardas ?? "",
-                pavarde: data.pavarde ?? "",
-                el_pastas: data.el_pastas ?? "",
-                telefono_nr: data.telefono_nr ?? "",
-                pareigos: data.pareigos ?? "",
-                atlyginimas: Number(data.atlyginimas ?? 0),
-                isidarbinimo_data:
-                  data.isidarbinimo_data ??
-                  new Date().toISOString().slice(0, 10),
-                slaptazodis: data.slaptazodis ?? "",
-              };
-
-              await createEmployee({ employeeCreate: prepared }).unwrap();
-              await refetch();
-              alert("Darbuotojas sukurtas sėkmingai!");
-            } catch (e) {
-              alert("Nepavyko sukurti darbuotojo.");
-              console.error("Create error:", e);
-            }
-          }}
-        />
+            }}
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap gap-4">

@@ -49,7 +49,7 @@ export function useDashboardStats() {
   ).length;
 
   const neapmoketosSaskaitos = saskaitos.filter(
-    (s) => s.status === "vėluojanti"
+    (s) => s.status !== "užbaigta"
   ).length;
   const neatsakytosUzklausos = pagalbosUzklausos.filter(
     (u) => !u.atsakymas
@@ -64,7 +64,7 @@ export function useDashboardStats() {
     () => [
       {
         name: "Vykdomi",
-        value: uzsakymai.filter((u) => u.uzsakymo_busena === "vykdomas").length,
+        value: uzsakymai.filter((u) => u.uzsakymo_busena === "vykdoma").length,
       },
       {
         name: "Užbaigti",

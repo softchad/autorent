@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=EmployeeOut, operation_id="createEmployee",
-             dependencies=[Depends(require_perm(Perm.EDIT))])
+             dependencies=[Depends(require_perm(Perm.ADMIN))])
 def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
     if employee_repo.get_by_email(db, data.el_pastas):
         raise HTTPException(status_code=400, detail="Email already exists")
