@@ -1,11 +1,35 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.models.order import Order
 from app.schemas.order import OrderCreate
+
+AKTYVIOS_BUSENOS = ["patvirtinta", "vykdoma"]
 
 
 def get_all(db: Session):
     return db.query(Order).all()
+
+
+def find_car_conflict(db: Session, automobilio_id: int, nuomos_data, grazinimo_data):
+    return db.query(Order).filter(
+        Order.automobilio_id == automobilio_id,
+        Order.uzsakymo_busena.in_(AKTYVIOS_BUSENOS),
+        or_(
+            Order.nuomos_data.between(nuomos_data, grazinimo_data),
+            Order.grazinimo_data.between(nuomos_data, grazinimo_data),
+        ),
+    ).first()
+
+
+def find_client_conflict(db: Session, kliento_id: int, nuomos_data, grazinimo_data):
+    return db.query(Order).filter(
+        Order.kliento_id == kliento_id,
+        Order.uzsakymo_busena.in_(AKTYVIOS_BUSENOS),
+        or_(
+            Order.nuomos_data.between(nuomos_data, grazinimo_data),
+            Order.grazinimo_data.between(nuomos_data, grazinimo_data),
+        ),
+    ).first()
 
 
 def get_by_id(db: Session, uzsakymo_id: int):

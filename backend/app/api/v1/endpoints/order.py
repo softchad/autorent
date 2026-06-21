@@ -49,6 +49,11 @@ def get_order(uzsakymo_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.OrderOut, operation_id="createOrder",
              dependencies=[Depends(require_perm(Perm.EDIT))])
 def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    if repo.find_car_conflict(db, order.automobilio_id, order.nuomos_data, order.grazinimo_data):
+        raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas arba išnuomotas tomis dienomis.")
+    if repo.find_client_conflict(db, order.kliento_id, order.nuomos_data, order.grazinimo_data):
+        raise HTTPException(status_code=409, detail="Klientas jau turi kitą rezervuotą automobilį tomis dienomis.")
+
     created = repo.create(db, order)
     return {
         **created.__dict__,
