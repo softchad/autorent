@@ -47,7 +47,7 @@ export default function PieChartBox({
             }}
             labelStyle={{ color: "#F7F7F7", fontWeight: 600 }}
             itemStyle={{ color: "#8899AA" }}
-            formatter={(value: number) => [value, valueLabel]}
+            formatter={(value: number, name: string) => [`${value} (${valueLabel})`, name]}
           />
         </PieChart>
       </ResponsiveContainer>

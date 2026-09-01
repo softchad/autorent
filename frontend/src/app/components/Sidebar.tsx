@@ -12,7 +12,7 @@ import {
 import image from "@/assets/autorenttextLOGO.png";
 
 const menu = [
-  { label: "Dashboard",          href: "/",            icon: FiHome },
+  { label: "Dashboard",          href: "/dashboard",   icon: FiHome },
   { label: "Automobiliai",       href: "/cars",        icon: FiTruck },
   { label: "Klientai",           href: "/clients",     icon: FiUsers },
   { label: "Rezervacijos",       href: "/reservations",icon: FiCalendar },
