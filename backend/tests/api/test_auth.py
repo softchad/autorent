@@ -14,23 +14,29 @@ TEST_USER = {
 
 
 @pytest.fixture(scope="module")
-def create_test_user(client: TestClient):
-    resp = client.post("/api/v1/register", json=TEST_USER)
+def create_test_user(client: TestClient, auth_headers):
+    resp = client.post("/api/v1/register", json=TEST_USER, headers=auth_headers)
     assert resp.status_code in (200, 400)
     yield
 
 
-def test_register_new_user(client):
+def test_register_requires_admin(client):
+    """Registracija be prisijungimo turi būti uždrausta - žr. auth.py `/register`."""
+    resp = client.post("/api/v1/register", json=TEST_USER)
+    assert resp.status_code == 401
+
+
+def test_register_new_user(client, auth_headers):
     data = TEST_USER.copy()
     import time
     unique_email = f"unikalus_{int(time.time())}@viko.lt"
     data["el_pastas"] = unique_email
-    resp = client.post("/api/v1/register", json=data)
+    resp = client.post("/api/v1/register", json=data, headers=auth_headers)
     assert resp.status_code == 200
 
 
-def test_register_duplicate_user(client, create_test_user):
-    resp = client.post("/api/v1/register", json=TEST_USER)
+def test_register_duplicate_user(client, auth_headers, create_test_user):
+    resp = client.post("/api/v1/register", json=TEST_USER, headers=auth_headers)
     assert resp.status_code == 400
     assert resp.json()["detail"] == "Employee with this email already exists"
 

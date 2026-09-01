@@ -10,6 +10,7 @@ from app.schemas.auth import LoginRequest, TokenResponse, RegisterRequest, UserI
 from app.repositories import employee as employee_repo
 from app.services.auth_service import verify_password, create_access_token, get_password_hash
 from app.api.deps import get_current_user, get_db
+from app.api.permissions import require_perm, Perm
 from authlib.integrations.starlette_client import OAuth
 from utils.config import settings
 
@@ -135,7 +136,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(data={"sub": db_user.el_pastas})
     return TokenResponse(access_token=token)
 
-@router.post("/register", operation_id="register")
+@router.post("/register", operation_id="register",
+             dependencies=[Depends(require_perm(Perm.ADMIN))])
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if employee_repo.get_by_email(db, request.el_pastas):
         raise HTTPException(status_code=400, detail="Employee with this email already exists")

@@ -7,7 +7,11 @@ from app.api.deps import get_db
 from app.services.auth_service import get_password_hash
 from utils.hateoas import generate_links
 from app.api.deps import get_current_user
-from app.api.permissions import require_perm, Perm
+from app.api.permissions import require_perm, has_perm, Perm
+
+# Šiuos laukus keisti gali tik administratorius - kitaip EDIT teisę turintis
+# darbuotojas galėtų pats sau (ar kitam) pasikelti rolę arba pasikeisti slaptažodį.
+ADMIN_ONLY_FIELDS = {"pareigos", "atlyginimas", "slaptazodis", "el_pastas"}
 
 router = APIRouter(
     prefix="/employees",
@@ -54,8 +58,19 @@ def get_employee(employee_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{employee_id}", response_model=EmployeeOut, operation_id="updateEmployee",
             dependencies=[Depends(require_perm(Perm.EDIT))])
-def update_employee(employee_id: int, data: EmployeeUpdate, db: Session = Depends(get_db)):
+def update_employee(
+    employee_id: int,
+    data: EmployeeUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     updates = data.dict(exclude_unset=True)
+
+    if ADMIN_ONLY_FIELDS & updates.keys() and not has_perm(current_user, Perm.ADMIN):
+        raise HTTPException(
+            status_code=403,
+            detail="Only an administrator can change role, salary, email or password",
+        )
 
     if "slaptazodis" in updates:
         updates["slaptazodis"] = get_password_hash(updates["slaptazodis"])

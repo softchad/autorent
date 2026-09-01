@@ -102,3 +102,37 @@ def test_delete_employee_not_found(client, auth_headers):
     resp = client.delete("/api/v1/employees/999999", headers=auth_headers)
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Employee not found"
+
+
+def test_edit_role_employee_cannot_self_promote(client, auth_headers):
+    """Emplo (VIEW+EDIT) negali pats sau pasikeisti rolės į Admin per PUT - žr. employee.py ADMIN_ONLY_FIELDS."""
+    non_admin = EMPLOYEE_SAMPLE.copy()
+    non_admin["el_pastas"] = "employee.nonadmin@viko.lt"
+    non_admin["pareigos"] = "Emplo"
+    resp = client.post("/api/v1/employees/", json=non_admin, headers=auth_headers)
+    assert resp.status_code == 200, resp.json()
+    emp_id = resp.json()["darbuotojo_id"]
+
+    login_resp = client.post("/api/v1/login", json={
+        "el_pastas": non_admin["el_pastas"],
+        "slaptazodis": non_admin["slaptazodis"],
+    })
+    assert login_resp.status_code == 200, login_resp.json()
+    non_admin_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+
+    escalate_resp = client.put(
+        f"/api/v1/employees/{emp_id}",
+        json={"pareigos": "Admin"},
+        headers=non_admin_headers,
+    )
+    assert escalate_resp.status_code == 403
+
+    basic_update_resp = client.put(
+        f"/api/v1/employees/{emp_id}",
+        json={"vardas": "Pasikeitęs"},
+        headers=non_admin_headers,
+    )
+    assert basic_update_resp.status_code == 200
+    assert basic_update_resp.json()["vardas"] == "Pasikeitęs"
+
+    client.delete(f"/api/v1/employees/{emp_id}", headers=auth_headers)

@@ -17,10 +17,14 @@ ROLE_PERMS = {
     "Klientų aptarnavimas": {Perm.VIEW, Perm.EDIT},
 }
 
+def has_perm(user, perm: Perm) -> bool:
+    role = getattr(user, "role", None) or getattr(user, "pareigos", None)
+    return perm in ROLE_PERMS.get(role, set())
+
+
 def require_perm(perm: Perm):
     def dep(user = Depends(get_current_user)):
-        role = getattr(user, "role", None) or getattr(user, "pareigos", None)
-        if perm not in ROLE_PERMS.get(role, set()):
+        if not has_perm(user, perm):
             raise HTTPException(status_code=403, detail="Forbidden")
         return user
     return dep
