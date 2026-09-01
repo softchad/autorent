@@ -6,12 +6,33 @@ from app.schemas.reservation import ReservationCreate
 from app.models.car import Car
 from app.models.client import Client
 
+# Tos pačios būsenos, kurios blokuoja automobilį, kaip ir užsakymuose (order.py) - "atšaukta" nebeblokuoja.
+BLOKUOJANCIOS_BUSENOS = ["patvirtinta", "laukia"]
+
 
 def get_all(db: Session):
     return db.query(Reservation).all()
 
 def get_by_id(db: Session, rezervacijos_id: int):
     return db.query(Reservation).filter(Reservation.rezervacijos_id == rezervacijos_id).first()
+
+def find_conflict(
+    db: Session,
+    automobilio_id: int,
+    rezervacijos_pradzia,
+    rezervacijos_pabaiga,
+    exclude_id: int = None,
+):
+    # Ta pati pusiau atviro intervalo taisyklė kaip užsakymuose ir /cars/available.
+    query = db.query(Reservation).filter(
+        Reservation.automobilio_id == automobilio_id,
+        Reservation.busena.in_(BLOKUOJANCIOS_BUSENOS),
+        Reservation.rezervacijos_pradzia < rezervacijos_pabaiga,
+        Reservation.rezervacijos_pabaiga > rezervacijos_pradzia,
+    )
+    if exclude_id is not None:
+        query = query.filter(Reservation.rezervacijos_id != exclude_id)
+    return query.first()
 
 def create(db: Session, reservation: ReservationCreate):
     db_res = Reservation(**reservation.dict())

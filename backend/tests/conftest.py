@@ -55,27 +55,34 @@ def client(db_session):
 
 
 @pytest.fixture(scope="module")
-def auth_headers(client):
-    """Sukuria admin vartotoją ir grąžina Authorization header."""
-    register_payload = {
-        "vardas": "Admin",
-        "pavarde": "Testuotojas",
-        "el_pastas": "admin.cars@viko.lt",
-        "slaptazodis": "Slaptas123!",
-        "telefono_nr": "+37060000000",
-        "pareigos": "Admin",
-        "atlyginimas": 1500,
-        "isidarbinimo_data": "2024-01-01",
-    }
+def auth_headers(client, db_session):
+    """Sukuria admin darbuotoją tiesiai per DB sesiją ir grąžina Authorization header.
 
-    resp_reg = client.post("/api/v1/register", json=register_payload)
-    assert resp_reg.status_code in (200, 400)
+    /register dabar reikalauja ADMIN teisės (žr. auth.py), todėl pirmas admin
+    testams sukuriamas tiesiogiai, taip kaip realioje sistemoje jį sukurtų seed.sql.
+    """
+    from datetime import date
+    from app.models.employee import Employee
+    from app.services.auth_service import get_password_hash
 
-    login_payload = {
-        "el_pastas": register_payload["el_pastas"],
-        "slaptazodis": register_payload["slaptazodis"],
-    }
-    resp = client.post("/api/v1/login", json=login_payload)
+    email = "admin.cars@viko.lt"
+    password = "Slaptas123!"
+
+    existing = db_session.query(Employee).filter_by(el_pastas=email).first()
+    if not existing:
+        db_session.add(Employee(
+            vardas="Admin",
+            pavarde="Testuotojas",
+            el_pastas=email,
+            telefono_nr="+37060000000",
+            pareigos="Admin",
+            atlyginimas=1500,
+            isidarbinimo_data=date(2024, 1, 1),
+            slaptazodis=get_password_hash(password),
+        ))
+        db_session.commit()
+
+    resp = client.post("/api/v1/login", json={"el_pastas": email, "slaptazodis": password})
     assert resp.status_code == 200, resp.text
 
     token = resp.json()["access_token"]

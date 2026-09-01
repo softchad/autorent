@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from app.models.order import Order
 from app.schemas.order import OrderCreate
 
@@ -11,13 +11,13 @@ def get_all(db: Session):
 
 
 def find_car_conflict(db: Session, automobilio_id: int, nuomos_data, grazinimo_data):
+    # Pusiau atviras intervalas: esamas < prašomos pabaigos IR esamos pabaiga > prašomos pradžios.
+    # Senoji BETWEEN versija praleisdavo atvejį, kai prašomas intervalas visiškai patenka į esamą.
     return db.query(Order).filter(
         Order.automobilio_id == automobilio_id,
         Order.uzsakymo_busena.in_(AKTYVIOS_BUSENOS),
-        or_(
-            Order.nuomos_data.between(nuomos_data, grazinimo_data),
-            Order.grazinimo_data.between(nuomos_data, grazinimo_data),
-        ),
+        Order.nuomos_data < grazinimo_data,
+        Order.grazinimo_data > nuomos_data,
     ).first()
 
 
@@ -25,10 +25,8 @@ def find_client_conflict(db: Session, kliento_id: int, nuomos_data, grazinimo_da
     return db.query(Order).filter(
         Order.kliento_id == kliento_id,
         Order.uzsakymo_busena.in_(AKTYVIOS_BUSENOS),
-        or_(
-            Order.nuomos_data.between(nuomos_data, grazinimo_data),
-            Order.grazinimo_data.between(nuomos_data, grazinimo_data),
-        ),
+        Order.nuomos_data < grazinimo_data,
+        Order.grazinimo_data > nuomos_data,
     ).first()
 
 

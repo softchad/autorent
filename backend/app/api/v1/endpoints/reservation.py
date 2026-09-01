@@ -125,6 +125,11 @@ def get_all_reservations(db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.ReservationOut, operation_id="createReservation",
              dependencies=[Depends(require_perm(Perm.EDIT))])
 def create_reservation(reservation: schemas.ReservationCreate, db: Session = Depends(get_db)):
+    if reservation.busena != "atšaukta" and repo.find_conflict(
+        db, reservation.automobilio_id, reservation.rezervacijos_pradzia, reservation.rezervacijos_pabaiga
+    ):
+        raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+
     created = repo.create(db, reservation)
     return {
         **created.__dict__,
@@ -138,7 +143,21 @@ def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate,
     if not existing:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-    for field, value in updated.dict(exclude_unset=True).items():
+    changes = updated.dict(exclude_unset=True)
+    automobilio_id = changes.get("automobilio_id", existing.automobilio_id)
+    pradzia = changes.get("rezervacijos_pradzia", existing.rezervacijos_pradzia)
+    pabaiga = changes.get("rezervacijos_pabaiga", existing.rezervacijos_pabaiga)
+    busena = changes.get("busena", existing.busena)
+
+    if pabaiga <= pradzia:
+        raise HTTPException(status_code=400, detail="Pabaigos data turi būti vėlesnė nei pradžios data")
+
+    if busena != "atšaukta" and repo.find_conflict(
+        db, automobilio_id, pradzia, pabaiga, exclude_id=rezervacijos_id
+    ):
+        raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+
+    for field, value in changes.items():
         setattr(existing, field, value)
 
     db.commit()

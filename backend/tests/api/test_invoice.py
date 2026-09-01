@@ -2,16 +2,14 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from uuid import uuid4
-from app.api.deps import get_db
 from app.models import Location
 
 client = TestClient(app)
 
 
 @pytest.fixture(scope="module")
-def ensure_place_exists():
-    db = next(get_db())
-    vieta = db.query(Location).filter_by(vietos_id=1).first()
+def ensure_place_exists(db_session):
+    vieta = db_session.query(Location).filter_by(vietos_id=1).first()
     if not vieta:
         vieta = Location(
             vietos_id=1,
@@ -19,8 +17,8 @@ def ensure_place_exists():
             adresas="Test gatvė 1",
             miestas="Vilnius",
         )
-        db.add(vieta)
-        db.commit()
+        db_session.add(vieta)
+        db_session.commit()
     yield vieta
 
 
