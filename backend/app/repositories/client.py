@@ -11,6 +11,18 @@ def get_by_id(db: Session, kliento_id: int):
     return db.query(Client).filter(Client.kliento_id == kliento_id).first()
 
 
+def get_by_email(db: Session, email: str):
+    return db.query(Client).filter(Client.el_pastas == email).first()
+
+
+def create_customer(db: Session, data: dict):
+    db_client = Client(**data)
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
+
 def create(db: Session, client: ClientCreate):
     db_client = Client(**client.dict())
     db.add(db_client)
