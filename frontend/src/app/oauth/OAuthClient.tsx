@@ -27,7 +27,7 @@ export default function OAuthClient() {
 
     dispatch(setToken(token));
     document.cookie = `token=${token}; path=/; SameSite=Lax`;
-    router.replace("/");
+    router.replace("/dashboard");
   }, [dispatch, router, sp]);
 
   return null;

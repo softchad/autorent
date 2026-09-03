@@ -144,9 +144,15 @@ export default function MapComponent({ cars }: MapComponentProps) {
         className="h-full w-full"
         scrollWheelZoom
       >
+        {/*
+          CARTO nemokamas "dark_all" žemėlapis dabar reikalauja API rakto (be jo
+          grąžina "API KEY REQUIRED" paveikslėlį vietoj tikro žemėlapio). Naudojame
+          standartinius nemokamus OpenStreetMap plytelius su CSS invert filtru
+          (žr. globals.css .leaflet-tile-pane), kad išliktų tamsus stilius.
+        */}
         <TileLayer
-          attribution='© <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {carsWithCoords

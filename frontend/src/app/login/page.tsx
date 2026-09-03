@@ -12,12 +12,21 @@ import logo from "@/assets/autorentLOGO.png";
 
 const BACKEND = "http://localhost:8000/api/v1";
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  not_staff: "Ši paskyra nesusieta su darbuotojo profiliu. Kreipkitės į administratorių, jei turėtumėte turėti prieigą.",
+  no_token: "Nepavyko prisijungti. Bandykite dar kartą.",
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
+    const err = sp.get("error");
+    if (err) setOauthError(OAUTH_ERROR_MESSAGES[err] ?? OAUTH_ERROR_MESSAGES.no_token);
+
     let t = sp.get("token");
     if (!t) {
       const h = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
@@ -26,7 +35,7 @@ export default function LoginPage() {
     if (!t) return;
     dispatch(setToken(t));
     document.cookie = `token=${t}; path=/; SameSite=Lax`;
-    router.replace("/");
+    router.replace("/dashboard");
   }, [dispatch, router]);
 
   const [email, setEmail] = useState("");
@@ -41,7 +50,7 @@ export default function LoginPage() {
       }).unwrap();
       dispatch(setToken(res.access_token));
       document.cookie = `token=${res.access_token}; path=/;`;
-      router.push("/");
+      router.push("/dashboard");
     } catch {}
   };
 
@@ -111,6 +120,9 @@ export default function LoginPage() {
             <p className="text-red-400 text-xs mt-3 text-center">
               Neteisingas el. paštas arba slaptažodis
             </p>
+          )}
+          {oauthError && (
+            <p className="text-red-400 text-xs mt-3 text-center">{oauthError}</p>
           )}
 
           {/* Submit */}
