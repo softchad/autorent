@@ -1,13 +1,11 @@
 # Prisijungimo, registracijos ir OAuth (Google/GitHub) endpointai
-from datetime import date
-import secrets
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.schemas.auth import LoginRequest, TokenResponse, RegisterRequest, UserInfo, ChangePasswordRequest
 from app.repositories import employee as employee_repo
+from app.repositories import client as client_repo
 from app.services.auth_service import verify_password, create_access_token, get_password_hash
 from app.api.deps import get_current_user, get_db
 from app.api.permissions import require_perm, Perm
@@ -43,11 +41,27 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
     )
 
 # ---------- GitHub ----------
+# Vienas /github/callback aptarnauja ir darbuotojų, ir klientų prisijungimą - kuris
+# kelias tai yra, saugoma sesijoje (request.session), kurią nustato /github/login
+# arba /customer/github/login. Google turi tik vieną registruotą redirect URI Google
+# Cloud konsolėje, tad negalime turėti atskirų /customer/google/callback kelių be
+# papildomos Google konfigūracijos - sesijos požymis sprendžia tą patį be jos.
 
 @router.get("/github/login")
 async def github_login(request: Request):
     if not (GITHUB_REDIRECT_URL and settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET):
         raise HTTPException(status_code=503, detail="GitHub OAuth neaktyvus: trūksta konfigūracijos.")
+    request.session["oauth_intent"] = "staff"
+    return await oauth.github.authorize_redirect(
+        request, GITHUB_REDIRECT_URL,
+        allow_signup="true",
+    )
+
+@router.get("/customer/github/login")
+async def customer_github_login(request: Request):
+    if not (GITHUB_REDIRECT_URL and settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET):
+        raise HTTPException(status_code=503, detail="GitHub OAuth neaktyvus: trūksta konfigūracijos.")
+    request.session["oauth_intent"] = "customer"
     return await oauth.github.authorize_redirect(
         request, GITHUB_REDIRECT_URL,
         allow_signup="true",
@@ -57,6 +71,7 @@ async def github_login(request: Request):
 async def github_callback(request: Request, db: Session = Depends(get_db)):
     if not (settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET):
         raise HTTPException(status_code=503, detail="GitHub OAuth neaktyvus.")
+    intent = request.session.pop("oauth_intent", "staff")
     token = await oauth.github.authorize_access_token(request)
     if not token:
         raise HTTPException(status_code=400, detail="Nepavyko gauti GitHub tokeno.")
@@ -67,23 +82,27 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     if not email:
         raise HTTPException(status_code=400, detail="Nepavyko gauti el. pašto iš GitHub.")
 
+    if intent == "customer":
+        full = (me.get("name") or me.get("login") or "GitHub Klientas").split(" ", 1)
+        first, last = (full[0], (full[1] if len(full) > 1 else ""))
+        jwt_token = _get_or_create_customer_token(db, email, first, last, auth="github")
+        return RedirectResponse(url=f"{FRONTEND_URL}/paskyra/oauth#access_token={jwt_token}", status_code=303)
+
+    # SVARBU: darbuotojo paskyra per OAuth NEBĖRA kuriama automatiškai. Anksčiau bet
+    # kas su GitHub paskyra galėjo prisijungti ir gauti naują "Svečias" darbuotojo
+    # įrašą su tikru JWT tokenu - tai darbuotojo identitetas, jį turi sukurti tik
+    # administratorius. Nežinomas el. paštas -> aiški klaida, ne nauja paskyra.
     user = employee_repo.get_by_email(db, email)
     if not user:
-        full = (me.get("name") or me.get("login") or "GitHub User").split(" ", 1)
-        first, last = (full[0], (full[1] if len(full) > 1 else "User"))
-        random_pwd = secrets.token_urlsafe(24)
-        user = employee_repo.create_employee(db, {
-            "vardas": first, "pavarde": last, "el_pastas": email,
-            "telefono_nr": "", "pareigos": "Svečias", "atlyginimas": 0.0,
-            "isidarbinimo_data": date.today(), "slaptazodis": get_password_hash(random_pwd),
-        })
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=not_staff", status_code=303)
 
-    jwt_token = create_access_token(data={"sub": email, "auth": "github"})
+    jwt_token = create_access_token(data={"sub": email, "type": "staff", "auth": "github"})
     return RedirectResponse(url=f"{FRONTEND_URL}/oauth#access_token={jwt_token}", status_code=303)
 
 # ---------- Google ----------
 @router.get("/google/login")
 async def google_login(request: Request):
+    request.session["oauth_intent"] = "staff"
     return await oauth.google.authorize_redirect(
         request,
         GOOGLE_REDIRECT_URL,
@@ -91,8 +110,19 @@ async def google_login(request: Request):
         prompt="select_account",  # verčia rodyti paskyros pasirinkimą
     )
 
+@router.get("/customer/google/login")
+async def customer_google_login(request: Request):
+    request.session["oauth_intent"] = "customer"
+    return await oauth.google.authorize_redirect(
+        request,
+        GOOGLE_REDIRECT_URL,
+        scope="openid email profile",
+        prompt="select_account",
+    )
+
 @router.get("/google/callback", name="google_callback")
 async def google_callback(request: Request, db: Session = Depends(get_db)):
+    intent = request.session.pop("oauth_intent", "staff")
     token = await oauth.google.authorize_access_token(request)
 
     userinfo = token.get("userinfo")
@@ -109,23 +139,38 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Google el. paštas nepatvirtintas.")
 
     email = userinfo["email"]
+
+    if intent == "customer":
+        first = userinfo.get("given_name") or "Google"
+        last = userinfo.get("family_name") or "Klientas"
+        jwt_token = _get_or_create_customer_token(db, email, first, last, auth="google")
+        return RedirectResponse(url=f"{FRONTEND_URL}/paskyra/oauth#access_token={jwt_token}", status_code=303)
+
+    # SVARBU: ta pati taisyklė kaip GitHub aukščiau - žr. komentarą ten. Darbuotojo
+    # paskyrą turi sukurti administratorius, ne bet kas su Google paskyra.
     user = employee_repo.get_by_email(db, email)
     if not user:
-        random_pwd = secrets.token_urlsafe(24)
-        employee_data = {
-            "vardas": userinfo.get("given_name") or "Google",
-            "pavarde": userinfo.get("family_name") or "User",
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=not_staff", status_code=303)
+
+    jwt_token = create_access_token(data={"sub": email, "type": "staff", "auth": "google"})
+    return RedirectResponse(url=f"{FRONTEND_URL}/oauth#access_token={jwt_token}", status_code=303)
+
+
+def _get_or_create_customer_token(db: Session, email: str, first: str, last: str, auth: str) -> str:
+    """OAuth klientui: jei paskyros dar nėra - sukuriama iškart (tai ir yra norimas
+    'lengva užsiregistruoti su Google' elgesys), priešingai nei darbuotojui aukščiau."""
+    customer = client_repo.get_by_email(db, email)
+    if not customer:
+        from datetime import date as date_cls
+        customer = client_repo.create_customer(db, {
+            "vardas": first,
+            "pavarde": last or "Klientas",
             "el_pastas": email,
             "telefono_nr": "",
-            "pareigos": "Svečias",
-            "atlyginimas": 0.0,
-            "isidarbinimo_data": date.today(),
-            "slaptazodis": get_password_hash(random_pwd),
-        }
-        user = employee_repo.create_employee(db, employee_data)
-
-    jwt_token = create_access_token(data={"sub": email, "auth": "google"})
-    return RedirectResponse(url=f"{FRONTEND_URL}/oauth#access_token={jwt_token}", status_code=303)
+            "gimimo_data": date_cls(2000, 1, 1),
+            "slaptazodis": None,
+        })
+    return create_access_token(data={"sub": email, "type": "customer", "auth": auth})
 
 # ---------- Klasikinis prisijungimas ----------
 @router.post("/login", response_model=TokenResponse, operation_id="login")
@@ -133,7 +178,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     db_user = employee_repo.get_by_email(db, request.el_pastas)
     if not db_user or not verify_password(request.slaptazodis, db_user.slaptazodis):
         raise HTTPException(status_code=401, detail="Invalid login credentials")
-    token = create_access_token(data={"sub": db_user.el_pastas})
+    token = create_access_token(data={"sub": db_user.el_pastas, "type": "staff"})
     return TokenResponse(access_token=token)
 
 @router.post("/register", operation_id="register",
@@ -168,5 +213,5 @@ def login_swagger(username: str = Form(...), password: str = Form(...), db: Sess
     user = employee_repo.get_by_email(db, username)
     if not user or not verify_password(password, user.slaptazodis):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token(data={"sub": user.el_pastas})
+    token = create_access_token(data={"sub": user.el_pastas, "type": "staff"})
     return TokenResponse(access_token=token)
