@@ -14,7 +14,7 @@ from app.db.base import Base
 from app.db.session import engine
 from app.api.v1.endpoints import (
     auth, employee, car, reservation, order, geocode, client, client_support, invoice, public,
-    customer_auth, )
+    customer_auth, customer, )
 
 #Base.metadata.create_all(bind=engine)
 
@@ -71,6 +71,7 @@ app.include_router(invoice.router,       prefix="/api/v1", tags=["Invoices"])
 app.include_router(geocode.router,       prefix="/api/v1", tags=["Geo Code"])
 app.include_router(public.router,        prefix="/api/v1", tags=["Public"])
 app.include_router(customer_auth.router, prefix="/api/v1", tags=["Customer Auth"])
+app.include_router(customer.router,      prefix="/api/v1", tags=["Customer"])
 
 # 500 klaidos atveju grąžiname bendrą klaidos pranešimą
 @app.exception_handler(Exception)
