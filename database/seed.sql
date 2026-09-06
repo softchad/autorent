@@ -34,18 +34,22 @@ TRUNCATE TABLE `Klientai`;
 -- Klientai (IDs 1–10)
 -- ----------------------------------------------------------------
 
-INSERT INTO `Klientai` (`vardas`, `pavarde`, `el_pastas`, `telefono_nr`, `gimimo_data`, `registracijos_data`, `bonus_taskai`)
+-- Jonas Petrauskas turi demonstracinį slaptažodį "Klientas123!" (bcrypt hash),
+-- kad būtų galima iškart išbandyti kliento prisijungimą - žr. customer_auth.py.
+-- Likę klientai neturi prisijungimo (juos sukūrė darbuotojas), kol patys
+-- neužsiregistruos arba neprisijungs per Google.
+INSERT INTO `Klientai` (`vardas`, `pavarde`, `el_pastas`, `telefono_nr`, `gimimo_data`, `registracijos_data`, `bonus_taskai`, `slaptazodis`)
 VALUES
-('Jonas',    'Petrauskas',     'jonas.petrauskas@example.com',     '+37061234567', '1990-05-12', '2026-04-28 10:30:00', 150),
-('Aistė',    'Kazlauskienė',   'aiste.kazlauskiene@example.com',   '+37069876543', '1985-08-24', '2026-04-29 14:45:00', 200),
-('Tomas',    'Vaitkus',        'tomas.vaitkus@example.com',        '+37067788990', '1993-11-15', '2026-04-30 08:15:00',  50),
-('Laura',    'Jankauskaitė',   'laura.jankauskaite@example.com',   '+37064567890', '1988-02-10', '2026-05-02 12:00:00', 300),
-('Paulius',  'Jonaitis',       'paulius.jonaitis@example.com',     '+37060123456', '1995-07-30', '2026-05-05 17:30:00', 100),
-('Gabija',   'Pakalniškytė',   'gabija.pakalniskyte@example.com',  '+37061239876', '1992-03-21', '2026-05-07 09:20:00', 250),
-('Mantas',   'Šimkus',         'mantas.simkus@example.com',        '+37068991234', '1987-12-05', '2026-05-08 19:10:00', 400),
-('Dovilė',   'Butkutė',        'dovile.butkute@example.com',       '+37065432109', '1994-06-14', '2026-05-12 15:05:00', 175),
-('Karolis',  'Rutkauskas',     'karolis.rutkauskas@example.com',   '+37069987654', '1990-09-02', '2026-05-15 11:40:00',  50),
-('Rasa',     'Grigaliūnaitė',  'rasa.grigaliunaite@example.com',   '+37061122334', '1986-01-28', '2026-05-18 13:55:00', 225);
+('Jonas',    'Petrauskas',     'jonas.petrauskas@example.com',     '+37061234567', '1990-05-12', '2026-04-28 10:30:00', 150, '$2b$12$zLIYwoRF5HYDlsBz5KV4SeilF4W0KlibQK7f4/PqZun0vt6Us5VU6'),
+('Aistė',    'Kazlauskienė',   'aiste.kazlauskiene@example.com',   '+37069876543', '1985-08-24', '2026-04-29 14:45:00', 200, NULL),
+('Tomas',    'Vaitkus',        'tomas.vaitkus@example.com',        '+37067788990', '1993-11-15', '2026-04-30 08:15:00',  50, NULL),
+('Laura',    'Jankauskaitė',   'laura.jankauskaite@example.com',   '+37064567890', '1988-02-10', '2026-05-02 12:00:00', 300, NULL),
+('Paulius',  'Jonaitis',       'paulius.jonaitis@example.com',     '+37060123456', '1995-07-30', '2026-05-05 17:30:00', 100, NULL),
+('Gabija',   'Pakalniškytė',   'gabija.pakalniskyte@example.com',  '+37061239876', '1992-03-21', '2026-05-07 09:20:00', 250, NULL),
+('Mantas',   'Šimkus',         'mantas.simkus@example.com',        '+37068991234', '1987-12-05', '2026-05-08 19:10:00', 400, NULL),
+('Dovilė',   'Butkutė',        'dovile.butkute@example.com',       '+37065432109', '1994-06-14', '2026-05-12 15:05:00', 175, NULL),
+('Karolis',  'Rutkauskas',     'karolis.rutkauskas@example.com',   '+37069987654', '1990-09-02', '2026-05-15 11:40:00',  50, NULL),
+('Rasa',     'Grigaliūnaitė',  'rasa.grigaliunaite@example.com',   '+37061122334', '1986-01-28', '2026-05-18 13:55:00', 225, NULL);
 
 -- ----------------------------------------------------------------
 -- Pristatymo_Vietos (IDs 1–10)
@@ -71,7 +75,7 @@ VALUES
 INSERT INTO `Darbuotojai` (
     `vardas`, `pavarde`, `el_pastas`, `telefono_nr`, `pareigos`, `atlyginimas`, `isidarbinimo_data`, `slaptazodis`
 ) VALUES
-('Admin',      'Autorent',      'admin@autorent.lt',                    '+37060000000', 'Administratorius',     2000.00, '2026-04-18', '$2b$12$P5UPwpwc6Cm7qILxpyeD0OjtHOUsPdgaC7n5WUTaY32hkLxcf.Hlu'),
+('Admin',      'Autorent',      'admin@autorent.lt',                    '+37060000000', 'Administratorius',     2000.00, '2026-04-18', '$2b$12$WIRdlwhLpgdZWWKgSajRveu6jBZAVoDP9p4nB2AuDGi4mmt.uWN.S'),
 ('Tomas',      'Jonaitis',      'tomas.jonaitis@example.com',           '+37060010001', 'Administratorius',     1800.00, '2022-05-10', NULL),
 ('Rasa',       'Petrauskaitė',  'rasa.petrauskaite@example.com',        '+37060010002', 'Vadybininkas',         1600.00, '2021-03-15', NULL),
 ('Mindaugas',  'Kazlauskas',    'mindaugas.kazlauskas@example.com',     '+37060010003', 'Mechanikas',           1700.00, '2023-07-20', NULL),
@@ -199,6 +203,25 @@ INSERT INTO `Uzsakymai` (
 (8,  28, 6, '2026-06-01', '2026-06-05', 2, 4,  350.00, 'užbaigta',    FALSE),
 (9,  29, 7, '2026-06-03', '2026-06-09', 4, 3,  400.00, 'patvirtinta', TRUE),
 (10, 30, 8, '2026-06-07', '2026-06-11', 1, 5,  500.00, 'laukiama',    FALSE);
+
+-- ----------------------------------------------------------------
+-- Uzsakymai — trečioji partija: Jono Petrausko (kliento_id=1) užbaigta nuomų
+-- istorija, kad demonstracinė paskyra iškart rodytų lojalumo progresą (žr.
+-- backend app/api/v1/endpoints/customer_loyalty.py) - 6 užbaigtos nuomos reiškia
+-- 1 jau uždirbtą atlygį ir 1/5 progresą į kitą.
+-- ----------------------------------------------------------------
+
+INSERT INTO `Uzsakymai` (
+    `kliento_id`, `automobilio_id`, `darbuotojo_id`, `nuomos_data`,
+    `grazinimo_data`, `paemimo_vietos_id`, `grazinimo_vietos_id`,
+    `bendra_kaina`, `uzsakymo_busena`, `turi_papildomas_paslaugas`
+) VALUES
+(1, 21, 1, '2025-06-01', '2025-06-05', 5,  5,  160.00, 'užbaigta', FALSE),
+(1, 22, 2, '2025-07-10', '2025-07-14', 6,  6,  140.00, 'užbaigta', FALSE),
+(1, 26, 1, '2025-08-15', '2025-08-18', 6,  6,  105.00, 'užbaigta', FALSE),
+(1, 30, 3, '2025-09-20', '2025-09-25', 10, 10, 300.00, 'užbaigta', TRUE),
+(1, 25, 4, '2025-10-05', '2025-10-08', 5,  5,  135.00, 'užbaigta', FALSE),
+(1, 27, 1, '2025-11-12', '2025-11-15', 1,  1,  240.00, 'užbaigta', FALSE);
 
 -- ----------------------------------------------------------------
 -- Automobiliu_Servisas
