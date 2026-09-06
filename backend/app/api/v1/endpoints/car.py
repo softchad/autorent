@@ -10,7 +10,7 @@ from app.api.deps import get_current_user
 from app.api.permissions import require_perm, Perm
 from datetime import date
 from app.models.reservation import Reservation
-from app.models.order import Order
+from app.services.availability_service import get_busy_car_ids
 
 
 router = APIRouter(
@@ -53,23 +53,7 @@ def get_available_cars(
     if date_from >= date_to:
         raise HTTPException(status_code=400, detail="Invalid date range: `date_from` must be earlier than `date_to`.")
 
-    # Ta pati pusiau atviro intervalo taisyklė kaip užsakymuose ir rezervacijose (order.py, reservation.py).
-    # Atšauktos rezervacijos ir neaktyvūs užsakymai automobilio neblokuoja.
-    busy_from_reservations = {
-        row[0] for row in db.query(Reservation.automobilio_id).filter(
-            Reservation.busena.in_(["patvirtinta", "laukia"]),
-            Reservation.rezervacijos_pradzia < date_to,
-            Reservation.rezervacijos_pabaiga > date_from,
-        ).all()
-    }
-    busy_from_orders = {
-        row[0] for row in db.query(Order.automobilio_id).filter(
-            Order.uzsakymo_busena.in_(["patvirtinta", "vykdoma"]),
-            Order.nuomos_data < date_to,
-            Order.grazinimo_data > date_from,
-        ).all()
-    }
-    busy_car_ids = busy_from_reservations | busy_from_orders
+    busy_car_ids = get_busy_car_ids(db, date_from, date_to)
 
     cars_query = (
         db.query(Car)
