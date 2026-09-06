@@ -14,6 +14,7 @@ class Client(Base):
     gimimo_data = Column(Date)
     registracijos_data = Column(DateTime, default=datetime.utcnow)
     bonus_taskai = Column(Integer, default=0, nullable=False)
+    slaptazodis = Column(String(255), nullable=True)
 
     uzsakymai = relationship("Order", back_populates="klientas")
     uzklausos = relationship("ClientSupport", back_populates="kliento")

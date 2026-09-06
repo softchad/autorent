@@ -8,6 +8,9 @@
 -- ----------------------------------------------------------------
 
 -- Klientai — sistemos naudotojai su bonus taškų sistema
+-- slaptazodis: NULL reiškia, kad klientas dar neturi savo prisijungimo (įrašą
+-- sukūrė darbuotojas), arba prisijungia tik per Google - atskira, ne darbuotojo,
+-- paskyros sistema (žr. backend app/api/v1/endpoints/customer_auth.py).
 CREATE TABLE `Klientai` (
   `kliento_id`         INTEGER      PRIMARY KEY AUTO_INCREMENT,
   `vardas`             VARCHAR(255) NOT NULL,
@@ -16,7 +19,8 @@ CREATE TABLE `Klientai` (
   `telefono_nr`        VARCHAR(255) NOT NULL,
   `gimimo_data`        DATE         NOT NULL,
   `registracijos_data` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  `bonus_taskai`       INTEGER      DEFAULT 0 CHECK (`bonus_taskai` >= 0)
+  `bonus_taskai`       INTEGER      DEFAULT 0 CHECK (`bonus_taskai` >= 0),
+  `slaptazodis`        VARCHAR(255) NULL
 );
 
 -- Darbuotojai — įmonės personalas su pareigomis ir atlyginimu
@@ -136,7 +140,10 @@ CREATE TABLE `Mokejimai` (
 -- Klientų aptarnavimas ir atsiliepimai
 -- ----------------------------------------------------------------
 
--- Klientu_Palaikymas — klientų užklausos ir darbuotojų atsakymai
+-- Klientu_Palaikymas — SENAS modelis (vienas klausimas + vienas atsakymas viename
+-- įraše). Pakeistas Pokalbiai/Pokalbio_Zinutes žemiau (žr. docs/
+-- AUTORENT_KLIENTU_APTARNAVIMO_SISTEMOS_SPECIFIKACIJA.md). Lentelė paliekama
+-- neliečiama istorijai/rollback'ui - nauji endpointai jos nebenaudoja.
 CREATE TABLE `Klientu_Palaikymas` (
   `uzklausos_id`   INTEGER      PRIMARY KEY AUTO_INCREMENT,
   `kliento_id`     INTEGER      NOT NULL,
@@ -146,6 +153,61 @@ CREATE TABLE `Klientu_Palaikymas` (
   `atsakymas`      TEXT,
   `pateikimo_data` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `atsakymo_data`  TIMESTAMP
+);
+
+-- Pokalbiai — kliento aptarnavimo byla (viena konkreti problema). Kelios žinutės
+-- vienoje byloje, ne vienas klausimas+atsakymas įraše. busena reiškia KAS TURI
+-- VEIKTI toliau (žr. specifikacijos 8 skyrių), ne vien "atsakyta/neatsakyta".
+CREATE TABLE `Pokalbiai` (
+  `pokalbio_id`               INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`                INTEGER      NOT NULL,
+  `darbuotojo_id`              INTEGER      NULL,
+  `tema`                       VARCHAR(150) NOT NULL,
+  `kategorija`                  ENUM('rezervacija','atsiemimas_grazinimas','automobilis','saskaita','paskyra','kita') NOT NULL DEFAULT 'kita',
+  `busena`                      ENUM('atvira','sprendziama','laukiama_kliento','isspresta') NOT NULL DEFAULT 'atvira',
+  `rezervacijos_id`             INTEGER      NULL,
+  `sprendimo_santrauka`         TEXT         NULL,
+  `kliento_paskutinis_matytas`  INTEGER      NULL,
+  `darbuotojo_paskutinis_matytas` INTEGER    NULL,
+  `sukurimo_data`               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `atnaujinimo_data`            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pokalbio_Zinutes — viešos, klientui IR darbuotojui matomos žinutės. Niekada
+-- neperrašomos - klaida taisoma nauja žinute, ne UPDATE.
+CREATE TABLE `Pokalbio_Zinutes` (
+  `zinutes_id`      INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `pokalbio_id`     INTEGER      NOT NULL,
+  `autoriaus_tipas` ENUM('klientas','darbuotojas') NOT NULL,
+  `kliento_id`      INTEGER      NULL,
+  `darbuotojo_id`   INTEGER      NULL,
+  `tekstas`         TEXT         NOT NULL,
+  `sukurimo_data`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pokalbio_Pastabos — VIDINĖS pastabos, atskira lentelė (ne CSS-paslėpta žymė
+-- Pokalbio_Zinutes viduje), kad klientui skirtas API endpointas jų fiziškai
+-- negalėtų atsitiktinai grąžinti.
+CREATE TABLE `Pokalbio_Pastabos` (
+  `pastabos_id`   INTEGER   PRIMARY KEY AUTO_INCREMENT,
+  `pokalbio_id`   INTEGER   NOT NULL,
+  `darbuotojo_id` INTEGER   NOT NULL,
+  `tekstas`       TEXT      NOT NULL,
+  `sukurimo_data` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Lojalumo_Atlygiai — kliento uždirbti atlygiai už kas 5 užbaigtas nuomas.
+-- etapo_numeris = kiek penketukų nuomų jau uždirbta (1, 2, 3...), unikalu kiekvienam
+-- klientui - taip vienas etapas negali sukurti dviejų atlygių net jei būsena
+-- perskaičiuojama pakartotinai. Žr. backend customer_loyalty.py.
+CREATE TABLE `Lojalumo_Atlygiai` (
+  `atlygio_id`      INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`      INTEGER      NOT NULL,
+  `etapo_numeris`   INTEGER      NOT NULL,
+  `sukurimo_data`   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  `busena`          ENUM('neisnaudotas', 'isnaudotas') NOT NULL DEFAULT 'neisnaudotas',
+  `panaudojimo_data` TIMESTAMP   NULL,
+  UNIQUE (`kliento_id`, `etapo_numeris`)
 );
 
 -- Automobilio_Atsiliepimai — klientų įvertinimai (1–5) po nuomos
@@ -303,6 +365,23 @@ ALTER TABLE `Mokejimai`
 
 ALTER TABLE `Klientu_Palaikymas`
   ADD FOREIGN KEY (`kliento_id`)    REFERENCES `Klientai`    (`kliento_id`),
+  ADD FOREIGN KEY (`darbuotojo_id`) REFERENCES `Darbuotojai` (`darbuotojo_id`);
+
+ALTER TABLE `Lojalumo_Atlygiai`
+  ADD FOREIGN KEY (`kliento_id`) REFERENCES `Klientai` (`kliento_id`);
+
+ALTER TABLE `Pokalbiai`
+  ADD FOREIGN KEY (`kliento_id`)      REFERENCES `Klientai`     (`kliento_id`),
+  ADD FOREIGN KEY (`darbuotojo_id`)   REFERENCES `Darbuotojai`  (`darbuotojo_id`),
+  ADD FOREIGN KEY (`rezervacijos_id`) REFERENCES `Rezervavimas` (`rezervacijos_id`);
+
+ALTER TABLE `Pokalbio_Zinutes`
+  ADD FOREIGN KEY (`pokalbio_id`)   REFERENCES `Pokalbiai`   (`pokalbio_id`),
+  ADD FOREIGN KEY (`kliento_id`)    REFERENCES `Klientai`    (`kliento_id`),
+  ADD FOREIGN KEY (`darbuotojo_id`) REFERENCES `Darbuotojai` (`darbuotojo_id`);
+
+ALTER TABLE `Pokalbio_Pastabos`
+  ADD FOREIGN KEY (`pokalbio_id`)   REFERENCES `Pokalbiai`   (`pokalbio_id`),
   ADD FOREIGN KEY (`darbuotojo_id`) REFERENCES `Darbuotojai` (`darbuotojo_id`);
 
 ALTER TABLE `Automobilio_Atsiliepimai`
