@@ -14,7 +14,8 @@ from app.db.base import Base
 from app.db.session import engine
 from app.api.v1.endpoints import (
     auth, employee, car, reservation, order, geocode, client, client_support, invoice, public,
-    customer_auth, customer, customer_loyalty, customer_support, )
+    customer_auth, customer, customer_loyalty, customer_support, staff_support,
+)
 
 #Base.metadata.create_all(bind=engine)
 
@@ -63,6 +64,7 @@ app.include_router(client.router,        prefix="/api/v1", tags=["Client"])
 # "/support" priešdėlį, o senojo routerio /support/{uzklausos_id} (kelio
 # parametras) priešingu atveju "pagautų" /support/conversations kaip jei
 # uzklausos_id="conversations". FastAPI routerius derina registravimo tvarka.
+app.include_router(staff_support.router, prefix="/api/v1", tags=["Staff Support"])
 # client_support.router liko registruotas TIK dėl senos dashboard KPI (žr.
 # useDashboardStats.ts) - naujas aptarnavimo UI (support/page.tsx) jo nebenaudoja
 # ir naujų eilučių jame nebekuria.
