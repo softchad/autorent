@@ -7,14 +7,22 @@ import { usePathname } from "next/navigation";
 
 import image from "@/assets/autorentLOGO.png";
 import image2 from "@/assets/var1.png";
+import { isPublicPath } from "@/utils/publicRoutes";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((state) => state.auth.token);
   const pathname = usePathname();
 
+  // Viešos svetainės puslapiai ir prisijungimo puslapis turi savo pilną maketą -
+  // be darbuotojų Sidebar, watermark ar main paddingo.
+  const isFullBleed = isPublicPath(pathname ?? "") || pathname === "/login";
+  if (isFullBleed) {
+    return <div className="min-h-screen bg-[#0E0B1F]">{children}</div>;
+  }
+
   return (
     <div className="flex min-h-screen bg-[#0E0B1F] overflow-hidden relative">
-      {token && pathname !== "/login" && <Sidebar />}
+      {token && <Sidebar />}
 
       {/* Watermark */}
       <div className="pointer-events-none absolute inset-0 flex justify-center items-center z-0 opacity-3">

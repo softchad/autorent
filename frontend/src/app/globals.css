@@ -79,3 +79,19 @@ select option {
 .animate-fade-up {
   animation: fadeUp 0.4s ease-out both;
 }
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-25%);
+  }
+}
+
+/* Standartiniai OpenStreetMap plyteliai paverčiami tamsiais - CARTO nemokamas tamsus
+   žemėlapis dabar reikalauja API rakto, tad naudojame šviesius plytelius su invert
+   filtru vietoj jų. Filtras taikomas tik pačiam plytelių sluoksniui, ne žymekliams. */
+.leaflet-tile-pane {
+  filter: grayscale(1) invert(1) brightness(0.8) contrast(1.15);
+}
