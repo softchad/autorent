@@ -5,6 +5,7 @@ const statusMap: Record<string, { bg: string; dot: string; text: string }> = {
   užbaigta:    { bg: "bg-slate-700/40 border-slate-600/40",      dot: "bg-slate-400",   text: "text-slate-300" },
   užbaigtas:   { bg: "bg-slate-700/40 border-slate-600/40",      dot: "bg-slate-400",   text: "text-slate-300" },
   apmokėta:    { bg: "bg-emerald-900/40 border-emerald-700/40",  dot: "bg-emerald-400", text: "text-emerald-300" },
+  atsakyta:    { bg: "bg-emerald-900/40 border-emerald-700/40",  dot: "bg-emerald-400", text: "text-emerald-300" },
   aktyvi:      { bg: "bg-blue-900/40 border-blue-700/40",        dot: "bg-blue-400",    text: "text-blue-300" },
   vykdoma:     { bg: "bg-blue-900/40 border-blue-700/40",        dot: "bg-blue-400",    text: "text-blue-300" },
   vykdomas:    { bg: "bg-blue-900/40 border-blue-700/40",        dot: "bg-blue-400",    text: "text-blue-300" },
