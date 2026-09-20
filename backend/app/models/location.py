@@ -1,3 +1,4 @@
+# SQLAlchemy modelis - Python klasė, kuri atitinka "Pristatymo_Vietos" DB lentelę (automobilių paėmimo/grąžinimo punktai); sukuriamos tik per seed.sql, API turi TIK skaitymo endpoint'ą (getLocations car.py faile), ne kūrimo.
 from sqlalchemy import Column, Integer, String
 from app.db.base import Base
 

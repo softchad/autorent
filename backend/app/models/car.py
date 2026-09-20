@@ -1,3 +1,4 @@
+# SQLAlchemy modelis - Python klasė, kuri atitinka "Automobiliai" DB lentelę (žr. database/schema.sql); kiekvienas Column() žemiau yra VIENAS lentelės stulpelis.
 from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DECIMAL, Date
 from app.db.base import Base
 from sqlalchemy.orm import relationship
@@ -25,7 +26,9 @@ class Car(Base):
     kaina_parai = Column(DECIMAL(10,2), nullable=False)
     automobilio_statusas = Column(String(50), nullable=False)
     technikines_galiojimas = Column(Date, nullable=False)
-    dabartine_vieta_id = Column(Integer, ForeignKey("pristatymo_vietos.vietos_id"))
+    # "nullable=False" - schema.sql reikalauja šio lauko (automobilis VISADA turi turėti priskirtą esamą lokaciją), tad modelis turi atkartoti TĄ PAČIĄ taisyklę, kitaip SQLite testai tyliai leistų tai, kas tikroje MySQL DB lūžtų.
+    dabartine_vieta_id = Column(Integer, ForeignKey("pristatymo_vietos.vietos_id"), nullable=False)
     pastabos = Column(String(255))
 
+    # "lokacija" - leidžia Python kode rašyti "car.lokacija.pavadinimas" (SQLAlchemy pati padaro JOIN), vietoj to, kad reikėtų atskirai užklausti Location pagal dabartine_vieta_id.
     lokacija = relationship(Location, backref="automobiliai")
