@@ -1,14 +1,17 @@
+# Automobilio "formos" - CarCreate/CarUpdate apibrėžia, kokius laukus PRIIMAME, CarOut - kokius GRĄŽINAME.
 from pydantic import BaseModel, field_validator
 from typing import Optional, List, Dict
 from datetime import date
 
 from app.schemas.location import LocationOut
 
+# Turi atitikti database/schema.sql ENUM reikšmes TIKSLIAI - jei DB leidžia naują reikšmę, ją reikia pridėti IR čia.
 VALID_PAVARŲ_DEZE  = {"mechaninė", "automatinė", "pusiau automatinė"}
 VALID_KURO_TIPAS   = {"benzinas", "dyzelinas", "elektra", "hibridas", "dujos"}
 VALID_STATUSAS     = {"laisvas", "isnuomotas", "servise", "remonte"}
 
 
+# Bendri laukai IR kūrimui (CarCreate), IR grąžinimui (CarOut) - visi PRIVALOMI, nes tikras automobilio įrašas DB juos visada turi.
 class CarBase(BaseModel):
     marke: str
     modelis: str
@@ -92,6 +95,7 @@ class CarCreate(CarBase):
     pass
 
 
+# NEgali paveldėti CarBase - joje visi laukai PRIVALOMI, o čia VISI turi būti pasirenkami (dalinis atnaujinimas, žr. exclude_unset=True car.py endpoint'e). Dėl to VISI CarBase validatoriai PAKARTOJAMI žemiau su "v is not None" patikra - jei koks trūksta, bloga reikšmė PRAEITŲ čia, bet vėliau sulaužytų CarOut atsakymo validaciją (realus bug'as, rastas ir pataisytas - žr. testus).
 class CarUpdate(BaseModel):
     marke: Optional[str] = None
     modelis: Optional[str] = None
@@ -128,15 +132,47 @@ class CarUpdate(BaseModel):
             raise ValueError("Kaina parai turi būti teigiamas skaičius")
         return v
 
+    @field_validator("rida")
+    @classmethod
+    def validate_rida(cls, v: int) -> int:
+        if v is not None and v < 0:
+            raise ValueError("Rida negali būti neigiama")
+        return v
+
+    @field_validator("sedimos_vietos")
+    @classmethod
+    def validate_sedimos_vietos(cls, v: int) -> int:
+        if v is not None and not (2 <= v <= 9):
+            raise ValueError("Sėdimų vietų skaičius turi būti tarp 2 ir 9")
+        return v
+
+    @field_validator("galia_kw")
+    @classmethod
+    def validate_galia(cls, v: int) -> int:
+        if v is not None and v <= 0:
+            raise ValueError("Galia (kW) turi būti teigiamas skaičius")
+        return v
+
+    @field_validator("pavarų_deze")
+    @classmethod
+    def validate_pavarų_deze(cls, v: str) -> str:
+        if v is not None and v not in VALID_PAVARŲ_DEZE:
+            raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARŲ_DEZE)}")
+        return v
+
+    @field_validator("kuro_tipas")
+    @classmethod
+    def validate_kuro_tipas(cls, v: str) -> str:
+        if v is not None and v not in VALID_KURO_TIPAS:
+            raise ValueError(f"Negalimas kuro tipas. Leistini: {', '.join(VALID_KURO_TIPAS)}")
+        return v
+
     @field_validator("automobilio_statusas")
     @classmethod
     def validate_statusas(cls, v: str) -> str:
         if v is not None and v not in VALID_STATUSAS:
             raise ValueError(f"Negalimas statusas. Leistini: {', '.join(VALID_STATUSAS)}")
         return v
-
-    class Config:
-        from_attributes = True
 
 
 class CarOut(CarBase):
@@ -148,12 +184,3 @@ class CarOut(CarBase):
         from_attributes = True
 
 
-class CarStatusUpdate(BaseModel):
-    status: str
-
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, v: str) -> str:
-        if v not in VALID_STATUSAS:
-            raise ValueError(f"Negalimas statusas. Leistini: {', '.join(VALID_STATUSAS)}")
-        return v
