@@ -2,9 +2,10 @@ from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.order import Order
 from app.models import client as klientas_model
-from app.schemas.invoice import InvoiceCreate, InvoiceStatusUpdate
+from app.schemas.invoice import InvoiceCreate
 from datetime import datetime
 
+# Grąžina sąskaitas KARTU su susieto užsakymo ir kliento laukais (per JOIN) kaip žodynų sąrašą, ne Invoice objektus - response_model'io laukai (pvz. client_first_name) fiziškai yra KITOSE lentelėse, tad reikia sujungti SQL lygmeniu, ne Python kode.
 def get_invoice(db: Session):
     query = (
         db.query(
@@ -22,16 +23,19 @@ def get_invoice(db: Session):
     )
 
     results = query.all()
+    # "query.column_descriptions" - SQLAlchemy žino visų .label()'intų stulpelių pavadinimus; čia jie naudojami, kad kiekvieną grąžintą eilutę (tuple) paverstume į žodyną su tais pačiais vardais.
     keys = [col['name'] for col in query.column_descriptions]
     invoices = []
     for row in results:
         d = dict(zip(keys, row))
+        # saskaitos_data DB stulpelis gali grįžti kaip pilnas datetime - čia apkarpoma iki vien datos, kad atsakymas visada būtų vienodo formato.
         if isinstance(d["invoice_date"], datetime):
             d["invoice_date"] = d["invoice_date"].date()
         invoices.append(d)
     return invoices
 
 
+# Sukuria naują sąskaitą DB - patikros (duplikatas, užsakymo/kliento egzistavimas) atliekamos endpoint'e PRIEŠ šį kvietimą, čia tik tiesus įrašymas.
 def create_invoice(db: Session, invoice_data: InvoiceCreate):
     data = invoice_data.dict()
     invoice = Invoice(
@@ -45,6 +49,7 @@ def create_invoice(db: Session, invoice_data: InvoiceCreate):
     return invoice
 
 
+# Ištrina sąskaitą pagal ID - grąžina True/False, ar realiai kas nors buvo ištrinta, kad endpoint'as žinotų, ar rodyti 404.
 def delete_invoice(db: Session, invoice_id: int):
     invoice = db.query(Invoice).filter(Invoice.saskaitos_id == invoice_id).first()
     if invoice:
@@ -52,19 +57,3 @@ def delete_invoice(db: Session, invoice_id: int):
         db.commit()
         return True
     return False
-
-
-def update_invoice_status(db: Session, invoice_id: int, status_data: InvoiceStatusUpdate):
-    invoice = db.query(Invoice).filter(Invoice.saskaitos_id == invoice_id).first()
-    if invoice:
-        order = db.query(Order).filter(Order.uzsakymo_id == invoice.uzsakymo_id).first()
-        if order:
-            order.uzsakymo_busena = status_data.status
-            db.commit()
-            db.refresh(order)
-        db.refresh(invoice)
-        return invoice
-    return None
-
-def get_invoice_by_id(db: Session, invoice_id: int):
-    return db.query(Invoice).filter(Invoice.saskaitos_id == invoice_id).first()
