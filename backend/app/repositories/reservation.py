@@ -1,4 +1,3 @@
-from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.models.reservation import Reservation
@@ -16,6 +15,11 @@ def get_all(db: Session):
 def get_by_id(db: Session, rezervacijos_id: int):
     return db.query(Reservation).filter(Reservation.rezervacijos_id == rezervacijos_id).first()
 
+# Naudojama client.py delete_client - patikrinti, ar klientas turi NEBAIGTŲ rezervacijų prieš leidžiant jį ištrinti/anonimizuoti.
+def get_by_client_id(db: Session, kliento_id: int):
+    return db.query(Reservation).filter(Reservation.kliento_id == kliento_id).all()
+
+# Patikrina, ar automobilis JAU turi kitą AKTYVIĄ rezervaciją persidengiančiomis datomis - naudojama create/update_reservation endpoint'uose PRIEŠ įrašymą.
 def find_conflict(
     db: Session,
     automobilio_id: int,
@@ -23,13 +27,14 @@ def find_conflict(
     rezervacijos_pabaiga,
     exclude_id: int = None,
 ):
-    # Ta pati pusiau atviro intervalo taisyklė kaip užsakymuose ir /cars/available.
+    # Ta pati pusiau atviro intervalo taisyklė kaip užsakymuose: esamo.pradzia < naujo.pabaiga AND esamo.pabaiga > naujo.pradzia.
     query = db.query(Reservation).filter(
         Reservation.automobilio_id == automobilio_id,
         Reservation.busena.in_(BLOKUOJANCIOS_BUSENOS),
         Reservation.rezervacijos_pradzia < rezervacijos_pabaiga,
         Reservation.rezervacijos_pabaiga > rezervacijos_pradzia,
     )
+    # exclude_id - naudojama REDAGUOJANT esamą rezervaciją, kad JI PATI nebūtų palaikyta "konfliktu" su savimi.
     if exclude_id is not None:
         query = query.filter(Reservation.rezervacijos_id != exclude_id)
     return query.first()
@@ -49,6 +54,7 @@ def delete(db: Session, rezervacijos_id: int):
         return True
     return False
 
+# Grąžina N naujausių rezervacijų KARTU su automobilio ir kliento info (JOIN) - naudojama darbuotojų dashboard'o endpoint'e, kad frontend'ui nereikėtų atskirai užklausti kiekvienos eilutės susijusių duomenų.
 def get_latest_reservations_with_details(db: Session, limit: int = 5):
     return (
         db.query(
@@ -70,25 +76,3 @@ def get_latest_reservations_with_details(db: Session, limit: int = 5):
         .all()
     )
 
-def search_reservations(
-    db: Session,
-    kliento_id: int = None,
-    automobilio_id: int = None,
-    nuo: date = None,
-    iki: date = None,
-    busena: str = None
-):
-    query = db.query(Reservation)
-
-    if kliento_id:
-        query = query.filter(Reservation.kliento_id == kliento_id)
-    if automobilio_id:
-        query = query.filter(Reservation.automobilio_id == automobilio_id)
-    if nuo:
-        query = query.filter(Reservation.rezervacijos_pradzia >= nuo)
-    if iki:
-        query = query.filter(Reservation.rezervacijos_pabaiga <= iki)
-    if busena:
-        query = query.filter(Reservation.busena == busena)
-
-    return query.all()

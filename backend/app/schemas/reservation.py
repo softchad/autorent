@@ -1,7 +1,9 @@
+# Rezervacijų "formos" - ReservationCreate/ReservationUpdate apibrėžia, kokius laukus PRIIMAME, ReservationOut/ReservationSummary - kokius GRĄŽINAME.
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import date
 from typing import List, Dict, Optional
 
+# Turi atitikti database/schema.sql ENUM reikšmes TIKSLIAI.
 VALID_BUSENA = {"patvirtinta", "atšaukta", "laukia"}
 
 
@@ -19,6 +21,7 @@ class ReservationBase(BaseModel):
             raise ValueError(f"Negalima būsena. Leistinos: {', '.join(VALID_BUSENA)}")
         return v
 
+    # "model_validator" (ne field_validator) - nes čia reikia PALYGINTI DU laukus tarpusavyje (pradžią su pabaiga), ne patikrinti vieną atskirai.
     @model_validator(mode="after")
     def validate_dates(self) -> "ReservationBase":
         if self.rezervacijos_pabaiga and self.rezervacijos_pradzia:
@@ -31,6 +34,7 @@ class ReservationCreate(ReservationBase):
     pass
 
 
+# NEgali paveldėti ReservationBase - visi laukai čia pasirenkami (dalinis atnaujinimas). validate_dates iš ReservationBase ČIA NEPASIEKIAMA (dalinis atnaujinimas gali atsiųsti TIK VIENĄ datą) - TA PATI patikra atliekama RANKA endpoint'e (reservation.py update_reservation), kuris sujungia naujas reikšmes su esamomis PRIEŠ tikrinant.
 class ReservationUpdate(BaseModel):
     kliento_id: Optional[int] = None
     automobilio_id: Optional[int] = None
@@ -50,10 +54,8 @@ class ReservationOut(ReservationBase):
     rezervacijos_id: int
     links: List[Dict]
 
-    class Config:
-        from_attributes = True
 
-
+# Skirtingai nuo ReservationOut - šitas papildo AUTOMOBILIO ir KLIENTO vardus (JOIN repozitorijoje, žr. get_latest_reservations_with_details) - naudojamas darbuotojų dashboard'o "naujausios rezervacijos" sąrašui.
 class ReservationSummary(BaseModel):
     rezervacijos_id: int
     kliento_id: int
@@ -66,6 +68,3 @@ class ReservationSummary(BaseModel):
     vardas: str
     pavarde: str
     links: List[Dict]
-
-    class Config:
-        from_attributes = True
