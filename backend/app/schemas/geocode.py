@@ -1,8 +1,11 @@
+# Adreso -> koordinačių geokodavimo endpoint'o formos - žr. endpoints/geocode.py.
 from pydantic import BaseModel, Field
 
 class GeocodeRequest(BaseModel):
+    # "Field(..., min_length=1)" - "..." (Ellipsis) Pydantic'e reiškia "PRIVALOMAS, be numatytosios reikšmės"; min_length=1 atmeta tuščią eilutę ("") PRIEŠ pasiekiant tinklo kodą.
     adresas: str = Field(..., min_length=1)
 
+# lat/lng - platuma/ilguma; grąžinama iš OpenCage (žr. repositories/geocode.py).
 class GeocodeResponse(BaseModel):
     lat: float
     lng: float

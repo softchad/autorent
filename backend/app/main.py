@@ -1,4 +1,4 @@
-import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,26 +8,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.openapi.utils import get_openapi
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
+from app.rate_limit import limiter
 from utils.config import settings
-from app.db.base import Base
-from app.db.session import engine
+
+logger = logging.getLogger("autorent")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 from app.api.v1.endpoints import (
-    auth, employee, car, reservation, order, geocode, client, client_support, invoice, public,
+    auth, employee, car, reservation, order, geocode, client, invoice, public,
     customer_auth, customer, customer_loyalty, customer_support, staff_support,
 )
 
-#Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="AutoRent API", version="1.0.0")
+
+# Rate limitas (žr. @limiter.limit naudojimą auth.py/customer_auth.py faile) - apsauga nuo brute-force prisijungimo bandymų ir automatinio sąskaitų kūrimo.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Sesija reikalinga OAuth prisijungimui
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET_KEY", "dev-secret-32chars-change-me"),
+    secret_key=settings.SESSION_SECRET_KEY,
 )
 
-# CORS
+# CORS - leidžia naršyklei siųsti užklausas IŠ frontend'o domeno į ŠĮ (kitą) serverio domeną; "allow_credentials=True" reikalingas, kad "Authorization" antraštė (JWT tokenas) pereitų kartu - saugu TIK todėl, kad allow_origins ČIA yra KONKRETUS adresas, ne "*" (naršyklės atmestų credentials su wildcard).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[str(settings.FRONTEND_URL).rstrip("/")],
@@ -60,15 +66,7 @@ app.include_router(car.router,           prefix="/api/v1", tags=["Cars"])
 app.include_router(reservation.router,   prefix="/api/v1", tags=["Reservations"])
 app.include_router(order.router,         prefix="/api/v1", tags=["Orders"])
 app.include_router(client.router,        prefix="/api/v1", tags=["Client"])
-# staff_support PRIVALO būti registruotas PRIEŠ client_support - abu dalinasi
-# "/support" priešdėlį, o senojo routerio /support/{uzklausos_id} (kelio
-# parametras) priešingu atveju "pagautų" /support/conversations kaip jei
-# uzklausos_id="conversations". FastAPI routerius derina registravimo tvarka.
 app.include_router(staff_support.router, prefix="/api/v1", tags=["Staff Support"])
-# client_support.router liko registruotas TIK dėl senos dashboard KPI (žr.
-# useDashboardStats.ts) - naujas aptarnavimo UI (support/page.tsx) jo nebenaudoja
-# ir naujų eilučių jame nebekuria.
-app.include_router(client_support.router,prefix="/api/v1", tags=["Client Support (legacy)"])
 app.include_router(invoice.router,       prefix="/api/v1", tags=["Invoices"])
 app.include_router(geocode.router,       prefix="/api/v1", tags=["Geo Code"])
 app.include_router(public.router,        prefix="/api/v1", tags=["Public"])
@@ -77,9 +75,10 @@ app.include_router(customer.router,      prefix="/api/v1", tags=["Customer"])
 app.include_router(customer_loyalty.router, prefix="/api/v1", tags=["Customer Loyalty"])
 app.include_router(customer_support.router, prefix="/api/v1", tags=["Customer Support"])
 
-# 500 klaidos atveju grąžiname bendrą klaidos pranešimą
+# Log'inam klaidą PRIEŠ grąžinant bendrą pranešimą - kitaip ji niekur serveryje neužfiksuota.
 @app.exception_handler(Exception)
 async def server_error_handler(request: Request, exc: Exception):
+    logger.exception("Nesuvaldyta klaida apdorojant %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={"detail": "Serverio klaida. Bandykite dar kartą."},
