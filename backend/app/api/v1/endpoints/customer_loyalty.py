@@ -1,21 +1,11 @@
-# Kliento lojalumo programa: kas REWARD_MILESTONE_SIZE užbaigtų nuomų (Uzsakymai su
-# uzsakymo_busena='užbaigta') suteikia vieną atlygį. Tai PAVYZDINĖ taisyklė (žr.
-# docs/AUTORENT_PLETROS_PLANAS.md skyrių 5) - dydžiai lengvai keičiami, kol nėra
-# realios mokėjimų apskaitos, kriterijus yra darbuotojo patvirtintas užbaigimas,
-# ne apmokėjimas.
-#
-# Atlygių įrašai kuriami "gauk arba sukurk" būdu kiekvieną kartą, kai klientas
-# atsidaro /customer/loyalty - ne atskirame įvykyje, kai užsakymas pažymimas
-# užbaigtu (tai reikštų keisti esamą darbuotojų order.py endpointą). unique
-# (kliento_id, etapo_numeris) apsaugo nuo dvigubo to paties etapo sukūrimo net
-# jei du užklausimai atvyksta vienu metu.
+# Kliento lojalumo programa - kas REWARD_MILESTONE_SIZE užbaigtų nuomų, klientas uždirba vieną atlygį (REWARD_VALUE_EUR).
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError  # klaida, kurią duomenų bazė meta, kai veiksmas atmetamas dėl susijusių įrašų (žr. _ensure_rewards_up_to_date žemiau)
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func  # SQL agregavimo funkcijos (čia - func.count(), skaičiuoti užbaigtas nuomas)
 from datetime import datetime, timezone
 
-from app.api.deps import get_db, get_current_customer
+from app.api.deps import get_db, get_current_customer  # get_current_customer - "kas prisijungęs" klientams (ne darbuotojams)
 from app.models.client import Client
 from app.models.order import Order
 from app.models.loyalty_reward import LoyaltyReward
@@ -23,15 +13,16 @@ from app.schemas.customer_loyalty import LoyaltyStatusOut, LoyaltyRewardOut
 
 router = APIRouter(prefix="/customer/loyalty", tags=["Customer Loyalty"])
 
-REWARD_MILESTONE_SIZE = 5
-REWARD_VALUE_EUR = 20.0
+REWARD_MILESTONE_SIZE = 5  # kas kiek užbaigtų nuomų duodamas atlygis
+REWARD_VALUE_EUR = 20.0  # vieno atlygio vertė eurais
 
-
+# Patikrina, ar klientas jau uždirbo naujų etapų (žr. REWARD_MILESTONE_SIZE) nuo paskutinio patikrinimo, ir sukuria trūkstamus atlygius.
 def _ensure_rewards_up_to_date(db: Session, kliento_id: int, completed_count: int) -> None:
     earned_milestones = completed_count // REWARD_MILESTONE_SIZE
     if earned_milestones == 0:
         return
 
+    # Jau turimi etapų numeriai - kad NEBANDYTUME antrą kartą sukurti to paties atlygio.
     existing = {
         row[0]
         for row in db.query(LoyaltyReward.etapo_numeris).filter(LoyaltyReward.kliento_id == kliento_id).all()
@@ -45,10 +36,11 @@ def _ensure_rewards_up_to_date(db: Session, kliento_id: int, completed_count: in
             db.commit()
             db.refresh(new_reward)
         except IntegrityError:
-            # Kitas lygiagretus užklausimas jau sukūrė šį etapą - tai ne klaida.
+            # unique(kliento_id, etapo_numeris) DB apribojimas - kitas lygiagretus kvietimas jau sukūrė šį etapą, tai ne klaida.
             db.rollback()
 
 
+# Grąžina kliento lojalumo progresą - kiek nuomų užbaigta, kiek liko iki kito atlygio, ir visų uždirbtų atlygių sąrašą.
 @router.get("", response_model=LoyaltyStatusOut, operation_id="getCustomerLoyaltyStatus")
 def get_loyalty_status(
     db: Session = Depends(get_db),
@@ -60,6 +52,7 @@ def get_loyalty_status(
         .scalar()
     ) or 0
 
+    # Jei klientas nuo paskutinio patikrinimo pasiekė naują etapą - atlygis sukuriamas DABAR, prieš grąžinant atsakymą.
     _ensure_rewards_up_to_date(db, current_customer.kliento_id, completed_count)
 
     rewards = (
@@ -71,7 +64,7 @@ def get_loyalty_status(
 
     return LoyaltyStatusOut(
         uzbaigtu_nuomu_skaicius=completed_count,
-        progresas_dabartiniame_etape=completed_count % REWARD_MILESTONE_SIZE,
+        progresas_dabartiniame_etape=completed_count % REWARD_MILESTONE_SIZE,  # "%" - kiek nuomų įskaičiuota į DABARTINĮ, dar nebaigtą etapą
         etapo_dydis=REWARD_MILESTONE_SIZE,
         atlygio_verte_eur=REWARD_VALUE_EUR,
         atlygiai=[
@@ -88,15 +81,18 @@ def get_loyalty_status(
     )
 
 
+# Pažymi kliento atlygį kaip panaudotą - galima tik VIENĄ kartą (žr. busena patikrą žemiau).
 @router.post("/rewards/{atlygio_id}/redeem", response_model=LoyaltyRewardOut, operation_id="redeemCustomerLoyaltyReward")
 def redeem_reward(
     atlygio_id: int,
     db: Session = Depends(get_db),
     current_customer: Client = Depends(get_current_customer),
 ):
+    # with_for_update() UŽRAKINA šią eilutę - be šito du vienu metu atėję redeem prašymai abu spėtų pamatyti "neisnaudotas" prieš bet kuriam užsicommitinant, ir atlygis būtų panaudotas dukart.
     reward = (
         db.query(LoyaltyReward)
         .filter(LoyaltyReward.atlygio_id == atlygio_id, LoyaltyReward.kliento_id == current_customer.kliento_id)
+        .with_for_update()
         .first()
     )
     if not reward:

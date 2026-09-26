@@ -1,7 +1,9 @@
+# Pagalbos pokalbių formos - BENDROS klientui (customer_support.py) ir darbuotojui (staff_support.py). Teksto laukų (tema/pranesimas/tekstas/santrauka) ilgio patikra vyksta NE čia, o support_service.py _clean() funkcijoje - viena vieta abiem pusėms, ne dubliuoti field_validator'iai.
 from datetime import datetime
 from pydantic import BaseModel
 
 
+# Kliento NAUJO pokalbio sukūrimas - "rezervacijos_id" pasirenkamas, jei pokalbis apie konkrečią rezervaciją.
 class ConversationCreate(BaseModel):
     tema: str
     kategorija: str = "kita"
@@ -9,10 +11,12 @@ class ConversationCreate(BaseModel):
     rezervacijos_id: int | None = None
 
 
+# Kliento NAUJA žinutė į JAU esamą pokalbį.
 class MessageCreate(BaseModel):
     tekstas: str
 
 
+# Darbuotojo VIDINĖ pastaba - niekada nerodoma klientui.
 class NoteCreate(BaseModel):
     tekstas: str
 
@@ -21,6 +25,7 @@ class ResolveRequest(BaseModel):
     santrauka: str
 
 
+# Darbuotojo atsakymas klientui - "busena" nurodo, kas toliau (patikra VALID_KATEGORIJOS/NEXT_STAFF_STATUSES vyksta support_service.py, ne čia).
 class StaffMessageCreate(BaseModel):
     tekstas: str
     busena: str  # "sprendziama" | "laukiama_kliento"
@@ -30,10 +35,12 @@ class ReassignRequest(BaseModel):
     darbuotojo_id: int
 
 
+# "zinutes_id" - KURI žinutė paskutinė matyta (naudojama "neperskaityta" žymai skaičiuoti, žr. endpoints/mark_seen).
 class SeenRequest(BaseModel):
     zinutes_id: int
 
 
+# Rodoma pokalbio šalia, jei jis susietas su konkrečia rezervacija - kad darbuotojas/klientas matytų, KOKIU automobiliu klausiama, nereikėdami atskirai jos atsidaryti.
 class ReservationContext(BaseModel):
     rezervacijos_id: int
     marke: str
@@ -41,10 +48,8 @@ class ReservationContext(BaseModel):
     rezervacijos_pradzia: str
     rezervacijos_pabaiga: str
 
-    class Config:
-        from_attributes = True
 
-
+# VIENA žinutė pokalbyje - "autoriaus_tipas" ("klientas"/"darbuotojas") sako, KAS parašė; "autorius_vardas" formatas SKIRIASI pagal tai, KAM rodoma (žr. _author_names_map abiejuose endpoint'uose).
 class MessageOut(BaseModel):
     zinutes_id: int
     autoriaus_tipas: str
@@ -52,20 +57,16 @@ class MessageOut(BaseModel):
     tekstas: str
     sukurimo_data: datetime
 
-    class Config:
-        from_attributes = True
 
-
+# VIENA vidinė pastaba - matoma TIK darbuotojams (žr. StaffConversationDetailOut žemiau, kurio customer_support.py NEnaudoja).
 class NoteOut(BaseModel):
     pastabos_id: int
     darbuotojo_vardas: str
     tekstas: str
     sukurimo_data: datetime
 
-    class Config:
-        from_attributes = True
 
-
+# Pokalbio "santrauka" sąrašo rodymui - su PASKUTINE žinute (ne visomis), kad sąrašas nebūtų sunkus siunčiant visą istoriją kiekvienam pokalbiui.
 class ConversationSummaryOut(BaseModel):
     pokalbio_id: int
     tema: str
@@ -80,10 +81,12 @@ class ConversationSummaryOut(BaseModel):
     sprendimo_santrauka: str | None = None
 
 
+# Papildo santrauką VISOMIS žinutėmis - naudojama vieno konkretaus pokalbio puslapiui (žr. customer_support.py _to_detail).
 class ConversationDetailOut(ConversationSummaryOut):
     zinutes: list[MessageOut]
 
 
+# DARBUOTOJO pusės santrauka - papildo bendrą ConversationSummaryOut kliento/priskirto darbuotojo info, kurios klientui rodyti nereikia (jis pats žino, kas jis yra).
 class StaffConversationSummaryOut(ConversationSummaryOut):
     kliento_vardas: str
     darbuotojo_id: int | None = None
@@ -91,6 +94,7 @@ class StaffConversationSummaryOut(ConversationSummaryOut):
     reikia_atsakyti: bool = False
 
 
+# DARBUOTOJO pusės detalė - vienintelė vieta, kur "pastabos" (vidinės, klientui NIEKADA nerodomos) patenka į atsakymą.
 class StaffConversationDetailOut(StaffConversationSummaryOut):
     zinutes: list[MessageOut]
     pastabos: list[NoteOut]
