@@ -3,13 +3,15 @@ import uuid
 
 
 # ----------------------------------------------------------------
-# Pagalbiniai duomenys
+# Pagalbiniai duomenys - ATSKIRTA nuo testų žemiau, nes VALID_* šablonai ir unique_*() funkcijos naudojamos VISOSE penkiose sekcijose (automobilis/klientas/darbuotojas/užsakymas/rezervacija), ne tik vienoje - laikomi faile viršuje, kad būtų matomi PRIEŠ pirmą jų naudojimą.
 # ----------------------------------------------------------------
 
+# Grąžina UNIKALŲ automobilio numerį - numeris yra UNIQUE DB lygmeniu, tad be šito testai susidurtų su dublikato klaida.
 def unique_numeris():
     return f"V{uuid.uuid4().hex[:6].upper()}"
 
 
+# Grąžina UNIKALŲ VIN kodą - vin_kodas TAIP PAT UNIQUE DB lygmeniu.
 def unique_vin():
     return uuid.uuid4().hex[:17].upper()
 
@@ -31,7 +33,6 @@ VALID_CLIENT = {
     "el_pastas": "valid@test.lt",
     "telefono_nr": "+37060000001",
     "gimimo_data": "1990-01-01",
-    "bonus_taskai": 0,
 }
 
 VALID_EMPLOYEE = {
@@ -44,7 +45,23 @@ VALID_EMPLOYEE = {
     "slaptazodis": "Slaptas123!",
 }
 
+VALID_ORDER = {
+    "kliento_id": 1, "automobilio_id": 1, "darbuotojo_id": 1,
+    "nuomos_data": "2025-01-01", "grazinimo_data": "2025-01-05",
+    "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+    "bendra_kaina": 100.0, "uzsakymo_busena": "laukiama",
+    "turi_papildomas_paslaugas": False,
+}
 
+VALID_RESERVATION = {
+    "kliento_id": 1, "automobilio_id": 1,
+    "rezervacijos_pradzia": "2025-06-01",
+    "rezervacijos_pabaiga": "2025-06-05",
+    "busena": "laukia",
+}
+
+
+# "autouse=True" - paleidžiama AUTOMATIŠKAI prieš VISUS šio failo testus; automobiliui (dabartine_vieta_id NOT NULL) reikia egzistuojančios vietos, o API neturi vietos KŪRIMO endpoint'o, tad ji įterpiama TIESIAI per db_session.
 @pytest.fixture(scope="module", autouse=True)
 def ensure_location(db_session):
     from app.models import Location
@@ -56,69 +73,29 @@ def ensure_location(db_session):
 
 
 # ================================================================
-# Automobilio validacija
+# Automobilio validacija - ŠI sekcija turi DAUGIAUSIA atvejų (10) iš visų penkių, nes CarBase turi DAUGIAUSIA skirtingų taisyklių tipų: skaičių ribas (metai, kaina, rida, sėdimos vietos) IR ENUM sąrašus (pavarų dėžė, kuro tipas, statusas) - kitos esybės žemiau turi tik 1-3 validatorius.
 # ================================================================
 
-def test_car_invalid_metai_too_old(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "metai": 1800}
+# Kiekviena (laukas, bloga reikšmė) pora turi SAVO field_validator'į CarBase faile (žr. schemas/car.py) - viena parametrizuota funkcija vietoj 10 pakartotų, nes visos tikrina TĄ PATĮ raštą ("1 blogas laukas -> 422").
+@pytest.mark.parametrize("field,value", [
+    ("metai", 1800),               # per sena (< 1900)
+    ("metai", 2099),                # per nauja (> 2030)
+    ("kaina_parai", 0),              # kaina turi būti TEIGIAMA, 0 neleidžiama
+    ("kaina_parai", -10),
+    ("rida", -1),                    # rida negali būti neigiama
+    ("sedimos_vietos", 1),           # per mažai (< 2)
+    ("sedimos_vietos", 10),          # per daug (> 9)
+    ("pavarų_deze", "robotas"),      # ne VALID_PAVARŲ_DEZE
+    ("kuro_tipas", "vandenilis"),    # ne VALID_KURO_TIPAS
+    ("automobilio_statusas", "parduotas"),  # ne VALID_STATUSAS
+])
+def test_car_create_rejects_invalid_field(client, auth_headers, field, value):
+    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), field: value}
     resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
     assert resp.status_code == 422
 
 
-def test_car_invalid_metai_future(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "metai": 2099}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_kaina_zero(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "kaina_parai": 0}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_kaina_negative(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "kaina_parai": -10}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_rida_negative(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "rida": -1}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_sedimos_vietos_too_few(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "sedimos_vietos": 1}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_sedimos_vietos_too_many(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "sedimos_vietos": 10}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_pavarų_deze(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "pavarų_deze": "robotas"}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_kuro_tipas(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "kuro_tipas": "vandenilis"}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_car_invalid_statusas(client, auth_headers):
-    data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin(), "automobilio_statusas": "parduotas"}
-    resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
+# Priešinga patikra visoms aukščiau - VISI laukai teisingi, kūrimas turi PAVYKTI (sugauna atvejį, kai validatorius per griežtas net TEISINGIEMS duomenims).
 def test_car_valid_passes(client, auth_headers):
     data = {**VALID_CAR, "numeris": unique_numeris(), "vin_kodas": unique_vin()}
     resp = client.post("/api/v1/cars/", json=data, headers=auth_headers)
@@ -127,98 +104,61 @@ def test_car_valid_passes(client, auth_headers):
 
 
 # ================================================================
-# Kliento validacija
+# Kliento validacija - ATSKIRA sekcija, nes ClientBase turi MAŽIAUSIA validatorių iš visų (tik vardo ilgis ir EmailStr formatas) - telefono_nr/gimimo_data neturi papildomos field_validator patikros, tik tipo tikrinimą.
 # ================================================================
 
-def test_client_invalid_vardas_too_short(client, auth_headers):
-    data = {**VALID_CLIENT, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", "vardas": "A"}
-    resp = client.post("/api/v1/clients/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_client_invalid_bonus_negative(client, auth_headers):
-    data = {**VALID_CLIENT, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", "bonus_taskai": -5}
-    resp = client.post("/api/v1/clients/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_client_invalid_email(client, auth_headers):
-    data = {**VALID_CLIENT, "el_pastas": "ne-el-pastas"}
+# Analogiškai automobiliui aukščiau - kiekviena pora turi SAVO validatorių ClientBase faile (žr. schemas/client.py).
+@pytest.mark.parametrize("field,value", [
+    ("vardas", "A"),              # trumpiau nei 2 simboliai
+    ("el_pastas", "ne-el-pastas"),  # EmailStr formato patikra
+])
+def test_client_create_rejects_invalid_field(client, auth_headers, field, value):
+    data = {**VALID_CLIENT, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", field: value}
     resp = client.post("/api/v1/clients/", json=data, headers=auth_headers)
     assert resp.status_code == 422
 
 
 # ================================================================
-# Darbuotojo validacija
+# Darbuotojo validacija - ATSKIRA sekcija, nes EmployeeCreate (skirtingai nei Car/Client aukščiau) turi "slaptazodis" lauką su SAVO minimalaus ilgio patikra - vienintelė šiame faile testuojama validacija, susijusi su autentikacija, ne su pačiais duomenimis.
 # ================================================================
 
-def test_employee_invalid_atlyginimas_zero(client, auth_headers):
-    data = {**VALID_EMPLOYEE, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", "atlyginimas": 0}
-    resp = client.post("/api/v1/employees/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_employee_invalid_atlyginimas_negative(client, auth_headers):
-    data = {**VALID_EMPLOYEE, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", "atlyginimas": -100}
-    resp = client.post("/api/v1/employees/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_employee_short_password(client, auth_headers):
-    data = {**VALID_EMPLOYEE, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", "slaptazodis": "abc"}
+# Analogiškai aukščiau - EmployeeBase validatoriai (žr. schemas/employee.py); atlyginimas<=0 PRIVALO atmesti abu (0 IR neigiamą), ne tik neigiamą.
+@pytest.mark.parametrize("field,value", [
+    ("atlyginimas", 0),
+    ("atlyginimas", -100),
+    ("slaptazodis", "abc"),       # trumpiau nei 8 simboliai
+])
+def test_employee_create_rejects_invalid_field(client, auth_headers, field, value):
+    data = {**VALID_EMPLOYEE, "el_pastas": f"{uuid.uuid4().hex[:6]}@test.lt", field: value}
     resp = client.post("/api/v1/employees/", json=data, headers=auth_headers)
     assert resp.status_code == 422
 
 
 # ================================================================
-# Užsakymo validacija
+# Užsakymo validacija - ATSKIRA sekcija, nes OrderBase (skirtingai nei Car/Client/Employee aukščiau, kurie tikrina VIENĄ lauką atskirai) naudoja IR model_validator - "grazinimo_data < nuomos_data" lygina DU laukus TARPUSAVYJE, ne vieną izoliuotai (žr. schemas/order.py validate_dates).
 # ================================================================
 
-def test_order_invalid_busena(client, auth_headers):
-    data = {
-        "kliento_id": 1, "automobilio_id": 1, "darbuotojo_id": 1,
-        "nuomos_data": "2025-01-01", "grazinimo_data": "2025-01-05",
-        "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
-        "bendra_kaina": 100.0, "uzsakymo_busena": "neteisinga",
-        "turi_papildomas_paslaugas": False,
-    }
-    resp = client.post("/api/v1/orders/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_order_grazinimo_before_nuomos(client, auth_headers):
-    data = {
-        "kliento_id": 1, "automobilio_id": 1, "darbuotojo_id": 1,
-        "nuomos_data": "2025-01-10", "grazinimo_data": "2025-01-05",
-        "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
-        "bendra_kaina": 100.0, "uzsakymo_busena": "laukiama",
-        "turi_papildomas_paslaugas": False,
-    }
+# kliento_id/automobilio_id/darbuotojo_id=1 ČIA nereikia egzistuoti realiai DB - validacija (field_validator/model_validator) vyksta PRIEŠ pasiekiant DB, tad neteisinga reikšmė atmetama anksčiau, nei kas tikrina FK.
+@pytest.mark.parametrize("overrides", [
+    {"uzsakymo_busena": "neteisinga"},                                    # ne VALID_BUSENA
+    {"nuomos_data": "2025-01-10", "grazinimo_data": "2025-01-05"},        # pabaiga ANKSTESNĖ nei pradžia
+])
+def test_order_create_rejects_invalid_field(client, auth_headers, overrides):
+    data = {**VALID_ORDER, **overrides}
     resp = client.post("/api/v1/orders/", json=data, headers=auth_headers)
     assert resp.status_code == 422
 
 
 # ================================================================
-# Rezervacijos validacija
+# Rezervacijos validacija - ATSKIRA sekcija nuo Užsakymo aukščiau, nes nors ŠI esybė naudoja TĄ PATĮ model_validator raštą (datos palyginimas), ReservationBase yra VISIŠKAI KITA Pydantic klasė (schemas/reservation.py, ne order.py) - skirtinga DB lentelė (Rezervavimas, ne Uzsakymai), tad patikra turi būti pakartota ATSKIRAI, ne tikima, kad viena apima kitą.
 # ================================================================
 
-def test_reservation_invalid_busena(client, auth_headers):
-    data = {
-        "kliento_id": 1, "automobilio_id": 1,
-        "rezervacijos_pradzia": "2025-06-01",
-        "rezervacijos_pabaiga": "2025-06-05",
-        "busena": "neteisinga",
-    }
-    resp = client.post("/api/v1/reservations/", json=data, headers=auth_headers)
-    assert resp.status_code == 422
-
-
-def test_reservation_end_before_start(client, auth_headers):
-    data = {
-        "kliento_id": 1, "automobilio_id": 1,
-        "rezervacijos_pradzia": "2025-06-10",
-        "rezervacijos_pabaiga": "2025-06-05",
-        "busena": "laukia",
-    }
+# Tas pats FK principas kaip Užsakymo aukščiau - kliento_id/automobilio_id=1 nereikia egzistuoti realiai DB, nes validacija vyksta PRIEŠ pasiekiant DB.
+@pytest.mark.parametrize("overrides", [
+    {"busena": "neteisinga"},                                             # ne VALID_BUSENA
+    {"rezervacijos_pradzia": "2025-06-10", "rezervacijos_pabaiga": "2025-06-05"},  # pabaiga ANKSTESNĖ nei pradžia
+])
+def test_reservation_create_rejects_invalid_field(client, auth_headers, overrides):
+    data = {**VALID_RESERVATION, **overrides}
     resp = client.post("/api/v1/reservations/", json=data, headers=auth_headers)
     assert resp.status_code == 422

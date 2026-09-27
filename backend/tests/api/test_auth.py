@@ -1,4 +1,5 @@
 import pytest
+from uuid import uuid4
 from fastapi.testclient import TestClient
 
 TEST_USER = {
@@ -15,30 +16,11 @@ TEST_USER = {
 
 @pytest.fixture(scope="module")
 def create_test_user(client: TestClient, auth_headers):
-    resp = client.post("/api/v1/register", json=TEST_USER, headers=auth_headers)
-    assert resp.status_code in (200, 400)
+    # Darbuotojo paskyra sukuriama VIENINTELIU būdu - per /employees/ (createEmployee), kuriam reikia ADMIN teisės lygiai taip pat, kaip ir pačiam endpoint'ui.
+    resp = client.post("/api/v1/employees/", json=TEST_USER, headers=auth_headers)
+    # 409 TOLERUOJAMAS - jei šis el. paštas JAU užregistruotas (pvz. iš ankstesnio testo paleidimo), tai NE klaida, tiesiog paskyra jau yra ir ja saugu naudotis toliau.
+    assert resp.status_code in (200, 409)
     yield
-
-
-def test_register_requires_admin(client):
-    """Registracija be prisijungimo turi būti uždrausta - žr. auth.py `/register`."""
-    resp = client.post("/api/v1/register", json=TEST_USER)
-    assert resp.status_code == 401
-
-
-def test_register_new_user(client, auth_headers):
-    data = TEST_USER.copy()
-    import time
-    unique_email = f"unikalus_{int(time.time())}@viko.lt"
-    data["el_pastas"] = unique_email
-    resp = client.post("/api/v1/register", json=data, headers=auth_headers)
-    assert resp.status_code == 200
-
-
-def test_register_duplicate_user(client, auth_headers, create_test_user):
-    resp = client.post("/api/v1/register", json=TEST_USER, headers=auth_headers)
-    assert resp.status_code == 400
-    assert resp.json()["detail"] == "Employee with this email already exists"
 
 
 def test_login_success(client, create_test_user):
@@ -58,7 +40,7 @@ def test_login_wrong_password(client):
         "slaptazodis": "netinkamasSlaptazodis"
     })
     assert resp.status_code == 401
-    assert resp.json()["detail"] == "Invalid login credentials"
+    assert resp.json()["detail"] == "Neteisingas el. paštas arba slaptažodis"
 
 
 def test_login_nonexistent_user(client):
@@ -67,11 +49,11 @@ def test_login_nonexistent_user(client):
         "slaptazodis": "betkas"
     })
     assert resp.status_code == 401
-    assert resp.json()["detail"] == "Invalid login credentials"
+    assert resp.json()["detail"] == "Neteisingas el. paštas arba slaptažodis"
 
 
 def test_me_endpoint_success(client, create_test_user):
-    # Pirma prisijungiame
+    # Standartinis 2 žingsnių modelis, kartojamas visame šiame faile - PIRMA prisijungiame ir pasiimame tokeną, TADA jį naudojame kaip "Authorization" antraštę kitam kreipiniui.
     resp = client.post("/api/v1/login", json={
         "el_pastas": TEST_USER["el_pastas"],
         "slaptazodis": TEST_USER["slaptazodis"]
@@ -86,7 +68,7 @@ def test_me_endpoint_success(client, create_test_user):
 
 def test_me_endpoint_unauthorized(client):
     resp = client.get("/api/v1/me")
-    assert resp.status_code == 403 or resp.status_code == 401
+    assert resp.status_code == 401
 
 
 def test_change_password_success(client, create_test_user):
@@ -105,6 +87,7 @@ def test_change_password_success(client, create_test_user):
     assert resp.status_code == 200
     assert resp.json()["message"] == "Password updated successfully"
 
+    # Prisijungiama IŠ NAUJO su NAUJU slaptažodžiu - šis žingsnis patikrina, kad hash'as DB REALIAI pasikeitė, ne tik kad endpoint'as grąžino 200 (kuris pats savaime neparodo, ar DB įrašas iš tiesų atsinaujino).
     resp = client.post("/api/v1/login", json={
         "el_pastas": TEST_USER["el_pastas"],
         "slaptazodis": new_pw
@@ -112,10 +95,12 @@ def test_change_password_success(client, create_test_user):
     assert resp.status_code == 200
     assert "access_token" in resp.json()
 
+    # Slaptažodis atstatomas atgal į ORIGINALŲ - jei šis žingsnis tyliai nepavyktų, TEST_USER["slaptazodis"] nebeatitiktų tikro DB slaptažodžio ir KITI šio modulio testai (create_test_user vartotojai) sulūžtų neaiškiai, tad patikrinama aiškiai.
     resp = client.post("/api/v1/change-password", json={
         "senas_slaptazodis": new_pw,
         "naujas_slaptazodis": TEST_USER["slaptazodis"]
     }, headers={"Authorization": f"Bearer {resp.json()['access_token']}"})
+    assert resp.status_code == 200, resp.text
 
 
 def test_change_password_wrong_old_pw(client, create_test_user):
@@ -131,10 +116,36 @@ def test_change_password_wrong_old_pw(client, create_test_user):
         "naujas_slaptazodis": "NaujasSlaptazodis456!"
     }, headers=headers)
     assert resp.status_code == 400
-    assert resp.json()["detail"] == "Wrong current password"
+    assert resp.json()["detail"] == "Neteisingas dabartinis slaptažodis"
 
 
+# JWT YRA BE SERVERIO BŪSENOS - "logout" NEGALI realiai "atšaukti" tokeno DB pusėje (jis tiesiog liktų galiojantis, kol pasibaigs jo laikas); šis endpoint'as tik grąžina patvirtinimą, kad FRONTEND'AS ištrintų tokeną iš SAVO atminties - serveris pats jo neseka ir negali "pamiršti".
 def test_logout(client):
     resp = client.post("/api/v1/logout")
     assert resp.status_code == 200
     assert resp.json()["message"] == "Successfully logged out"
+
+
+def test_customer_token_rejected_by_staff_endpoint(client):
+    resp = client.post("/api/v1/customer/register", json={
+        "vardas": "Klientas", "pavarde": "Testas",
+        "el_pastas": f"depstest{uuid4().hex[:8]}@example.com",
+        "telefono_nr": "+37061234567", "gimimo_data": "1995-01-01",
+        "slaptazodis": "Testinis123!",
+    })
+    customer_token = resp.json()["access_token"]
+
+    # Kliento tokenas turi tiksliai tuos pačius "sub"/parašą kaip darbuotojo, bet KITĄ "type" - get_current_user tai turi atmesti, net jei el. paštas sutaptų.
+    resp2 = client.get("/api/v1/me", headers={"Authorization": f"Bearer {customer_token}"})
+    assert resp2.status_code == 401
+
+
+def test_staff_token_rejected_by_customer_endpoint(client, create_test_user):
+    resp = client.post("/api/v1/login", json={
+        "el_pastas": TEST_USER["el_pastas"],
+        "slaptazodis": TEST_USER["slaptazodis"],
+    })
+    staff_token = resp.json()["access_token"]
+
+    resp2 = client.get("/api/v1/customer/me", headers={"Authorization": f"Bearer {staff_token}"})
+    assert resp2.status_code == 401
