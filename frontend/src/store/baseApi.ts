@@ -6,7 +6,7 @@ export const baseApi = createApi({
   keepUnusedDataFor: 300,
 
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000',
     credentials: 'include',
 
     prepareHeaders: (headers, { getState }) => {

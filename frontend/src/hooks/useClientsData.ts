@@ -1,18 +1,16 @@
 import { useState, useMemo } from "react";
 import {
   ClientOut,
+  ClientCreate,
   ClientUpdate,
-  carRentalApi,
   useGetAllClientsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
 } from "@/store/carRentalApi";
-import { useAppDispatch } from "@/store/hooks";
 import { FieldConfig } from "@/app/components/modals/EntityModal";
 
 export function useClientsData() {
-  const dispatch = useAppDispatch();
   const { data: clients = [], isLoading, refetch } = useGetAllClientsQuery();
   const [createClientMutation, { isLoading: creating }] = useCreateClientMutation();
   const [updateClient, { isLoading: saving }] = useUpdateClientMutation();
@@ -43,44 +41,10 @@ export function useClientsData() {
       format: (value) =>
         value ? new Date(String(value)).toLocaleDateString("lt-LT") : "—",
     },
-    { name: "bonus_taskai", label: "Bonus taškai", type: "number", required: true },
   ];
 
-  function randomizeClient(): Partial<ClientOut> {
-    const vardai = ["Jonas", "Petras", "Tomas", "Lukas", "Mantas", "Dovydas", "Laurynas", "Rokas",
-                    "Laura", "Eglė", "Rūta", "Ingrida", "Viktorija", "Monika", "Simona", "Greta"];
-    const pavardes = ["Kazlauskas", "Petraitis", "Jonaitis", "Stankevičius", "Butkus",
-                      "Paulauskas", "Jankauskas", "Girdzijauskas", "Černiauskas", "Mickus"];
-    const domainai = ["gmail.com", "yahoo.com", "outlook.com", "inbox.lt", "one.lt"];
-    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-    const vardas = pick(vardai);
-    const pavarde = pick(pavardes);
-    const el_pastas = `${vardas.toLowerCase()}.${pavarde.toLowerCase()}${randInt(1, 99)}@${pick(domainai)}`;
-
-    const phonePrefix = pick(["+37060", "+37061", "+37062", "+37065", "+37069"]);
-    const telefono_nr = `${phonePrefix}${randInt(100000, 999999)}`;
-
-    const now = new Date();
-    const birthYear = now.getFullYear() - randInt(18, 65);
-    const gimimo_data = `${birthYear}-${String(randInt(1, 12)).padStart(2, "0")}-${String(randInt(1, 28)).padStart(2, "0")}`;
-    const regYear = now.getFullYear() - randInt(0, 3);
-    const registracijos_data = `${regYear}-${String(randInt(1, 12)).padStart(2, "0")}-${String(randInt(1, 28)).padStart(2, "0")}`;
-
-    return {
-      vardas,
-      pavarde,
-      el_pastas,
-      telefono_nr,
-      gimimo_data,
-      registracijos_data,
-      bonus_taskai: randInt(0, 500),
-    };
-  }
-
   const createClient = async (data: Partial<ClientOut>) => {
-    await createClientMutation({ clientCreate: data as ClientUpdate }).unwrap();
+    await createClientMutation({ clientCreate: data as ClientCreate }).unwrap();
     await refetch();
   };
 
@@ -89,25 +53,19 @@ export function useClientsData() {
     await refetch();
   };
 
-  const removeClient = async (id: number) => {
+  // Grąžina true, jei klientas buvo ANONIMIZUOTAS (ne pilnai ištrintas) - tai įvyksta, kai
+  // jis susietas su užsakymu/rezervacija ir backend'as pats automatiškai pasirinko šį kelią
+  // (žr. app/api/v1/endpoints/client.py delete_client) - čia tik informuojame darbuotoją.
+  const removeClient = async (id: number): Promise<boolean> => {
     try {
-      await deleteClient({ klientoId: id }).unwrap();
+      const result = (await deleteClient({ klientoId: id }).unwrap()) as { anonymized?: boolean };
       await refetch();
-    } catch {
-      let message =
-        "Šio kliento ištrinti negalima, nes jis susietas su užsakymais ar kitais įrašais.";
-      try {
-        const orders = await dispatch(
-          carRentalApi.endpoints.getClientOrder.initiate({ klientoId: id })
-        ).unwrap();
-        if (orders.length > 0) {
-          const ids = orders.map((o) => `#${o.uzsakymo_id}`).join(", ");
-          message = `Šio kliento ištrinti negalima – jis susietas su užsakymu(-ais): ${ids}. Pirmiausia ištrinkite arba pakeiskite šiuos užsakymus, tada galėsite ištrinti klientą.`;
-        }
-      } catch {
-        // nepavyko gauti užsakymų sąrašo – paliekam bendrą pranešimą
-      }
-      throw new Error(message);
+      return Boolean(result?.anonymized);
+    } catch (err) {
+      const detail = (err as { data?: { detail?: unknown } })?.data?.detail;
+      throw new Error(
+        typeof detail === "string" ? detail : "Nepavyko ištrinti kliento."
+      );
     }
   };
 
@@ -118,7 +76,6 @@ export function useClientsData() {
     search,
     setSearch,
     clientFields,
-    randomizeClient,
     createClient,
     saveClient,
     removeClient,

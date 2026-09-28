@@ -1,12 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { baseApi as api } from "./baseApi";
 const injectedRtkApi = api.injectEndpoints({
   endpoints: (build) => ({
+    githubLoginApiV1GithubLoginGet: build.query<
+      GithubLoginApiV1GithubLoginGetApiResponse,
+      GithubLoginApiV1GithubLoginGetApiArg
+    >({
+      query: () => ({ url: `/api/v1/github/login` }),
+    }),
+    githubCallbackApiV1GithubCallbackGet: build.query<
+      GithubCallbackApiV1GithubCallbackGetApiResponse,
+      GithubCallbackApiV1GithubCallbackGetApiArg
+    >({
+      query: () => ({ url: `/api/v1/github/callback` }),
+    }),
     googleLoginApiV1GoogleLoginGet: build.query<
       GoogleLoginApiV1GoogleLoginGetApiResponse,
       GoogleLoginApiV1GoogleLoginGetApiArg
     >({
       query: () => ({ url: `/api/v1/google/login` }),
+    }),
+    customerGoogleLoginApiV1CustomerGoogleLoginGet: build.query<
+      CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiResponse,
+      CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiArg
+    >({
+      query: () => ({ url: `/api/v1/customer/google/login` }),
     }),
     googleCallbackApiV1GoogleCallbackGet: build.query<
       GoogleCallbackApiV1GoogleCallbackGetApiResponse,
@@ -19,13 +36,6 @@ const injectedRtkApi = api.injectEndpoints({
         url: `/api/v1/login`,
         method: "POST",
         body: queryArg.loginRequest,
-      }),
-    }),
-    register: build.mutation<RegisterApiResponse, RegisterApiArg>({
-      query: (queryArg) => ({
-        url: `/api/v1/register`,
-        method: "POST",
-        body: queryArg.registerRequest,
       }),
     }),
     logout: build.mutation<LogoutApiResponse, LogoutApiArg>({
@@ -67,11 +77,6 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.employeeCreate,
       }),
     }),
-    getEmployee: build.query<GetEmployeeApiResponse, GetEmployeeApiArg>({
-      query: (queryArg) => ({
-        url: `/api/v1/employees/${queryArg.employeeId}`,
-      }),
-    }),
     updateEmployee: build.mutation<
       UpdateEmployeeApiResponse,
       UpdateEmployeeApiArg
@@ -94,32 +99,12 @@ const injectedRtkApi = api.injectEndpoints({
     getAllCars: build.query<GetAllCarsApiResponse, GetAllCarsApiArg>({
       query: () => ({ url: `/api/v1/cars/` }),
     }),
-    getLocations: build.query<{ vietos_id: number; pavadinimas: string; adresas: string; miestas: string }[], void>({
-      query: () => ({ url: `/api/v1/cars/locations/all` }),
-    }),
     createCar: build.mutation<CreateCarApiResponse, CreateCarApiArg>({
       query: (queryArg) => ({
         url: `/api/v1/cars/`,
         method: "POST",
         body: queryArg.carCreate,
       }),
-    }),
-    searchCars: build.query<SearchCarsApiResponse, SearchCarsApiArg>({
-      query: (queryArg) => ({
-        url: `/api/v1/cars/search`,
-        params: {
-          marke: queryArg.marke,
-          modelis: queryArg.modelis,
-          spalva: queryArg.spalva,
-          status: queryArg.status,
-          kuro_tipas: queryArg.kuroTipas,
-          metai: queryArg.metai,
-          sedimos_vietos: queryArg.sedimosVietos,
-        },
-      }),
-    }),
-    getCarById: build.query<GetCarByIdApiResponse, GetCarByIdApiArg>({
-      query: (queryArg) => ({ url: `/api/v1/cars/${queryArg.carId}` }),
     }),
     updateCar: build.mutation<UpdateCarApiResponse, UpdateCarApiArg>({
       query: (queryArg) => ({
@@ -134,15 +119,8 @@ const injectedRtkApi = api.injectEndpoints({
         method: "DELETE",
       }),
     }),
-    updateCarStatus: build.mutation<
-      UpdateCarStatusApiResponse,
-      UpdateCarStatusApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/api/v1/cars/${queryArg.carId}/status`,
-        method: "PATCH",
-        body: queryArg.carStatusUpdate,
-      }),
+    getLocations: build.query<GetLocationsApiResponse, GetLocationsApiArg>({
+      query: () => ({ url: `/api/v1/cars/locations/all` }),
     }),
     getLatestReservations: build.query<
       GetLatestReservationsApiResponse,
@@ -190,29 +168,6 @@ const injectedRtkApi = api.injectEndpoints({
         method: "DELETE",
       }),
     }),
-    getReservationById: build.query<
-      GetReservationByIdApiResponse,
-      GetReservationByIdApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/api/v1/reservations/${queryArg.rezervacijosId}`,
-      }),
-    }),
-    searchReservations: build.query<
-      SearchReservationsApiResponse,
-      SearchReservationsApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/api/v1/reservations/search`,
-        params: {
-          kliento_id: queryArg.klientoId,
-          automobilio_id: queryArg.automobilioId,
-          nuo: queryArg.nuo,
-          iki: queryArg.iki,
-          busena: queryArg.busena,
-        },
-      }),
-    }),
     getAllOrders: build.query<GetAllOrdersApiResponse, GetAllOrdersApiArg>({
       query: () => ({ url: `/api/v1/orders/` }),
     }),
@@ -222,9 +177,6 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
         body: queryArg.orderCreate,
       }),
-    }),
-    getOrderById: build.query<GetOrderByIdApiResponse, GetOrderByIdApiArg>({
-      query: (queryArg) => ({ url: `/api/v1/orders/${queryArg.uzsakymoId}` }),
     }),
     deleteOrder: build.mutation<DeleteOrderApiResponse, DeleteOrderApiArg>({
       query: (queryArg) => ({
@@ -239,20 +191,6 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.orderUpdate,
       }),
     }),
-    getOrderStatsByStatus: build.query<
-      GetOrderStatsByStatusApiResponse,
-      GetOrderStatsByStatusApiArg
-    >({
-      query: () => ({ url: `/api/v1/orders/stats/by-status` }),
-    }),
-    getOrderByClient: build.query<
-      GetOrderByClientApiResponse,
-      GetOrderByClientApiArg
-    >({
-      query: (queryArg) => ({
-        url: `/api/v1/orders/by-client/${queryArg.klientoId}`,
-      }),
-    }),
     getAllClients: build.query<GetAllClientsApiResponse, GetAllClientsApiArg>({
       query: () => ({ url: `/api/v1/clients/` }),
     }),
@@ -262,9 +200,6 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
         body: queryArg.clientCreate,
       }),
-    }),
-    getClientById: build.query<GetClientByIdApiResponse, GetClientByIdApiArg>({
-      query: (queryArg) => ({ url: `/api/v1/clients/${queryArg.klientoId}` }),
     }),
     updateClient: build.mutation<UpdateClientApiResponse, UpdateClientApiArg>({
       query: (queryArg) => ({
@@ -287,39 +222,79 @@ const injectedRtkApi = api.injectEndpoints({
         url: `/api/v1/clients/${queryArg.klientoId}/orders`,
       }),
     }),
-    getAllSupports: build.query<
-      GetAllSupportsApiResponse,
-      GetAllSupportsApiArg
-    >({
-      query: () => ({ url: `/api/v1/support/` }),
-    }),
-    createSupport: build.mutation<
-      CreateSupportApiResponse,
-      CreateSupportApiArg
+    getStaffConversations: build.query<
+      GetStaffConversationsApiResponse,
+      GetStaffConversationsApiArg
     >({
       query: (queryArg) => ({
-        url: `/api/v1/support/`,
-        method: "POST",
-        body: queryArg.clientSupportCreate,
+        url: `/api/v1/support/conversations`,
+        params: {
+          filter: queryArg.filter,
+        },
       }),
     }),
-    getUnansweredSupports: build.query<
-      GetUnansweredSupportsApiResponse,
-      GetUnansweredSupportsApiArg
-    >({
-      query: () => ({ url: `/api/v1/support/unanswered` }),
-    }),
-    getSupport: build.query<GetSupportApiResponse, GetSupportApiArg>({
-      query: (queryArg) => ({ url: `/api/v1/support/${queryArg.uzklausosId}` }),
-    }),
-    answerToSupport: build.mutation<
-      AnswerToSupportApiResponse,
-      AnswerToSupportApiArg
+    getStaffConversation: build.query<
+      GetStaffConversationApiResponse,
+      GetStaffConversationApiArg
     >({
       query: (queryArg) => ({
-        url: `/api/v1/support/${queryArg.uzklausosId}`,
-        method: "PATCH",
-        body: queryArg.clientSupportUpdate,
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}`,
+      }),
+    }),
+    claimStaffConversation: build.mutation<
+      ClaimStaffConversationApiResponse,
+      ClaimStaffConversationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/claim`,
+        method: "POST",
+      }),
+    }),
+    reassignStaffConversation: build.mutation<
+      ReassignStaffConversationApiResponse,
+      ReassignStaffConversationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/reassign`,
+        method: "POST",
+        body: queryArg.reassignRequest,
+      }),
+    }),
+    addStaffMessage: build.mutation<
+      AddStaffMessageApiResponse,
+      AddStaffMessageApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/messages`,
+        method: "POST",
+        body: queryArg.staffMessageCreate,
+      }),
+    }),
+    addStaffNote: build.mutation<AddStaffNoteApiResponse, AddStaffNoteApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/notes`,
+        method: "POST",
+        body: queryArg.noteCreate,
+      }),
+    }),
+    resolveStaffConversation: build.mutation<
+      ResolveStaffConversationApiResponse,
+      ResolveStaffConversationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/resolve`,
+        method: "POST",
+        body: queryArg.resolveRequest,
+      }),
+    }),
+    markStaffConversationSeen: build.mutation<
+      MarkStaffConversationSeenApiResponse,
+      MarkStaffConversationSeenApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/seen`,
+        method: "POST",
+        body: queryArg.seenRequest,
       }),
     }),
     getAllInvoices: build.query<
@@ -347,19 +322,6 @@ const injectedRtkApi = api.injectEndpoints({
         method: "DELETE",
       }),
     }),
-    getInvoiceById: build.query<
-      GetInvoiceByIdApiResponse,
-      GetInvoiceByIdApiArg
-    >({
-      query: (queryArg) => ({ url: `/api/v1/invoices/${queryArg.invoiceId}` }),
-    }),
-    updateStatus: build.mutation<UpdateStatusApiResponse, UpdateStatusApiArg>({
-      query: (queryArg) => ({
-        url: `/api/v1/invoices/${queryArg.invoiceId}/status`,
-        method: "PATCH",
-        body: queryArg.invoiceStatusUpdate,
-      }),
-    }),
     geoCode: build.mutation<GeoCodeApiResponse, GeoCodeApiArg>({
       query: (queryArg) => ({
         url: `/api/v1/geocode`,
@@ -367,13 +329,165 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.geocodeRequest,
       }),
     }),
+    getPublicCars: build.query<GetPublicCarsApiResponse, GetPublicCarsApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/public/cars`,
+        params: {
+          marke: queryArg.marke,
+          kebulo_tipas: queryArg.kebuloTipas,
+          kuro_tipas: queryArg.kuroTipas,
+          pavaru_deze: queryArg.pavaruDeze,
+          min_kaina: queryArg.minKaina,
+          max_kaina: queryArg.maxKaina,
+          sedimos_vietos: queryArg.sedimosVietos,
+          vietos_id: queryArg.vietosId,
+          only_available: queryArg.onlyAvailable,
+          date_from: queryArg.dateFrom,
+          date_to: queryArg.dateTo,
+        },
+      }),
+    }),
+    getPublicCar: build.query<GetPublicCarApiResponse, GetPublicCarApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/public/cars/${queryArg.automobilioId}`,
+        params: {
+          date_from: queryArg.dateFrom,
+          date_to: queryArg.dateTo,
+        },
+      }),
+    }),
+    getPublicCarBusyDates: build.query<
+      GetPublicCarBusyDatesApiResponse,
+      GetPublicCarBusyDatesApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/public/cars/${queryArg.automobilioId}/busy-dates`,
+      }),
+    }),
+    customerRegister: build.mutation<
+      CustomerRegisterApiResponse,
+      CustomerRegisterApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/register`,
+        method: "POST",
+        body: queryArg.customerRegisterRequest,
+      }),
+    }),
+    customerLogin: build.mutation<
+      CustomerLoginApiResponse,
+      CustomerLoginApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/login`,
+        method: "POST",
+        body: queryArg.customerLoginRequest,
+      }),
+    }),
+    customerMe: build.query<CustomerMeApiResponse, CustomerMeApiArg>({
+      query: () => ({ url: `/api/v1/customer/me` }),
+    }),
+    updateCustomerProfile: build.mutation<
+      UpdateCustomerProfileApiResponse,
+      UpdateCustomerProfileApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/profile`,
+        method: "PATCH",
+        body: queryArg.customerProfileUpdate,
+      }),
+    }),
+    getCustomerReservations: build.query<
+      GetCustomerReservationsApiResponse,
+      GetCustomerReservationsApiArg
+    >({
+      query: () => ({ url: `/api/v1/customer/reservations` }),
+    }),
+    createCustomerReservation: build.mutation<
+      CreateCustomerReservationApiResponse,
+      CreateCustomerReservationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/reservations`,
+        method: "POST",
+        body: queryArg.customerReservationCreate,
+      }),
+    }),
+    getCustomerLoyaltyStatus: build.query<
+      GetCustomerLoyaltyStatusApiResponse,
+      GetCustomerLoyaltyStatusApiArg
+    >({
+      query: () => ({ url: `/api/v1/customer/loyalty` }),
+    }),
+    redeemCustomerLoyaltyReward: build.mutation<
+      RedeemCustomerLoyaltyRewardApiResponse,
+      RedeemCustomerLoyaltyRewardApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/loyalty/rewards/${queryArg.atlygioId}/redeem`,
+        method: "POST",
+      }),
+    }),
+    getCustomerConversations: build.query<
+      GetCustomerConversationsApiResponse,
+      GetCustomerConversationsApiArg
+    >({
+      query: () => ({ url: `/api/v1/customer/support/conversations` }),
+    }),
+    createCustomerConversation: build.mutation<
+      CreateCustomerConversationApiResponse,
+      CreateCustomerConversationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/support/conversations`,
+        method: "POST",
+        body: queryArg.conversationCreate,
+      }),
+    }),
+    getCustomerConversation: build.query<
+      GetCustomerConversationApiResponse,
+      GetCustomerConversationApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/support/conversations/${queryArg.pokalbioId}`,
+      }),
+    }),
+    addCustomerMessage: build.mutation<
+      AddCustomerMessageApiResponse,
+      AddCustomerMessageApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/support/conversations/${queryArg.pokalbioId}/messages`,
+        method: "POST",
+        body: queryArg.messageCreate,
+      }),
+    }),
+    markCustomerConversationSeen: build.mutation<
+      MarkCustomerConversationSeenApiResponse,
+      MarkCustomerConversationSeenApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/customer/support/conversations/${queryArg.pokalbioId}/seen`,
+        method: "POST",
+        body: queryArg.seenRequest,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
 export { injectedRtkApi as carRentalApi };
+export type GithubLoginApiV1GithubLoginGetApiResponse =
+  /** status 200 Successful Response */ any;
+export type GithubLoginApiV1GithubLoginGetApiArg = void;
+export type GithubCallbackApiV1GithubCallbackGetApiResponse =
+  /** status 200 Successful Response */ any;
+export type GithubCallbackApiV1GithubCallbackGetApiArg = void;
 export type GoogleLoginApiV1GoogleLoginGetApiResponse =
   /** status 200 Successful Response */ any;
 export type GoogleLoginApiV1GoogleLoginGetApiArg = void;
+export type CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiResponse =
+  /** status 200 Successful Response */ any;
+export type CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiArg = void;
 export type GoogleCallbackApiV1GoogleCallbackGetApiResponse =
   /** status 200 Successful Response */ any;
 export type GoogleCallbackApiV1GoogleCallbackGetApiArg = void;
@@ -381,10 +495,6 @@ export type LoginApiResponse =
   /** status 200 Successful Response */ TokenResponse;
 export type LoginApiArg = {
   loginRequest: LoginRequest;
-};
-export type RegisterApiResponse = /** status 200 Successful Response */ any;
-export type RegisterApiArg = {
-  registerRequest: RegisterRequest;
 };
 export type LogoutApiResponse = /** status 200 Successful Response */ any;
 export type LogoutApiArg = void;
@@ -409,11 +519,6 @@ export type CreateEmployeeApiResponse =
 export type CreateEmployeeApiArg = {
   employeeCreate: EmployeeCreate;
 };
-export type GetEmployeeApiResponse =
-  /** status 200 Successful Response */ EmployeeOut;
-export type GetEmployeeApiArg = {
-  employeeId: number;
-};
 export type UpdateEmployeeApiResponse =
   /** status 200 Successful Response */ EmployeeOut;
 export type UpdateEmployeeApiArg = {
@@ -432,22 +537,6 @@ export type CreateCarApiResponse = /** status 200 Successful Response */ CarOut;
 export type CreateCarApiArg = {
   carCreate: CarCreate;
 };
-export type SearchCarsApiResponse =
-  /** status 200 Successful Response */ CarOut[];
-export type SearchCarsApiArg = {
-  marke?: string | null;
-  modelis?: string | null;
-  spalva?: string | null;
-  status?: string | null;
-  kuroTipas?: string | null;
-  metai?: number | null;
-  sedimosVietos?: number | null;
-};
-export type GetCarByIdApiResponse =
-  /** status 200 Successful Response */ CarOut;
-export type GetCarByIdApiArg = {
-  carId: number;
-};
 export type UpdateCarApiResponse = /** status 200 Successful Response */ CarOut;
 export type UpdateCarApiArg = {
   carId: number;
@@ -457,12 +546,9 @@ export type DeleteCarApiResponse = /** status 200 Successful Response */ any;
 export type DeleteCarApiArg = {
   carId: number;
 };
-export type UpdateCarStatusApiResponse =
-  /** status 200 Successful Response */ CarOut;
-export type UpdateCarStatusApiArg = {
-  carId: number;
-  carStatusUpdate: CarStatusUpdate;
-};
+export type GetLocationsApiResponse =
+  /** status 200 Successful Response */ LocationOut[];
+export type GetLocationsApiArg = void;
 export type GetLatestReservationsApiResponse =
   /** status 200 Successful Response */ ReservationSummary[];
 export type GetLatestReservationsApiArg = {
@@ -487,20 +573,6 @@ export type DeleteReservationApiResponse =
 export type DeleteReservationApiArg = {
   rezervacijosId: number;
 };
-export type GetReservationByIdApiResponse =
-  /** status 200 Successful Response */ ReservationOut;
-export type GetReservationByIdApiArg = {
-  rezervacijosId: number;
-};
-export type SearchReservationsApiResponse =
-  /** status 200 Successful Response */ ReservationOut[];
-export type SearchReservationsApiArg = {
-  klientoId?: number | null;
-  automobilioId?: number | null;
-  nuo?: string | null;
-  iki?: string | null;
-  busena?: string | null;
-};
 export type GetAllOrdersApiResponse =
   /** status 200 Successful Response */ OrderOut[];
 export type GetAllOrdersApiArg = void;
@@ -508,11 +580,6 @@ export type CreateOrderApiResponse =
   /** status 200 Successful Response */ OrderOut;
 export type CreateOrderApiArg = {
   orderCreate: OrderCreate;
-};
-export type GetOrderByIdApiResponse =
-  /** status 200 Successful Response */ OrderOut;
-export type GetOrderByIdApiArg = {
-  uzsakymoId: number;
 };
 export type DeleteOrderApiResponse = /** status 200 Successful Response */ any;
 export type DeleteOrderApiArg = {
@@ -524,14 +591,6 @@ export type UpdateOrderApiArg = {
   uzsakymoId: number;
   orderUpdate: OrderUpdate;
 };
-export type GetOrderStatsByStatusApiResponse =
-  /** status 200 Successful Response */ any;
-export type GetOrderStatsByStatusApiArg = void;
-export type GetOrderByClientApiResponse =
-  /** status 200 Successful Response */ OrderOut[];
-export type GetOrderByClientApiArg = {
-  klientoId: number;
-};
 export type GetAllClientsApiResponse =
   /** status 200 Successful Response */ ClientOut[];
 export type GetAllClientsApiArg = void;
@@ -539,11 +598,6 @@ export type CreateClientApiResponse =
   /** status 200 Successful Response */ ClientOut;
 export type CreateClientApiArg = {
   clientCreate: ClientCreate;
-};
-export type GetClientByIdApiResponse =
-  /** status 200 Successful Response */ ClientOut;
-export type GetClientByIdApiArg = {
-  klientoId: number;
 };
 export type UpdateClientApiResponse =
   /** status 200 Successful Response */ ClientOut;
@@ -560,27 +614,50 @@ export type GetClientOrderApiResponse =
 export type GetClientOrderApiArg = {
   klientoId: number;
 };
-export type GetAllSupportsApiResponse =
-  /** status 200 Successful Response */ ClientSupportOut[];
-export type GetAllSupportsApiArg = void;
-export type CreateSupportApiResponse =
-  /** status 200 Successful Response */ ClientSupportOut;
-export type CreateSupportApiArg = {
-  clientSupportCreate: ClientSupportCreate;
+export type GetStaffConversationsApiResponse =
+  /** status 200 Successful Response */ StaffConversationSummaryOut[];
+export type GetStaffConversationsApiArg = {
+  filter?: string;
 };
-export type GetUnansweredSupportsApiResponse =
-  /** status 200 Successful Response */ ClientSupportOut[];
-export type GetUnansweredSupportsApiArg = void;
-export type GetSupportApiResponse =
-  /** status 200 Successful Response */ ClientSupportOut;
-export type GetSupportApiArg = {
-  uzklausosId: number;
+export type GetStaffConversationApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type GetStaffConversationApiArg = {
+  pokalbioId: number;
 };
-export type AnswerToSupportApiResponse =
-  /** status 200 Successful Response */ ClientSupportOut;
-export type AnswerToSupportApiArg = {
-  uzklausosId: number;
-  clientSupportUpdate: ClientSupportUpdate;
+export type ClaimStaffConversationApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type ClaimStaffConversationApiArg = {
+  pokalbioId: number;
+};
+export type ReassignStaffConversationApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type ReassignStaffConversationApiArg = {
+  pokalbioId: number;
+  reassignRequest: ReassignRequest;
+};
+export type AddStaffMessageApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type AddStaffMessageApiArg = {
+  pokalbioId: number;
+  staffMessageCreate: StaffMessageCreate;
+};
+export type AddStaffNoteApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type AddStaffNoteApiArg = {
+  pokalbioId: number;
+  noteCreate: NoteCreate;
+};
+export type ResolveStaffConversationApiResponse =
+  /** status 200 Successful Response */ StaffConversationDetailOut;
+export type ResolveStaffConversationApiArg = {
+  pokalbioId: number;
+  resolveRequest: ResolveRequest;
+};
+export type MarkStaffConversationSeenApiResponse =
+  /** status 200 Successful Response */ StaffConversationSummaryOut;
+export type MarkStaffConversationSeenApiArg = {
+  pokalbioId: number;
+  seenRequest: SeenRequest;
 };
 export type GetAllInvoicesApiResponse =
   /** status 200 Successful Response */ InvoiceOut[];
@@ -595,21 +672,96 @@ export type DeleteInvoiceApiResponse =
 export type DeleteInvoiceApiArg = {
   invoiceId: number;
 };
-export type GetInvoiceByIdApiResponse =
-  /** status 200 Successful Response */ InvoiceOut;
-export type GetInvoiceByIdApiArg = {
-  invoiceId: number;
-};
-export type UpdateStatusApiResponse =
-  /** status 200 Successful Response */ InvoiceOut;
-export type UpdateStatusApiArg = {
-  invoiceId: number;
-  invoiceStatusUpdate: InvoiceStatusUpdate;
-};
 export type GeoCodeApiResponse =
   /** status 200 Successful Response */ GeocodeResponse;
 export type GeoCodeApiArg = {
   geocodeRequest: GeocodeRequest;
+};
+export type GetPublicCarsApiResponse =
+  /** status 200 Successful Response */ PublicCarOut[];
+export type GetPublicCarsApiArg = {
+  marke?: string | null;
+  kebuloTipas?: string | null;
+  kuroTipas?: string | null;
+  pavaruDeze?: string | null;
+  minKaina?: number | null;
+  maxKaina?: number | null;
+  sedimosVietos?: number | null;
+  vietosId?: number | null;
+  onlyAvailable?: boolean;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+};
+export type GetPublicCarApiResponse =
+  /** status 200 Successful Response */ PublicCarOut;
+export type GetPublicCarApiArg = {
+  automobilioId: number;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+};
+export type GetPublicCarBusyDatesApiResponse =
+  /** status 200 Successful Response */ any;
+export type GetPublicCarBusyDatesApiArg = {
+  automobilioId: number;
+};
+export type CustomerRegisterApiResponse =
+  /** status 200 Successful Response */ CustomerTokenResponse;
+export type CustomerRegisterApiArg = {
+  customerRegisterRequest: CustomerRegisterRequest;
+};
+export type CustomerLoginApiResponse =
+  /** status 200 Successful Response */ CustomerTokenResponse;
+export type CustomerLoginApiArg = {
+  customerLoginRequest: CustomerLoginRequest;
+};
+export type CustomerMeApiResponse =
+  /** status 200 Successful Response */ CustomerInfo;
+export type CustomerMeApiArg = void;
+export type UpdateCustomerProfileApiResponse =
+  /** status 200 Successful Response */ CustomerProfileUpdateOut;
+export type UpdateCustomerProfileApiArg = {
+  customerProfileUpdate: CustomerProfileUpdate;
+};
+export type GetCustomerReservationsApiResponse =
+  /** status 200 Successful Response */ CustomerReservationOut[];
+export type GetCustomerReservationsApiArg = void;
+export type CreateCustomerReservationApiResponse =
+  /** status 200 Successful Response */ CustomerReservationOut;
+export type CreateCustomerReservationApiArg = {
+  customerReservationCreate: CustomerReservationCreate;
+};
+export type GetCustomerLoyaltyStatusApiResponse =
+  /** status 200 Successful Response */ LoyaltyStatusOut;
+export type GetCustomerLoyaltyStatusApiArg = void;
+export type RedeemCustomerLoyaltyRewardApiResponse =
+  /** status 200 Successful Response */ LoyaltyRewardOut;
+export type RedeemCustomerLoyaltyRewardApiArg = {
+  atlygioId: number;
+};
+export type GetCustomerConversationsApiResponse =
+  /** status 200 Successful Response */ ConversationSummaryOut[];
+export type GetCustomerConversationsApiArg = void;
+export type CreateCustomerConversationApiResponse =
+  /** status 200 Successful Response */ ConversationDetailOut;
+export type CreateCustomerConversationApiArg = {
+  conversationCreate: ConversationCreate;
+};
+export type GetCustomerConversationApiResponse =
+  /** status 200 Successful Response */ ConversationDetailOut;
+export type GetCustomerConversationApiArg = {
+  pokalbioId: number;
+};
+export type AddCustomerMessageApiResponse =
+  /** status 200 Successful Response */ ConversationDetailOut;
+export type AddCustomerMessageApiArg = {
+  pokalbioId: number;
+  messageCreate: MessageCreate;
+};
+export type MarkCustomerConversationSeenApiResponse =
+  /** status 200 Successful Response */ ConversationSummaryOut;
+export type MarkCustomerConversationSeenApiArg = {
+  pokalbioId: number;
+  seenRequest: SeenRequest;
 };
 export type TokenResponse = {
   access_token: string;
@@ -625,16 +777,6 @@ export type HttpValidationError = {
 };
 export type LoginRequest = {
   el_pastas: string;
-  slaptazodis: string;
-};
-export type RegisterRequest = {
-  vardas: string;
-  pavarde: string;
-  el_pastas: string;
-  telefono_nr: string;
-  pareigos: string;
-  atlyginimas: number;
-  isidarbinimo_data: string;
   slaptazodis: string;
 };
 export type UserInfo = {
@@ -659,7 +801,7 @@ export type EmployeeOut = {
   vardas: string;
   pavarde: string;
   el_pastas: string;
-  telefono_nr: string | null;
+  telefono_nr?: string | null;
   pareigos: string;
   atlyginimas: number;
   isidarbinimo_data: string;
@@ -672,7 +814,7 @@ export type EmployeeCreate = {
   vardas: string;
   pavarde: string;
   el_pastas: string;
-  telefono_nr: string | null;
+  telefono_nr?: string | null;
   pareigos: string;
   atlyginimas: number;
   isidarbinimo_data: string;
@@ -714,7 +856,7 @@ export type CarOut = {
   automobilio_statusas: string;
   technikines_galiojimas: string;
   dabartine_vieta_id: number;
-  pastabos: string | null;
+  pastabos?: string | null;
   automobilio_id: number;
   lokacija: LocationOut | null;
   links: {
@@ -741,7 +883,7 @@ export type CarCreate = {
   automobilio_statusas: string;
   technikines_galiojimas: string;
   dabartine_vieta_id: number;
-  pastabos: string | null;
+  pastabos?: string | null;
 };
 export type CarUpdate = {
   marke?: string | null;
@@ -764,9 +906,6 @@ export type CarUpdate = {
   technikines_galiojimas?: string | null;
   dabartine_vieta_id?: number | null;
   pastabos?: string | null;
-};
-export type CarStatusUpdate = {
-  status: string;
 };
 export type ReservationSummary = {
   rezervacijos_id: number;
@@ -842,62 +981,104 @@ export type OrderUpdate = {
   turi_papildomas_paslaugas?: boolean | null;
 };
 export type ClientOut = {
-  vardas?: string;
-  pavarde?: string;
+  vardas?: string | null;
+  pavarde?: string | null;
   el_pastas: string;
-  telefono_nr?: string;
-  gimimo_data?: string;
-  registracijos_data?: string;
-  bonus_taskai?: number;
+  telefono_nr?: string | null;
+  gimimo_data?: string | null;
+  registracijos_data?: string | null;
   kliento_id: number;
   links: {
     [key: string]: any;
   }[];
 };
 export type ClientCreate = {
-  vardas?: string;
-  pavarde?: string;
+  vardas?: string | null;
+  pavarde?: string | null;
   el_pastas: string;
-  telefono_nr?: string;
-  gimimo_data?: string;
-  registracijos_data?: string;
-  bonus_taskai?: number;
+  telefono_nr?: string | null;
+  gimimo_data?: string | null;
+  registracijos_data?: string | null;
 };
 export type ClientUpdate = {
-  vardas?: string;
-  pavarde?: string;
-  el_pastas: string;
-  telefono_nr?: string;
-  gimimo_data?: string;
-  registracijos_data?: string;
-  bonus_taskai?: number;
+  vardas?: string | null;
+  pavarde?: string | null;
+  el_pastas?: string | null;
+  telefono_nr?: string | null;
+  gimimo_data?: string | null;
+  registracijos_data?: string | null;
 };
-export type ClientSupportOut = {
-  kliento_id: number;
-  darbuotojo_id?: number | null;
+export type ReservationContext = {
+  rezervacijos_id: number;
+  marke: string;
+  modelis: string;
+  rezervacijos_pradzia: string;
+  rezervacijos_pabaiga: string;
+};
+export type StaffConversationSummaryOut = {
+  pokalbio_id: number;
   tema: string;
-  pranesimas: string;
-  atsakymas?: string | null;
-  pateikimo_data?: string | null;
-  atsakymo_data?: string | null;
-  uzklausos_id: number;
-  links: {
-    [key: string]: any;
-  }[];
+  kategorija: string;
+  busena: string;
+  sukurimo_data: string;
+  atnaujinimo_data: string;
+  paskutine_zinute?: string | null;
+  paskutine_zinute_autorius?: string | null;
+  neperskaityta?: boolean;
+  rezervacija?: ReservationContext | null;
+  sprendimo_santrauka?: string | null;
+  kliento_vardas: string;
+  darbuotojo_id?: number | null;
+  darbuotojo_vardas?: string | null;
+  reikia_atsakyti?: boolean;
 };
-export type ClientSupportCreate = {
-  kliento_id: number;
+export type MessageOut = {
+  zinutes_id: number;
+  autoriaus_tipas: string;
+  autorius_vardas?: string | null;
+  tekstas: string;
+  sukurimo_data: string;
+};
+export type NoteOut = {
+  pastabos_id: number;
+  darbuotojo_vardas: string;
+  tekstas: string;
+  sukurimo_data: string;
+};
+export type StaffConversationDetailOut = {
+  pokalbio_id: number;
+  tema: string;
+  kategorija: string;
+  busena: string;
+  sukurimo_data: string;
+  atnaujinimo_data: string;
+  paskutine_zinute?: string | null;
+  paskutine_zinute_autorius?: string | null;
+  neperskaityta?: boolean;
+  rezervacija?: ReservationContext | null;
+  sprendimo_santrauka?: string | null;
+  kliento_vardas: string;
+  darbuotojo_id?: number | null;
+  darbuotojo_vardas?: string | null;
+  reikia_atsakyti?: boolean;
+  zinutes: MessageOut[];
+  pastabos: NoteOut[];
+};
+export type ReassignRequest = {
   darbuotojo_id: number;
-  tema: string;
-  pranesimas: string;
-  atsakymas?: string | null;
-  pateikimo_data?: string | null;
-  atsakymo_data?: string | null;
 };
-export type ClientSupportUpdate = {
-  atsakymas?: string | null;
-  atsakymo_data?: string | null;
-  darbuotojo_id?: number | null;
+export type StaffMessageCreate = {
+  tekstas: string;
+  busena: string;
+};
+export type NoteCreate = {
+  tekstas: string;
+};
+export type ResolveRequest = {
+  santrauka: string;
+};
+export type SeenRequest = {
+  zinutes_id: number;
 };
 export type InvoiceOut = {
   order_id: number;
@@ -917,9 +1098,6 @@ export type InvoiceCreate = {
   total: number;
   invoice_date: string;
 };
-export type InvoiceStatusUpdate = {
-  status: string;
-};
 export type GeocodeResponse = {
   lat: number;
   lng: number;
@@ -927,57 +1105,196 @@ export type GeocodeResponse = {
 export type GeocodeRequest = {
   adresas: string;
 };
+export type PublicCarOut = {
+  automobilio_id: number;
+  marke: string;
+  modelis: string;
+  metai: number;
+  spalva: string;
+  kebulo_tipas: string;
+  pavarų_deze: string;
+  variklio_turis: number;
+  galia_kw: number;
+  kuro_tipas: string;
+  rida: number;
+  sedimos_vietos: number;
+  klimato_kontrole: boolean;
+  navigacija: boolean;
+  kaina_parai: number;
+  automobilio_statusas: string;
+  lokacija: LocationOut | null;
+  laisvas_pasirinktu_laikotarpiu?: boolean | null;
+};
+export type CustomerTokenResponse = {
+  access_token: string;
+  token_type?: string;
+};
+export type CustomerRegisterRequest = {
+  vardas: string;
+  pavarde: string;
+  el_pastas: string;
+  telefono_nr: string;
+  gimimo_data: string;
+  slaptazodis: string;
+};
+export type CustomerLoginRequest = {
+  el_pastas: string;
+  slaptazodis: string;
+};
+export type CustomerInfo = {
+  kliento_id: number;
+  vardas: string;
+  pavarde: string;
+  el_pastas: string;
+  telefono_nr: string;
+  gimimo_data: string;
+  registracijos_data?: string | null;
+};
+export type CustomerProfileUpdateOut = {
+  kliento_id: number;
+  vardas: string;
+  pavarde: string;
+  el_pastas: string;
+  telefono_nr: string;
+  gimimo_data: string;
+  registracijos_data?: string | null;
+  access_token?: string | null;
+};
+export type CustomerProfileUpdate = {
+  vardas?: string | null;
+  pavarde?: string | null;
+  el_pastas?: string | null;
+  telefono_nr?: string | null;
+  gimimo_data?: string | null;
+};
+export type CustomerReservationOut = {
+  rezervacijos_id: number;
+  automobilio_id: number;
+  marke: string;
+  modelis: string;
+  rezervacijos_pradzia: string;
+  rezervacijos_pabaiga: string;
+  busena: string;
+  dienu_skaicius: number;
+  kaina_parai: number;
+  viso_kaina: number;
+};
+export type CustomerReservationCreate = {
+  automobilio_id: number;
+  date_from: string;
+  date_to: string;
+};
+export type LoyaltyRewardOut = {
+  atlygio_id: number;
+  etapo_numeris: number;
+  busena: string;
+  verte_eur: number;
+  sukurimo_data?: string | null;
+  panaudojimo_data?: string | null;
+};
+export type LoyaltyStatusOut = {
+  uzbaigtu_nuomu_skaicius: number;
+  progresas_dabartiniame_etape: number;
+  etapo_dydis: number;
+  atlygio_verte_eur: number;
+  atlygiai: LoyaltyRewardOut[];
+};
+export type ConversationSummaryOut = {
+  pokalbio_id: number;
+  tema: string;
+  kategorija: string;
+  busena: string;
+  sukurimo_data: string;
+  atnaujinimo_data: string;
+  paskutine_zinute?: string | null;
+  paskutine_zinute_autorius?: string | null;
+  neperskaityta?: boolean;
+  rezervacija?: ReservationContext | null;
+  sprendimo_santrauka?: string | null;
+};
+export type ConversationDetailOut = {
+  pokalbio_id: number;
+  tema: string;
+  kategorija: string;
+  busena: string;
+  sukurimo_data: string;
+  atnaujinimo_data: string;
+  paskutine_zinute?: string | null;
+  paskutine_zinute_autorius?: string | null;
+  neperskaityta?: boolean;
+  rezervacija?: ReservationContext | null;
+  sprendimo_santrauka?: string | null;
+  zinutes: MessageOut[];
+};
+export type ConversationCreate = {
+  tema: string;
+  kategorija?: string;
+  pranesimas: string;
+  rezervacijos_id?: number | null;
+};
+export type MessageCreate = {
+  tekstas: string;
+};
 export const {
+  useGithubLoginApiV1GithubLoginGetQuery,
+  useGithubCallbackApiV1GithubCallbackGetQuery,
   useGoogleLoginApiV1GoogleLoginGetQuery,
+  useCustomerGoogleLoginApiV1CustomerGoogleLoginGetQuery,
   useGoogleCallbackApiV1GoogleCallbackGetQuery,
   useLoginMutation,
-  useRegisterMutation,
   useLogoutMutation,
   useMeApiV1MeGetQuery,
   useChangePasswordMutation,
   useSwaggerLoginMutation,
   useGetAllEmployeesQuery,
   useCreateEmployeeMutation,
-  useGetEmployeeQuery,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
   useGetAllCarsQuery,
-  useGetLocationsQuery,
   useCreateCarMutation,
-  useSearchCarsQuery,
-  useGetCarByIdQuery,
   useUpdateCarMutation,
   useDeleteCarMutation,
-  useUpdateCarStatusMutation,
+  useGetLocationsQuery,
   useGetLatestReservationsQuery,
   useGetAllReservationsQuery,
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useDeleteReservationMutation,
-  useGetReservationByIdQuery,
-  useSearchReservationsQuery,
   useGetAllOrdersQuery,
   useCreateOrderMutation,
-  useGetOrderByIdQuery,
   useDeleteOrderMutation,
   useUpdateOrderMutation,
-  useGetOrderStatsByStatusQuery,
-  useGetOrderByClientQuery,
   useGetAllClientsQuery,
   useCreateClientMutation,
-  useGetClientByIdQuery,
   useUpdateClientMutation,
   useDeleteClientMutation,
   useGetClientOrderQuery,
-  useGetAllSupportsQuery,
-  useCreateSupportMutation,
-  useGetUnansweredSupportsQuery,
-  useGetSupportQuery,
-  useAnswerToSupportMutation,
+  useGetStaffConversationsQuery,
+  useGetStaffConversationQuery,
+  useClaimStaffConversationMutation,
+  useReassignStaffConversationMutation,
+  useAddStaffMessageMutation,
+  useAddStaffNoteMutation,
+  useResolveStaffConversationMutation,
+  useMarkStaffConversationSeenMutation,
   useGetAllInvoicesQuery,
   useCreateInvoiceMutation,
   useDeleteInvoiceMutation,
-  useGetInvoiceByIdQuery,
-  useUpdateStatusMutation,
   useGeoCodeMutation,
+  useGetPublicCarsQuery,
+  useGetPublicCarQuery,
+  useGetPublicCarBusyDatesQuery,
+  useCustomerRegisterMutation,
+  useCustomerLoginMutation,
+  useCustomerMeQuery,
+  useUpdateCustomerProfileMutation,
+  useGetCustomerReservationsQuery,
+  useCreateCustomerReservationMutation,
+  useGetCustomerLoyaltyStatusQuery,
+  useRedeemCustomerLoyaltyRewardMutation,
+  useGetCustomerConversationsQuery,
+  useCreateCustomerConversationMutation,
+  useGetCustomerConversationQuery,
+  useAddCustomerMessageMutation,
+  useMarkCustomerConversationSeenMutation,
 } = injectedRtkApi;
