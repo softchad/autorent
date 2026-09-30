@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import DataTable from "../components/DataTable";
-import { ActionButtons } from "../components/ActionButtons";
+import DataTable from "@/app/components/DataTable";
+import { ActionButtons } from "@/app/components/ActionButtons";
 import dynamic from "next/dynamic";
 
-const MapComponent = dynamic(() => import("../components/MapComponent"), {
+const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-[500px] mt-6 rounded-lg bg-[#0f172a] text-slate-400">
@@ -16,7 +16,7 @@ const MapComponent = dynamic(() => import("../components/MapComponent"), {
     </div>
   ),
 });
-import EntityModal from "../components/modals/EntityModal";
+import EntityModal from "@/app/components/modals/EntityModal";
 import { useCarsData } from "@/hooks/useCarsData";
 import LoadingScreen from "@/app/components/loadingScreen";
 import {

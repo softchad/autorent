@@ -1,13 +1,13 @@
 import { Suspense } from "react";
-import OAuthClient from "./OAuthClient";
+import CustomerOAuthClient from "@/app/(public)/paskyra/oauth/CustomerOAuthClient";
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store"; // kad nieko necachintų
+export const fetchCache = "force-no-store";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <OAuthClient />
+      <CustomerOAuthClient />
     </Suspense>
   );
 }

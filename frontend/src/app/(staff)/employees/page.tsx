@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import DataTable, { Column } from "../components/DataTable";
-import { ActionButtons } from "../components/ActionButtons";
-import EntityModal, { FieldConfig } from "../components/modals/EntityModal";
+import DataTable, { Column } from "@/app/components/DataTable";
+import { ActionButtons } from "@/app/components/ActionButtons";
+import EntityModal, { FieldConfig } from "@/app/components/modals/EntityModal";
 import type { EmployeeOut } from "@/store/carRentalApi";
 import { useMeApiV1MeGetQuery } from "@/store/carRentalApi";
 
