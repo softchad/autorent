@@ -6,7 +6,9 @@ import {
   FiCreditCard,
   FiAlertCircle,
   FiCornerDownLeft,
+  FiInbox,
 } from "react-icons/fi";
+import Link from "next/link";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import DataTable from "@/app/components/DataTable";
@@ -26,6 +28,7 @@ type Reservation = ReturnType<
 export default function DashboardPage() {
   const {
     latestReservations,
+    latestSupportRequests,
     barData,
     pieData,
     laisvi,
@@ -144,6 +147,40 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 ">
         <BarChartBox title="Užsakymai pagal būsenas" data={barData} valueLabel="Užsakymų skaičius" />
         <PieChartBox title="Automobilių statusai" data={pieData} valueLabel="Automobilių skaičius" />
+      </div>
+
+      <div className="rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-5 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-[#F7F7F7]">Naujausios pagalbos užklausos</h2>
+          <Link href="/support" className="text-sm text-[#4BAFD4] hover:underline">
+            Visos užklausos
+          </Link>
+        </div>
+
+        {latestSupportRequests.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <FiInbox className="text-2xl text-[#3D4F63]" />
+            <p className="text-sm text-[#8899AA]">Neatsakytų užklausų nėra.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {latestSupportRequests.map((p) => (
+              <Link
+                key={p.pokalbio_id}
+                href="/support"
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#1C2B3A] bg-[#0E0B1F] p-3 transition hover:border-[#0F597B]/40"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#F7F7F7]">{p.kliento_vardas}</p>
+                  <p className="truncate text-xs text-[#8899AA]">{p.tema}</p>
+                </div>
+                <span className="shrink-0 text-xs text-[#707070]">
+                  {new Date(p.atnaujinimo_data).toLocaleString("lt-LT", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-gray">
