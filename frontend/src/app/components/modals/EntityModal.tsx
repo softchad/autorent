@@ -34,7 +34,9 @@ export interface EntityModalProps<T extends Record<string, any>> {
   extraData?: {
     cars?: Record<string, unknown>[];
   };
-  randomize?: () => Partial<T>;
+  // Papildomas, VISIŠKAI nebūtinas turinys redagavimo rėžime (pvz. pasirinkto
+  // automobilio foto/kaina/vieta) - niekam, kas šito nenaudoja, poveikio nėra.
+  renderExtra?: (form: T) => React.ReactNode;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +50,7 @@ export default function EntityModal<T extends Record<string, any>>({
   noCancel,
   startInEdit = false,
   extraData,
-  randomize,
+  renderExtra,
 }: EntityModalProps<T>) {
   const [form, setForm] = useState<T>(entity);
   const [isEditing, setIsEditing] = useState(startInEdit);
@@ -242,23 +244,18 @@ export default function EntityModal<T extends Record<string, any>>({
   };
 
   const body = (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 text-[#F7F7F7]">
-      {fields.map((cfg) =>
-        isEditing ? renderFieldEdit(cfg) : renderFieldView(cfg)
-      )}
+    <div className="py-2 text-[#F7F7F7]">
+      {isEditing && renderExtra && <div className="mb-4">{renderExtra(form)}</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {fields.map((cfg) =>
+          isEditing ? renderFieldEdit(cfg) : renderFieldView(cfg)
+        )}
+      </div>
     </div>
   );
 
   const actions = isEditing ? (
     <>
-      {randomize && (
-        <button
-          onClick={() => setForm((prev) => ({ ...prev, ...randomize() }))}
-          className="px-3 py-2 rounded-lg text-sm bg-[#1A2238] border border-[#1C2B3A] text-[#8899AA] hover:text-[#F7F7F7] hover:border-[#0F597B]/50 transition mr-auto"
-        >
-          Atsitiktiniai
-        </button>
-      )}
       {!noCancel && (
         <button
           onClick={() => { setIsEditing(false); setForm(entity); }}

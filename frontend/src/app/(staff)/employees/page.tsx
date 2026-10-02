@@ -10,6 +10,7 @@ type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?:
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import LoadingScreen from "@/app/components/loadingScreen";
 import { useEmployeesData } from "@/hooks/useEmployeesData";
+import { formatApiError } from "@/utils/formatApiError";
 
 export default function EmployeesPage() {
   const { data: currentUser } = useMeApiV1MeGetQuery();
@@ -32,7 +33,6 @@ export default function EmployeesPage() {
     deleteEmployee,
     refetch,
     employeeFields,
-    randomizeEmployee,
   } = useEmployeesData();
 
   const [editMode, setEditMode] = useState(false);
@@ -80,8 +80,7 @@ export default function EmployeesPage() {
             setSelectedEmployee(null);
             await refetch();
           } catch (err) {
-            alert("Negalima ištrinti šio darbuotojo.");
-            console.error("Delete error", err);
+            alert(formatApiError(err, "Negalima ištrinti šio darbuotojo."));
           }
         }}
       />
@@ -99,7 +98,6 @@ export default function EmployeesPage() {
             buttonLabel="+ Pridėti darbuotoją"
             modalTitle="Naujas darbuotojas"
             fields={creationFields}
-            randomize={randomizeEmployee}
             onCreate={async (data) => {
               try {
                 if (data.slaptazodis !== data.repeat_slaptazodis) {

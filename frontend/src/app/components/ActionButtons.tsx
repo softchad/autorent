@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { FiEye, FiEdit2, FiMail, FiTrash2 } from "react-icons/fi";
 
 type ActionButtonsProps = {
@@ -7,6 +8,7 @@ type ActionButtonsProps = {
   onExtra?: () => void;
   show?: { view?: boolean; edit?: boolean; delete?: boolean; extra?: boolean };
   extraLabel?: string;
+  extraIcon?: ReactNode;
 };
 
 export function ActionButtons({
@@ -16,6 +18,7 @@ export function ActionButtons({
   onExtra,
   show = { view: true, edit: true, delete: true },
   extraLabel = "Veiksmas",
+  extraIcon = <FiMail className="text-base" />,
 }: ActionButtonsProps) {
   const btn = "p-1.5 rounded-lg transition-all text-[#3D4F63]";
   return (
@@ -32,7 +35,7 @@ export function ActionButtons({
       )}
       {show.extra && (
         <button onClick={onExtra} title={extraLabel} className={`${btn} hover:bg-purple-900/30 hover:text-purple-400`}>
-          <FiMail className="text-base" />
+          {extraIcon}
         </button>
       )}
       {show.delete && (

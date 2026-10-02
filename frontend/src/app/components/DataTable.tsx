@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiChevronUp, FiChevronDown } from "react-icons/fi";
 
 export type Column<T> = {
   label: string;
   accessor: keyof T | string | ((row: T) => React.ReactNode);
   className?: string;
+  // Reikalinga rūšiavimui, kai accessor yra funkcija (grąžina React elementą,
+  // kurio tiesiogiai palyginti negalima) - pvz. formatuotai kainai ar datai.
+  sortValue?: (row: T) => string | number | Date | null | undefined;
 };
 
 export type DataTableProps<T> = {
@@ -14,6 +17,12 @@ export type DataTableProps<T> = {
   itemsPerPage?: number;
 };
 
+function getSortValue<T>(col: Column<T>, row: T): string | number | Date | null | undefined {
+  if (col.sortValue) return col.sortValue(row);
+  if (typeof col.accessor === "function") return undefined;
+  return row[col.accessor as keyof T] as unknown as string | number | Date;
+}
+
 export default function DataTable<T>({
   columns,
   data,
@@ -21,12 +30,50 @@ export default function DataTable<T>({
   itemsPerPage = 10,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const [sortIndex, setSortIndex] = useState<number | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const isSortable = (col: Column<T>) => typeof col.accessor !== "function" || !!col.sortValue;
+
+  const handleSort = (index: number) => {
+    const col = columns[index];
+    if (!isSortable(col)) return;
+    if (sortIndex === index) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortIndex(index);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  const sortedData = useMemo(() => {
+    if (sortIndex === null) return data;
+    const col = columns[sortIndex];
+    const withValues = data.map((row) => ({ row, value: getSortValue(col, row) }));
+    withValues.sort((a, b) => {
+      if (a.value == null && b.value == null) return 0;
+      if (a.value == null) return 1;
+      if (b.value == null) return -1;
+      let cmp: number;
+      if (a.value instanceof Date || b.value instanceof Date) {
+        cmp = new Date(a.value).getTime() - new Date(b.value).getTime();
+      } else if (typeof a.value === "number" && typeof b.value === "number") {
+        cmp = a.value - b.value;
+      } else {
+        cmp = String(a.value).localeCompare(String(b.value), "lt");
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return withValues.map((w) => w.row);
+  }, [data, sortIndex, sortDir, columns]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
 
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return data.slice(start, start + itemsPerPage);
-  }, [currentPage, data, itemsPerPage]);
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [currentPage, sortedData, itemsPerPage]);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
@@ -52,14 +99,26 @@ export default function DataTable<T>({
       <table className="min-w-full divide-y divide-[#1C2B3A]">
         <thead>
           <tr className="bg-[#0F597B]/15">
-            {columns.map((col, i) => (
-              <th
-                key={i}
-                className={`px-4 py-3 text-left text-xs font-semibold text-[#4BAFD4] uppercase tracking-wider ${col.className ?? ""}`}
-              >
-                {col.label}
-              </th>
-            ))}
+            {columns.map((col, i) => {
+              const sortable = isSortable(col);
+              return (
+                <th
+                  key={i}
+                  onClick={sortable ? () => handleSort(i) : undefined}
+                  className={`px-4 py-3 text-left text-xs font-semibold text-[#4BAFD4] uppercase tracking-wider ${sortable ? "cursor-pointer select-none hover:text-[#6CC4EE]" : ""} ${col.className ?? ""}`}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {col.label}
+                    {sortable && (
+                      <span className="inline-flex flex-col -space-y-1 text-[10px]">
+                        <FiChevronUp className={sortIndex === i && sortDir === "asc" ? "text-[#4BAFD4]" : "text-[#3D4F63]"} />
+                        <FiChevronDown className={sortIndex === i && sortDir === "desc" ? "text-[#4BAFD4]" : "text-[#3D4F63]"} />
+                      </span>
+                    )}
+                  </span>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-[#1C2B3A]">

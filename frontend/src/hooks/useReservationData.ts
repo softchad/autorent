@@ -63,14 +63,19 @@ export const useReservationData = () => {
     "visi" | "patvirtinta" | "laukia" | "atšaukta"
   >("visi");
 
-  const filtered = reservations.filter((r) => {
-    const target =
-      `${getClientName(r.kliento_id)} ${getCarName(r.automobilio_id)}`.toLowerCase();
-    const matchSearch = target.includes(search.toLowerCase());
-    const busena = (r.busena ?? "").toLowerCase();
-    const matchStatus = statusFilter === "visi" || statusFilter === busena;
-    return matchSearch && matchStatus;
-  });
+  const filtered = reservations
+    .filter((r) => {
+      const target =
+        `${getClientName(r.kliento_id)} ${getCarName(r.automobilio_id)}`.toLowerCase();
+      const matchSearch = target.includes(search.toLowerCase());
+      const busena = (r.busena ?? "").toLowerCase();
+      const matchStatus = statusFilter === "visi" || statusFilter === busena;
+      return matchSearch && matchStatus;
+    })
+    // Naujausios (didžiausias ID = vėliausiai pateikta, nėra atskiro sukurimo
+    // laiko stulpelio DB) viršuje - kitaip naujai pateikta rezervacija "pasimeta"
+    // tarp senų įrašų, kol nepaspaudi stulpelio rūšiavimo pačiam.
+    .sort((a, b) => b.rezervacijos_id - a.rezervacijos_id);
 
   const { data: cars = [] } = useGetAllCarsQuery();
 
@@ -130,6 +135,7 @@ export const useReservationData = () => {
     setStatusFilter,
     getClientName,
     getCarName,
+    cars,
     saveReservation,
     handleDelete,
     reservationFields,

@@ -10,6 +10,9 @@ import StatusBadge from "@/app/components/StatusBadge";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import type { ReservationUpdate } from "@/store/carRentalApi";
+import { FiCheck, FiMapPin } from "react-icons/fi";
+import Image from "next/image";
+import { getCarPhoto } from "@/utils/carPhoto";
 
 type Rezervacija = NonNullable<
   ReturnType<typeof useReservationData>["reservations"]
@@ -29,6 +32,7 @@ export default function ReservationsPage() {
     setStatusFilter,
     getClientName,
     getCarName,
+    cars,
     handleDelete,
     reservationFields,
     saveReservation,
@@ -53,6 +57,17 @@ export default function ReservationsPage() {
       label: "Veiksmai",
       accessor: (r: Rezervacija) => (
         <ActionButtons
+          show={{ view: true, edit: true, delete: true, extra: r.busena === "laukia" }}
+          extraLabel="Patvirtinti"
+          extraIcon={<FiCheck className="text-base" />}
+          onExtra={async () => {
+            if (!window.confirm("Patvirtinti šią rezervaciją?")) return;
+            try {
+              await saveReservation(r.rezervacijos_id, { busena: "patvirtinta" });
+            } catch (err) {
+              alert(formatApiError(err, "Nepavyko patvirtinti rezervacijos."));
+            }
+          }}
           onView={() => {
             setSelected(r);
             setEditMode(false);
@@ -63,9 +78,12 @@ export default function ReservationsPage() {
             setEditMode(true);
             setModalOpen(true);
           }}
-          onDelete={() => {
-            if (window.confirm("Ar tikrai norite atšaukti rezervaciją?")) {
-              handleDelete(r.rezervacijos_id);
+          onDelete={async () => {
+            if (!window.confirm("Ar tikrai norite atšaukti rezervaciją?")) return;
+            try {
+              await handleDelete(r.rezervacijos_id);
+            } catch (err) {
+              alert(formatApiError(err, "Nepavyko ištrinti rezervacijos."));
             }
           }}
         />
@@ -156,6 +174,26 @@ export default function ReservationsPage() {
           }}
           onSave={onSave}
           startInEdit={editMode}
+          renderExtra={(r) => {
+            const car = cars.find((c) => c.automobilio_id === r.automobilio_id);
+            if (!car) return null;
+            return (
+              <div className="flex gap-3 rounded-xl border border-[#1C2B3A] bg-[#0E0B1F] p-3">
+                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-[#1A2238]">
+                  <Image src={getCarPhoto(car)} alt={`${car.marke} ${car.modelis}`} fill sizes="96px" className="object-cover" />
+                </div>
+                <div className="min-w-0 text-sm">
+                  <p className="font-semibold text-[#F7F7F7]">{car.marke} {car.modelis} ({car.metai})</p>
+                  <p className="text-[#8899AA]">{car.kaina_parai} €/parai &bull; {car.automobilio_statusas}</p>
+                  {car.lokacija && (
+                    <p className="flex items-center gap-1 text-[#8899AA]">
+                      <FiMapPin className="shrink-0" /> {car.lokacija.pavadinimas}, {car.lokacija.miestas}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          }}
         />
       )}
     </div>

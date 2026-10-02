@@ -15,7 +15,6 @@ type Props<T extends Record<string, any>> = {
   extraData?: {
     cars?: Record<string, unknown>[];
   };
-  randomize?: () => Partial<T>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,7 +25,6 @@ export default function CreateEntityButton<T extends Record<string, any>>({
   onCreate,
   initial = {},
   extraData,
-  randomize,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
 
@@ -48,7 +46,6 @@ export default function CreateEntityButton<T extends Record<string, any>>({
           isOpen={open}
           startInEdit
           extraData={extraData}
-          randomize={randomize}
           onClose={() => setOpen(false)}
           onSave={async (created) => {
             await onCreate(created as Omit<T, "id" | `${string}_id`>);

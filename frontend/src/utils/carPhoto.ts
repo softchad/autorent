@@ -22,7 +22,7 @@ const BRAND_PHOTOS: Record<string, string> = {
 // public/images/fleet/CREDITS.md). Dabartiniams seed duomenims (markės žemiau
 // BRAND_PHOTOS sąraše) šis fallback'as realiai nekviečiamas, bet jei atsiras
 // nauja markė be nuotraukos, ji pateks čia - reikia pakeisti patikrintomis prieš viešinant.
-function fallbackPhoto(car: Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">): string {
+function fallbackPhoto(car: Partial<Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">>): string {
   if (car.kuro_tipas === "elektra") return "/images/fleet/ev-charging.jpg";
   if (car.kebulo_tipas === "Visureigis") return "/images/fleet/suv-studio.jpg";
   if (car.kuro_tipas === "hibridas") return "/images/fleet/black-sports-car.jpg";
@@ -30,6 +30,6 @@ function fallbackPhoto(car: Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">): str
   return "/images/fleet/sedan-highway.jpg";
 }
 
-export function getCarPhoto(car: Pick<PublicCar, "marke" | "kuro_tipas" | "kebulo_tipas">): string {
+export function getCarPhoto(car: Partial<Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">> & Pick<PublicCar, "marke">): string {
   return BRAND_PHOTOS[car.marke] ?? fallbackPhoto(car);
 }

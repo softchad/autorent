@@ -46,7 +46,6 @@ export default function CarsPage() {
     setModalOpen,
     carFields,
     refetchCars,
-    randomizeCar,
   } = useCarsData();
 
   const [editMode, setEditMode] = useState(false);
@@ -90,10 +89,12 @@ export default function CarsPage() {
               await deleteCar({ carId: a.automobilio_id }).unwrap();
               setSelectedCar(null);
               await refetchCars();
-            } catch {
-              console.error("Klaida trinant automobilį:");
+            } catch (err) {
               alert(
-                "Šio automobilio ištrinti negalima, nes jis susijęs su užsakymais ar kita informacija."
+                formatApiError(
+                  err,
+                  "Šio automobilio ištrinti negalima, nes jis susijęs su užsakymais ar kita informacija."
+                )
               );
             }
           }}
@@ -112,7 +113,6 @@ export default function CarsPage() {
           buttonLabel="+ Pridėti automobilį"
           modalTitle="Naujas automobilis"
           fields={carFields}
-          randomize={randomizeCar}
           onCreate={async (data) => {
             try {
               await createCar({ carCreate: data as unknown as CarCreate }).unwrap();
