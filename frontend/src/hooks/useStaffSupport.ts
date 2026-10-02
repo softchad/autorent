@@ -61,21 +61,30 @@ export function useStaffConversationList(filter: QueueFilter) {
   const [conversations, setConversations] = useState<StaffConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) return;
-    const res = await fetch(`${API}/api/v1/support/conversations?filter=${filter}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) setConversations(await res.json());
-    setIsLoading(false);
+    try {
+      const res = await fetch(`${API}/api/v1/support/conversations?filter=${filter}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      });
+      if (res.ok) setConversations(await res.json());
+      if (!signal?.aborted) setIsLoading(false);
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") throw e;
+    }
   }, [token, filter]);
 
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
-    refresh();
+    refresh(controller.signal);
     // Sąrašo/eilės polling - kas 20s, kol matoma (žr. specifikacijos 10 skyrių).
-    const interval = setInterval(refresh, 20000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => refresh(controller.signal), 20000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [refresh]);
 
   return { conversations, isLoading, refresh };
@@ -87,12 +96,17 @@ export function useStaffConversation(pokalbioId: number | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token || !pokalbioId) return;
-    const res = await fetch(`${API}/api/v1/support/conversations/${pokalbioId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) setConversation(await res.json());
+    try {
+      const res = await fetch(`${API}/api/v1/support/conversations/${pokalbioId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      });
+      if (res.ok) setConversation(await res.json());
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") throw e;
+    }
   }, [token, pokalbioId]);
 
   useEffect(() => {
@@ -100,11 +114,17 @@ export function useStaffConversation(pokalbioId: number | null) {
       setConversation(null);
       return;
     }
+    const controller = new AbortController();
     setIsLoading(true);
-    refresh().finally(() => setIsLoading(false));
+    refresh(controller.signal).finally(() => {
+      if (!controller.signal.aborted) setIsLoading(false);
+    });
     // Atidaryto pokalbio polling - kas 5s (žr. specifikacijos 10 skyrių).
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => refresh(controller.signal), 5000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [pokalbioId, refresh]);
 
   const runAction = useCallback(
@@ -131,6 +151,10 @@ export function useStaffConversation(pokalbioId: number | null) {
   );
 
   const claim = useCallback(() => runAction("/claim"), [runAction]);
+  const reassign = useCallback(
+    (darbuotojoId: number) => runAction("/reassign", { darbuotojo_id: darbuotojoId }),
+    [runAction]
+  );
   const reply = useCallback((tekstas: string, busena: "sprendziama" | "laukiama_kliento") => runAction("/messages", { tekstas, busena }), [runAction]);
   const addNote = useCallback((tekstas: string) => runAction("/notes", { tekstas }), [runAction]);
   const resolve = useCallback((santrauka: string) => runAction("/resolve", { santrauka }), [runAction]);
@@ -153,5 +177,5 @@ export function useStaffConversation(pokalbioId: number | null) {
     [token, pokalbioId]
   );
 
-  return { conversation, isLoading, actionError, claim, reply, addNote, resolve, markSeen, refresh };
+  return { conversation, isLoading, actionError, claim, reassign, reply, addNote, resolve, markSeen, refresh };
 }

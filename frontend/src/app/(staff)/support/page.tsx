@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiSend, FiLock, FiCheckCircle, FiInbox } from "react-icons/fi";
+import { FiSend, FiLock, FiCheckCircle, FiInbox, FiRepeat } from "react-icons/fi";
 import {
   useStaffConversationList,
   useStaffConversation,
   QueueFilter,
 } from "@/hooks/useStaffSupport";
+import { useMeApiV1MeGetQuery, useGetAllEmployeesQuery } from "@/store/carRentalApi";
+
+// Tas pats SUPPORT_ROLES/MANAGER_ROLES rinkinys kaip backend staff_support.py -
+// tik UI lygmeniu (realus apribojimas visada tikrinamas serveryje per require_support_manager).
+const SUPPORT_ROLES = new Set(["Administratorius", "Vadybininkas", "Klientų aptarnavimas"]);
+const MANAGER_ROLES = new Set(["Administratorius", "Vadybininkas"]);
 
 const FILTERS: { value: QueueFilter; label: string }[] = [
   { value: "needs_reply", label: "Reikia atsakyti" },
@@ -50,12 +56,21 @@ export default function SupportPage() {
   const [filter, setFilter] = useState<QueueFilter>("needs_reply");
   const { conversations, isLoading, refresh: refreshList } = useStaffConversationList(filter);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const { conversation, actionError, claim, reply, addNote, resolve, markSeen } = useStaffConversation(selectedId);
+  const { conversation, actionError, claim, reassign, reply, addNote, resolve, markSeen } = useStaffConversation(selectedId);
+
+  const { data: currentUser } = useMeApiV1MeGetQuery();
+  const { data: employees = [] } = useGetAllEmployeesQuery();
+  const canReassign = !!currentUser && MANAGER_ROLES.has(currentUser.pareigos);
+  const reassignOptions = employees.filter(
+    (e) => SUPPORT_ROLES.has(e.pareigos) && e.darbuotojo_id !== conversation?.darbuotojo_id
+  );
 
   const [mode, setMode] = useState<"reply" | "note">("reply");
   const [text, setText] = useState("");
   const [showResolve, setShowResolve] = useState(false);
   const [santrauka, setSantrauka] = useState("");
+  const [showReassign, setShowReassign] = useState(false);
+  const [reassignTarget, setReassignTarget] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -70,6 +85,23 @@ export default function SupportPage() {
     setMode("reply");
     setText("");
     setShowResolve(false);
+    setShowReassign(false);
+    setReassignTarget("");
+  };
+
+  const handleReassign = async () => {
+    if (!reassignTarget) return;
+    setBusy(true);
+    try {
+      await reassign(Number(reassignTarget));
+      setShowReassign(false);
+      setReassignTarget("");
+      refreshList();
+    } catch {
+      // klaida rodoma per actionError
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSend = async () => {
@@ -216,6 +248,15 @@ export default function SupportPage() {
                       <FiCheckCircle /> Išspręsta
                     </button>
                   )}
+                  {canReassign && (
+                    <button
+                      onClick={() => setShowReassign((v) => !v)}
+                      title="Perduoti kitam darbuotojui"
+                      className="flex items-center gap-1.5 rounded-lg border border-[#1C2B3A] bg-[#1A2238] hover:bg-[#1E2A47] text-[#F7F7F7] text-xs font-semibold px-3 py-1.5 transition"
+                    >
+                      <FiRepeat /> Perduoti
+                    </button>
+                  )}
                 </div>
               </div>
               {conversation.sprendimo_santrauka && (
@@ -223,13 +264,34 @@ export default function SupportPage() {
                   Sprendimas: {conversation.sprendimo_santrauka}
                 </p>
               )}
+              {showReassign && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg border border-[#1C2B3A] bg-[#0E0B1F] p-2">
+                  <select
+                    value={reassignTarget}
+                    onChange={(e) => setReassignTarget(e.target.value)}
+                    className="flex-1 rounded-lg border border-[#1C2B3A] bg-[#1A2238] px-2 py-1.5 text-xs text-[#F7F7F7] focus:outline-none focus:border-[#0F597B]"
+                  >
+                    <option value="">Pasirink darbuotoją...</option>
+                    {reassignOptions.map((e) => (
+                      <option key={e.darbuotojo_id} value={e.darbuotojo_id}>
+                        {e.vardas} {e.pavarde} ({e.pareigos})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleReassign}
+                    disabled={busy || !reassignTarget}
+                    className="rounded-lg bg-[#0F597B] hover:bg-[#0C4A66] disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 transition"
+                  >
+                    Perduoti
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
-              {/* Žinutės ir vidinės pastabos sujungiamos į VIENĄ chronologinę juostą pagal
-                  sukurimo_data - anksčiau tai buvo du atskiri .map() blokai (visos žinutės,
-                  tada visos pastabos po jų), todėl pastaba visada "nuslysdavo" žemyn, kai
-                  prirašydavai naujų žinučių po jos, vietoj to, kad liktų savo laiko vietoje. */}
+              {/* Žinutės ir pastabos sujungtos į vieną juostą, surikiuotą pagal sukurimo_data,
+                  kad pastaba liktų savo tikroje laiko vietoje. */}
               {[
                 ...conversation.zinutes.map((m) => ({ ...m, kind: "message" as const, ts: m.sukurimo_data })),
                 ...conversation.pastabos.map((n) => ({ ...n, kind: "note" as const, ts: n.sukurimo_data })),
