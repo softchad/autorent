@@ -14,7 +14,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <Image src="/images/fleet/sedan-highway.jpg" alt="" fill sizes="100vw" className="object-cover opacity-40" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0E0B1F]/60 via-[#0E0B1F] to-[#0E0B1F]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0B121F]/60 via-[#0B121F] to-[#0B121F]" />
         </div>
         <div className="relative mx-auto max-w-3xl px-4 py-20 sm:px-6 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#F7F7F7] mb-4">Apie AutoRent</h1>

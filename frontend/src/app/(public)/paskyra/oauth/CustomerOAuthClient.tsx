@@ -21,7 +21,7 @@ export default function CustomerOAuthClient() {
   }, [applyTokenFromOAuth, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0E0B1F] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#0B121F] px-4">
       <p className="text-sm text-[#8899AA]">
         {error ? (
           <>

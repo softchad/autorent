@@ -93,7 +93,7 @@ export default function KelioniuPatarimaiPage() {
       </section>
 
       {/* Miestų gidas */}
-      <section className="border-y border-[#1C2B3A] bg-[#080617] py-16">
+      <section className="border-y border-[#1C2B3A] bg-[#060A14] py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#F7F7F7] text-center mb-3">
             Automobilių nuoma pagal miestą

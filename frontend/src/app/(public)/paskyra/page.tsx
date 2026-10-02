@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AccountClient from "@/app/components/public/AccountClient";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function PaskyraPage() {
-  return <AccountClient />;
+  return (
+    <Suspense fallback={null}>
+      <AccountClient />
+    </Suspense>
+  );
 }

@@ -10,7 +10,7 @@ import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import logo from "@/assets/autorentLOGO.png";
 
-const BACKEND = "http://localhost:8000/api/v1";
+const BACKEND = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1`;
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   not_staff: "Ši paskyra nesusieta su darbuotojo profiliu. Kreipkitės į administratorių, jei turėtumėte turėti prieigą.",
@@ -107,7 +107,6 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPass((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3D4F63] hover:text-[#707070] text-xs transition"
-                  tabIndex={-1}
                 >
                   {showPass ? "Slėpti" : "Rodyti"}
                 </button>
