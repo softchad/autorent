@@ -83,10 +83,6 @@ export default function ProfilePage() {
             #{user.darbuotojo_id}
           </p>
           <p>
-            <span className="font-medium text-gray-300">Atlyginimas:</span>{" "}
-            {user.atlyginimas} €
-          </p>
-          <p>
             <span className="font-medium text-gray-300">Įsidarbinimo data:</span>{" "}
             {new Date(user.isidarbinimo_data).toLocaleDateString("lt-LT")}
           </p>

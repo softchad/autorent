@@ -12,6 +12,7 @@ import CreateInvoiceButton from "@/app/components/CreateInvoiceButton";
 import type { InvoiceOut, OrderOut } from "@/store/carRentalApi";
 import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllOrdersQuery } from "@/store/carRentalApi";
 import { FiRefreshCw, FiClipboard } from "react-icons/fi";
+import { formatApiError } from "@/utils/formatApiError";
 
 // PDF biblioteka neveikia SSR — kraunama tik kliente
 const InvoicePdfModal = dynamic(
@@ -96,8 +97,8 @@ export default function InvoicesPage() {
                 }).unwrap();
                 await refetch();
                 alert("Sąskaita sėkmingai pergeneruota!");
-              } catch {
-                alert("Klaida pergeneruojant sąskaitą.");
+              } catch (err) {
+                alert(formatApiError(err, "Klaida pergeneruojant sąskaitą."));
               }
             }}
             className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-amber-900/30 hover:text-amber-400"

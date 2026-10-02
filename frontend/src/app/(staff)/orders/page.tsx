@@ -105,9 +105,12 @@ export default function OrdersPage() {
             if (!confirmed) return;
             try {
               await handleDelete(o.uzsakymo_id);
-            } catch {
+            } catch (err) {
               alert(
-                "Nepavyko ištrinti užsakymo. Jis gali būti susietas su kitais įrašais (pvz., sąskaitomis ar mokėjimais)."
+                formatApiError(
+                  err,
+                  "Nepavyko ištrinti užsakymo. Jis gali būti susietas su kitais įrašais (pvz., sąskaitomis ar mokėjimais)."
+                )
               );
             }
           }}
