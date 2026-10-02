@@ -78,41 +78,6 @@ export function useEmployeesData() {
       required: true,
     },
   ];
-  function randomizeEmployee() {
-    const vardai = ["Jonas", "Petras", "Tomas", "Lukas", "Mantas", "Dovydas",
-                    "Laura", "Eglė", "Rūta", "Ingrida", "Monika", "Simona"];
-    const pavardes = ["Kazlauskas", "Petraitis", "Jonaitis", "Stankevičius",
-                      "Butkus", "Paulauskas", "Jankauskas", "Mickus"];
-    const pareigosOptions = roles.length > 0
-      ? roles
-      : ["Vadybininkas", "Mechaniklas", "Konsultantas", "Administratorius"];
-    const domainai = ["autorent.lt", "gmail.com", "outlook.com"];
-    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-    const vardas = pick(vardai);
-    const pavarde = pick(pavardes);
-    const el_pastas = `${vardas.toLowerCase()}.${pavarde.toLowerCase()}@${pick(domainai)}`;
-    const phonePrefix = pick(["+37060", "+37061", "+37062", "+37065", "+37069"]);
-    const telefono_nr = `${phonePrefix}${randInt(100000, 999999)}`;
-    const now = new Date();
-    const year = now.getFullYear() - randInt(0, 5);
-    const isidarbinimo_data = `${year}-${String(randInt(1, 12)).padStart(2, "0")}-${String(randInt(1, 28)).padStart(2, "0")}`;
-    const password = `Autorent${randInt(100, 999)}!`;
-
-    return {
-      vardas,
-      pavarde,
-      el_pastas,
-      telefono_nr,
-      pareigos: pick(pareigosOptions),
-      atlyginimas: randInt(1200, 3500),
-      isidarbinimo_data,
-      slaptazodis: password,
-      repeat_slaptazodis: password,
-    };
-  }
-
   return {
     employees: data,
     isLoading,
@@ -130,6 +95,5 @@ export function useEmployeesData() {
     deleteEmployee,
     refetch,
     employeeFields,
-    randomizeEmployee,
   };
 }

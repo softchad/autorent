@@ -1,14 +1,17 @@
 import React from "react";
 import { FiX } from "react-icons/fi";
 
+// Bendras modalo karkasas (antraštė/turinys/apatinė dalis) - naudojamas VISUR, kur reikia modalo lango (žr. CreateInvoiceButton.tsx ir EntityModal.tsx), kad stilius nesiskirtų tarp skirtingų vietų.
 type BaseModalProps = {
   title: string;
   children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
+  // Neprivaloma - kviečiantis komponentas gali parodyti modalą vien informacijai, be apatinių mygtukų (žr. "Footer" žemiau, kuris tada iš viso nerenderinamas).
   actions?: React.ReactNode;
 };
 
+// "isOpen" valdomas IŠORĖS (tėvinio komponento state) - šis komponentas tik sprendžia, RODYTI ar NE (ankstyvas "return null"), savaime savo būsenos niekada nekeičia.
 export default function BaseModal({ title, children, isOpen, onClose, actions }: BaseModalProps) {
   if (!isOpen) return null;
 
