@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FiX, FiBriefcase } from "react-icons/fi";
+import { FiX, FiBriefcase, FiEye, FiEyeOff } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/autorentLOGO.png";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
@@ -27,8 +27,53 @@ export default function SignInModal({
   const [telefonoNr, setTelefonoNr] = useState("");
   const [gimimoData, setGimimoData] = useState("");
   const [slaptazodis, setSlaptazodis] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Komponentas NEUNMOUNTINAMAS uždarius (tėvas visada jį renderina, žr.
+  // PublicHeader.tsx) - be šito efekto senos reikšmės likdavo laukuose kitą
+  // kartą atidarius modalą, nes useState išlieka tarp "isOpen=false" kadrų.
+  useEffect(() => {
+    if (isOpen) {
+      setMode("login");
+      setVardas("");
+      setPavarde("");
+      setElPastas("");
+      setTelefonoNr("");
+      setGimimoData("");
+      setSlaptazodis("");
+      setShowPassword(false);
+      setError(null);
+      setSubmitting(false);
+    }
+  }, [isOpen]);
+
+  // Animuotas atsidarymas/užsidarymas - komponentas trumpai pasilieka
+  // sumontuotas po isOpen=false, kad spėtų nuskrieti žemyn prieš pradingdamas.
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true);
+      // DVI įdėtos rAF, ne viena - su viena naršyklė dažnai sutraukia "mounted=true"
+      // ir "visible=true" į TĄ PATĮ kadrą (nebūna nupieštos pradinės, nematomos
+      // būsenos), tad CSS transition tiesiog nepasimato - atrodo kaip staigus "pop".
+      // Antra rAF garantuoja, kad pradinė būsena realiai nupiešta prieš persijungiant.
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setVisible(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    } else {
+      setVisible(false);
+      const t = setTimeout(() => setMounted(false), 250);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -39,15 +84,11 @@ export default function SignInModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // Kiekvieną kartą atidarius modalą iš naujo, žinutė ir laukai neturėtų likę iš praeito karto.
-  useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      setSubmitting(false);
-    }
-  }, [isOpen]);
+  // "Misclick" apsauga: uždaryti TIK jei paspaudimas PRADĖTAS ant fono, ne jei
+  // tekstą pažymėjai modalo viduje ir pelės mygtuką paleidai už jo ribų.
+  const mouseDownOnBackdrop = useRef(false);
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,12 +120,14 @@ export default function SignInModal({
     // (žr. tą pačią pastabą PublicHeader.tsx) - z-50 čia leisdavo žemėlapiui "pavogti"
     // paspaudimus per modalą ir jis neatsidarydavo/neblur'indavo fono tame puslapyje.
     <div
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      onClick={onClose}
+      className={`fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
+      onClick={(e) => {
+        if (mouseDownOnBackdrop.current && e.target === e.currentTarget) onClose();
+      }}
     >
       <div
-        className="relative w-full max-w-sm bg-[#0E1525] border border-[#1C2B3A] rounded-2xl shadow-2xl px-8 py-9 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className={`relative w-full max-w-sm bg-[#0E1525] border border-[#1C2B3A] rounded-2xl shadow-2xl px-8 py-9 max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0"}`}
       >
         <button
           onClick={onClose}
@@ -191,15 +234,25 @@ export default function SignInModal({
                   />
                 </div>
               )}
-              <input
-                required
-                type="password"
-                value={slaptazodis}
-                onChange={(e) => setSlaptazodis(e.target.value)}
-                placeholder="Slaptažodis"
-                minLength={6}
-                className="w-full bg-[#1A2238] border border-[#1C2B3A] text-[#F7F7F7] placeholder-[#3D4F63] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#0F597B]"
-              />
+              <div className="relative">
+                <input
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={slaptazodis}
+                  onChange={(e) => setSlaptazodis(e.target.value)}
+                  placeholder="Slaptažodis"
+                  minLength={6}
+                  className="w-full bg-[#1A2238] border border-[#1C2B3A] text-[#F7F7F7] placeholder-[#3D4F63] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:border-[#0F597B]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3D4F63] hover:text-[#8899AA] transition"
+                  aria-label={showPassword ? "Slėpti slaptažodį" : "Rodyti slaptažodį"}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
 
               {error && <p className="text-red-400 text-xs text-center">{error}</p>}
 

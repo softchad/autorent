@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -12,18 +12,20 @@ import {
   FiTruck,
   FiMapPin,
   FiPhone,
+  FiUser,
+  FiInbox,
+  FiLogOut,
+  FiChevronDown,
 } from "react-icons/fi";
 import { FaRoad } from "react-icons/fa6";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import logo from "@/assets/autorenttextLOGO.png";
 import SearchForm, { SearchValue } from "./SearchForm";
 import SignInModal from "./SignInModal";
+import ClientAvatar from "./ClientAvatar";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
-// Tik realūs, atskiri puslapiai - jokių scroll-to-section nuorodų tame pačiame
-// puslapyje. Anksčiau čia buvo visada matoma šoninė juosta su scroll-spy logika
-// (žr. git istoriją PublicSidebar.tsx), kas kėlė nuolatinių riktų su highlight'inimu
-// ir nepatikimu scroll'inimu iš kito puslapio - supaprastinta pagal KAYAK pavyzdį:
-// ramus puslapis be nuolatinio sidebar, hamburger atidaro overlay su tikrais keliais.
+// Tik realūs, atskiri puslapiai - jokios scroll-to-section navigacijos.
 const NAV_ITEMS = [
   { label: "Pradžia", href: "/", icon: FiHome },
   { label: "Automobiliai", href: "/automobiliai", icon: FiTruck },
@@ -44,11 +46,17 @@ export default function PublicHeader({
   onSearchSubmit,
 }: PublicHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const { customer } = useCustomerAuth();
+  const { customer, logout } = useCustomerAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 320);
@@ -79,8 +87,12 @@ export default function PublicHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[#1C2B3A] bg-[#0E0B1F]/85 backdrop-blur">
-        <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-[#1C2B3A] bg-[#0B121F]/85 backdrop-blur">
+        {/* h-16 FIKSUOTAS, NE py-3.5 (auto pagal turinį) - su py.. aukštis sektųsi
+            pagal AUKŠČIAUSIĄ vaiką, o paieškos pilė (kai atsiranda) buvo aukštesnė
+            už logotipo/meniu pusę, tad visa juosta "išsiplėsdavo". Fiksuotas h-16
+            garantuoja TĄ PATĮ aukštį nepriklausomai nuo to, ar paieška rodoma. */}
+        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setNavOpen(true)}
@@ -103,10 +115,10 @@ export default function PublicHeader({
               nepriklausomai nuo to, ar rodoma. */}
           <div
             className={`hidden min-w-0 flex-1 items-center justify-center overflow-hidden transition-all duration-300 ease-out md:flex ${
-              showCompactSearch ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+              showCompactSearch ? "max-h-14 opacity-100" : "max-h-0 opacity-0"
             }`}
           >
-            <div className="w-full max-w-xl">
+            <div className="max-w-2xl">
               <SearchForm
                 value={searchValue}
                 onChange={onSearchChange}
@@ -117,15 +129,50 @@ export default function PublicHeader({
           </div>
 
           {customer ? (
-            <Link
-              href="/paskyra"
-              className="shrink-0 flex items-center gap-2 bg-[#1A2238] hover:bg-[#1E2A47] border border-[#1C2B3A] text-[#F7F7F7] text-sm font-medium pl-2 pr-4 py-1.5 rounded-full transition"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0F597B] text-xs font-semibold text-white">
-                {customer.vardas[0]?.toUpperCase()}
-              </span>
-              {customer.vardas}
-            </Link>
+            <Menu as="div" className="relative shrink-0">
+              <MenuButton className="flex items-center gap-2 bg-[#1A2238] hover:bg-[#1E2A47] border border-[#1C2B3A] text-[#F7F7F7] text-sm font-medium pl-2 pr-3 py-1.5 rounded-full transition focus:outline-none">
+                <ClientAvatar name={customer.vardas} seed={customer.kliento_id} size={28} />
+                {customer.vardas}
+                <FiChevronDown className="text-xs text-[#8899AA]" />
+              </MenuButton>
+              <MenuItems
+                transition
+                anchor="bottom end"
+                className="z-50 mt-2 w-56 rounded-xl border border-[#1C2B3A] bg-[#0E1525] p-1.5 shadow-2xl focus:outline-none origin-top-right transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 data-[closed]:-translate-y-1"
+              >
+                <MenuItem>
+                  {({ focus }) => (
+                    <Link
+                      href="/paskyra"
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${focus ? "bg-[#1A2238] text-[#F7F7F7]" : "text-[#C5CEDA]"}`}
+                    >
+                      <FiUser /> Mano paskyra
+                    </Link>
+                  )}
+                </MenuItem>
+                <MenuItem>
+                  {({ focus }) => (
+                    <Link
+                      href="/paskyra?tab=pastas"
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${focus ? "bg-[#1A2238] text-[#F7F7F7]" : "text-[#C5CEDA]"}`}
+                    >
+                      <FiInbox /> Mano pašto dėžutė
+                    </Link>
+                  )}
+                </MenuItem>
+                <div className="my-1 h-px bg-[#1C2B3A]" />
+                <MenuItem>
+                  {({ focus }) => (
+                    <button
+                      onClick={handleLogout}
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${focus ? "bg-[#1A2238] text-[#F7F7F7]" : "text-[#C5CEDA]"}`}
+                    >
+                      <FiLogOut /> Atsijungti
+                    </button>
+                  )}
+                </MenuItem>
+              </MenuItems>
+            </Menu>
           ) : (
             <button
               onClick={() => setSignInOpen(true)}
@@ -154,7 +201,7 @@ export default function PublicHeader({
           aria-hidden
         />
         <nav
-          className={`relative flex h-full w-full max-w-xs flex-col bg-[#080617] border-r border-[#1C2B3A] shadow-2xl transition-transform duration-300 ease-out ${
+          className={`relative flex h-full w-full max-w-xs flex-col bg-[#060A14] border-r border-[#1C2B3A] shadow-2xl transition-transform duration-300 ease-out ${
             navOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
