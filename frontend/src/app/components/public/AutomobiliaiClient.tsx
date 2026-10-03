@@ -18,11 +18,11 @@ import {
 } from "react-icons/fi";
 import PublicHeader from "./PublicHeader";
 import MapTexture from "./MapTexture";
-import DatePicker from "./DatePicker";
 import { SearchValue } from "./SearchForm";
 import { usePublicCars, PublicCar } from "@/hooks/usePublicCars";
 import { getCarPhoto } from "@/utils/carPhoto";
 import { LOCATIONS, distanceKm } from "@/utils/locations";
+import { formatLt, defaultDateRange } from "@/utils/formatLt";
 import { buildAutomobiliaiHref } from "@/utils/publicSearch";
 
 const CarResultsMap = dynamic(() => import("./CarResultsMap"), {
@@ -42,12 +42,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 const DEFAULT_CENTER = { lat: 55.2, lng: 23.9 };
-
-// "YYYY-MM-DD" -> "DD.MM.YYYY", naudojama datų intervalo santraukai virš rezultatų.
-function formatLt(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-");
-  return `${d}.${m}.${y}`;
-}
 
 // Mažas, savarankiškas dropdown filtras juostoje - kiekviena kategorija (markė, kėbulo
 // tipas...) savo atskiras mygtukas, o ne visi sugrūsti į vieną "Daugiau filtrų" meniu.
@@ -78,8 +72,9 @@ function FilterDropdown({
         <FiChevronDown className="text-xs" />
       </PopoverButton>
       <PopoverPanel
+        transition
         anchor="bottom start"
-        className="z-50 mt-2 w-56 max-h-80 overflow-y-auto rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-3 shadow-2xl"
+        className="z-50 mt-2 w-56 max-h-80 overflow-y-auto rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-3 shadow-2xl origin-top transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 data-[closed]:-translate-y-1"
       >
         <div className="space-y-1">
           {options.map((o) => (
@@ -102,6 +97,63 @@ function FilterDropdown({
   );
 }
 
+// Vietų skaičius yra VIENO pasirinkimo (ne multi-select) filtras, tad savo, atskiras
+// dropdown, bet TOKS PAT vizualus stilius/elgesys kaip FilterDropdown (Markė/Kėbulas/
+// Kuras) - atskiras mygtukas juostoje, ne sujungtas su kažkuo kitu į "Daugiau filtrų".
+function SeatsFilterDropdown({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <Popover className="relative">
+      <PopoverButton
+        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition ${
+          value
+            ? "border-[#0F597B] bg-[#0F597B]/20 text-[#4BAFD4]"
+            : "border-[#1C2B3A] bg-[#1A2238] text-[#8899AA] hover:text-[#F7F7F7]"
+        }`}
+      >
+        Vietų sk. {value && `(${value}+)`}
+        <FiChevronDown className="text-xs" />
+      </PopoverButton>
+      <PopoverPanel
+        transition
+        anchor="bottom start"
+        className="z-50 mt-2 w-48 rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-3 shadow-2xl origin-top transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 data-[closed]:-translate-y-1"
+      >
+        {({ close }) => (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => { onChange(null); close(); }}
+              className={`w-full rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                !value ? "bg-[#0F597B]/20 text-[#4BAFD4]" : "text-[#C5CEDA] hover:bg-[#1A2238]"
+              }`}
+            >
+              Visos
+            </button>
+            {[2, 4, 5, 7].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => { onChange(n); close(); }}
+                className={`w-full rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                  value === n ? "bg-[#0F597B]/20 text-[#4BAFD4]" : "text-[#C5CEDA] hover:bg-[#1A2238]"
+                }`}
+              >
+                {n}+ vietos
+              </button>
+            ))}
+          </div>
+        )}
+      </PopoverPanel>
+    </Popover>
+  );
+}
+
 // Rezultato "plytelė" - apvalus, iškylantis mygtukas, ne Excel lentelės eilutė. Puikaus
 // pasiūlymo žymeklis (oranžinis švytėjimas) skirtas TOP 3 pagal "Rekomenduojama" balą,
 // nepriklausomai nuo realiai pasirinkto rūšiavimo - tai nuoseklus "geras sandoris" ženklas.
@@ -111,12 +163,12 @@ function ResultCard({ car, isTopPick }: { car: PublicCar; isTopPick: boolean }) 
       href={`/automobiliai/${car.automobilio_id}`}
       className={`group relative flex gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 ${
         isTopPick
-          ? "border-[#FF7A1A]/50 bg-[#1A1430] shadow-[0_0_0_1px_rgba(255,122,26,0.15),0_8px_24px_-8px_rgba(255,122,26,0.35)] hover:shadow-[0_0_0_1px_rgba(255,122,26,0.3),0_12px_32px_-8px_rgba(255,122,26,0.5)]"
+          ? "border-[#FF7A1A]/50 bg-[#1A2238] shadow-[0_0_0_1px_rgba(255,122,26,0.15),0_8px_24px_-8px_rgba(255,122,26,0.35)] hover:shadow-[0_0_0_1px_rgba(255,122,26,0.3),0_12px_32px_-8px_rgba(255,122,26,0.5)]"
           : "border-[#1C2B3A] bg-[#0E1525] hover:border-[#0F597B]/40"
       }`}
     >
       {isTopPick && (
-        <span className="absolute -top-2 left-3 flex items-center gap-1 rounded-full bg-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0E0B1F] shadow-[0_2px_10px_rgba(255,122,26,0.6)]">
+        <span className="absolute -top-2 left-3 flex items-center gap-1 rounded-full bg-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0B121F] shadow-[0_2px_10px_rgba(255,122,26,0.6)]">
           <FiStar className="text-[10px]" /> Puikus pasiūlymas
         </span>
       )}
@@ -163,7 +215,7 @@ export default function AutomobiliaiClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [search, setSearch] = useState<SearchValue>({ location: "", dateFrom: "", dateTo: "" });
+  const [search, setSearch] = useState<SearchValue>({ location: "", ...defaultDateRange() });
   const { cars, isLoading, error } = usePublicCars({ dateFrom: search.dateFrom, dateTo: search.dateTo });
   const [sort, setSort] = useState<SortKey>("recommended");
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
@@ -190,6 +242,14 @@ export default function AutomobiliaiClient() {
         dateTo: dateTo ?? s.dateTo,
       }));
     }
+  }, [searchParams]);
+
+  // Iš pradinio puslapio "Automobilių tipai" kortelių (ateina su ?kebulas= arba ?kuras=).
+  useEffect(() => {
+    const kebulas = searchParams.get("kebulas");
+    const kuras = searchParams.get("kuras");
+    if (kebulas) setKebuloTipas([kebulas]);
+    if (kuras) setKuroTipas([kuras]);
   }, [searchParams]);
 
   // search.location visada tiksliai atitinka vieno padalinio miestą (LocationSearch
@@ -225,9 +285,7 @@ export default function AutomobiliaiClient() {
     };
   }, [cars]);
 
-  // Filtrai BE vietos - naudojama žemėlapiui, kad visi padaliniai liktų matomi/spaudžiami,
-  // net kai vienas jau pasirinktas (anksčiau pasirinkus vietą kiti taškai tiesiog
-  // dingdavo nuo žemėlapio, versdami pirma "Išvalyti filtrus", kad pamatytum alternatyvas).
+  // Filtrai BE vietos - kad visi padaliniai liktų matomi/spaudžiami žemėlapyje net kai vienas pasirinktas.
   const filteredExceptLocation = useMemo(() => {
     return cars.filter((c) => {
       if (marke.length && !marke.includes(c.marke)) return false;
@@ -305,6 +363,8 @@ export default function AutomobiliaiClient() {
     return map;
   }, [filteredExceptLocation]);
 
+  // Datų laukai NIEKADA neturi likti tušti - "Išvalyti" grąžina juos į numatytąjį
+  // (šiandien -> rytoj) intervalą, ne į "", lygiai kaip pradinė šio komponento būsena.
   const clearFilters = () => {
     setMarke([]);
     setKebuloTipas([]);
@@ -314,14 +374,21 @@ export default function AutomobiliaiClient() {
     setMaxKaina("");
     setSedimosVietos(null);
     setVietosId(null);
+    setSearch((s) => ({ ...s, ...defaultDateRange() }));
   };
 
+  // Datos skaičiuojamos kaip "aktyvus filtras" tik kai jos SKIRIASI nuo numatytojo
+  // intervalo - priešingu atveju jos būtų amžinai įskaičiuotos (nes dabar niekada
+  // nėra tuščios), ir "Išvalyti" mygtukas niekada neišnyktų net nieko nepasirinkus.
+  const defaultRange = defaultDateRange();
   const activeFilterCount =
     marke.length + kebuloTipas.length + kuroTipas.length + pavaruDeze.length +
-    (minKaina ? 1 : 0) + (maxKaina ? 1 : 0) + (sedimosVietos ? 1 : 0) + (vietosId ? 1 : 0);
+    (minKaina ? 1 : 0) + (maxKaina ? 1 : 0) + (sedimosVietos ? 1 : 0) + (vietosId ? 1 : 0) +
+    (search.dateFrom !== defaultRange.dateFrom ? 1 : 0) +
+    (search.dateTo !== defaultRange.dateTo ? 1 : 0);
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-[#0E0B1F]">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-[#0B121F]">
       <MapTexture />
       <div className="relative z-10 flex h-full flex-col">
         <PublicHeader
@@ -330,29 +397,21 @@ export default function AutomobiliaiClient() {
           onSearchSubmit={() => router.push(buildAutomobiliaiHref(search))}
         />
 
-        {/* Filtrų juosta - kiekviena kategorija SAVO atskiras dropdown, kairė->dešinė */}
+        {/* Filtrų juosta - vieta/datos valdomos VIRŠUTINĖJE paieškos juostoje (header'yje),
+            ne čia pakartotinai - dvi atskiros paieškos juostos vienos po kitos buvo tikra
+            dubliavimo/"per storo top bar" priežastis. Čia tik likę filtrai, sugrupuoti su
+            plonais skirtukais - KIEKVIENAS savo atskiras mygtukas, jokio sujungto "Daugiau
+            filtrų" meniu. */}
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#1C2B3A] bg-[#0E1525]/80 px-4 py-2.5 backdrop-blur sm:px-6">
-          <select
-            value={vietosId ?? ""}
-            onChange={(e) => setVietosId(e.target.value ? Number(e.target.value) : null)}
-            className="bg-[#1A2238] border border-[#1C2B3A] text-[#F7F7F7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0F597B]"
-          >
-            <option value="">Visos vietos</option>
-            {LOCATIONS.map((l) => (
-              <option key={l.vietos_id} value={l.vietos_id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-
-          <DatePicker label="Nuo" value={search.dateFrom} onChange={(v) => setSearch((s) => ({ ...s, dateFrom: v }))} compact />
-          <DatePicker
-            label="Iki"
-            value={search.dateTo}
-            onChange={(v) => setSearch((s) => ({ ...s, dateTo: v }))}
-            minDate={search.dateFrom}
-            compact
-          />
+          {vietosId && (
+            <span className="flex items-center gap-1.5 rounded-lg border border-[#0F597B] bg-[#0F597B]/20 px-3 py-2 text-sm text-[#4BAFD4]">
+              <FiMapPin className="text-xs" />
+              {LOCATIONS.find((l) => l.vietos_id === vietosId)?.name ?? "Pasirinkta vieta"}
+              <button onClick={() => setVietosId(null)} aria-label="Pašalinti vietos filtrą" className="text-[#4BAFD4]/70 hover:text-[#4BAFD4]">
+                <FiX className="text-xs" />
+              </button>
+            </span>
+          )}
 
           <div className="flex items-center gap-1.5">
             <input
@@ -374,22 +433,15 @@ export default function AutomobiliaiClient() {
             />
           </div>
 
-          <select
-            value={sedimosVietos ?? ""}
-            onChange={(e) => setSedimosVietos(e.target.value ? Number(e.target.value) : null)}
-            className={`rounded-lg border px-3 py-2 text-sm focus:outline-none ${
-              sedimosVietos ? "border-[#0F597B] bg-[#0F597B]/20 text-[#4BAFD4]" : "border-[#1C2B3A] bg-[#1A2238] text-[#8899AA]"
-            }`}
-          >
-            <option value="">Vietų sk.</option>
-            {[2, 4, 5, 7].map((n) => (
-              <option key={n} value={n}>{n}+ vietos</option>
-            ))}
-          </select>
+          <div className="h-6 w-px shrink-0 bg-[#1C2B3A]" />
 
           <FilterDropdown label="Markė" count={marke.length} options={facets.marke} selected={marke} onToggle={(v) => toggle(marke, setMarke, v)} />
           <FilterDropdown label="Kėbulas" count={kebuloTipas.length} options={facets.kebuloTipas} selected={kebuloTipas} onToggle={(v) => toggle(kebuloTipas, setKebuloTipas, v)} />
           <FilterDropdown label="Kuras" count={kuroTipas.length} options={facets.kuroTipas} selected={kuroTipas} onToggle={(v) => toggle(kuroTipas, setKuroTipas, v)} />
+
+          <div className="h-6 w-px shrink-0 bg-[#1C2B3A]" />
+
+          <SeatsFilterDropdown value={sedimosVietos} onChange={setSedimosVietos} />
           <FilterDropdown label="Pavarų dėžė" count={pavaruDeze.length} options={facets.pavaruDeze} selected={pavaruDeze} onToggle={(v) => toggle(pavaruDeze, setPavaruDeze, v)} />
 
           {activeFilterCount > 0 && (
@@ -423,7 +475,7 @@ export default function AutomobiliaiClient() {
 
         {/* Pagrindinis turinys: žemėlapis (2/3, dominuojantis) + rezultatų sąrašas (1/3) */}
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="h-[42vh] shrink-0 lg:h-auto lg:flex-[2]">
+          <div className="relative h-[42vh] shrink-0 lg:h-auto lg:flex-[2]">
             <CarResultsMap
               stats={mapStats}
               activeVietosId={vietosId}
@@ -432,6 +484,11 @@ export default function AutomobiliaiClient() {
               onSelectLocation={(id) => setVietosId((prev) => (prev === id ? null : id))}
               onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
             />
+            {/* Vinjetė - pritemdyti žemėlapio kraštai, kad tikros (nebe invertuotos)
+                plytelių spalvos švelniau "susilietų" su tamsiu puslapio fonu, ne
+                staigiai nukirstų stačiu kampu. pointer-events-none, kad nebūtų
+                užblokuoti markerių paspaudimai/vilkimas po šiuo sluoksniu. */}
+            <div className="pointer-events-none absolute inset-0 z-[5] shadow-[inset_0_0_60px_30px_rgba(11,18,31,0.55)]" />
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto border-t border-[#1C2B3A] p-3 lg:flex-[1] lg:border-t-0 lg:border-l">

@@ -12,11 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Kainos "pin" ant žemėlapio - kaip booking.com/airbnb rodo kainą tiesiai ant žymeklio,
-// ne tik pop-up'e. Automobilio ikona + kaina piliulėje, su smailiu apačioje, kuris
-// tiksliai rodo į koordinatę (translate(-50%,-100%) kelia visą ženkliuką virš taško,
-// o ne centruoja ant jo - taip pin'o "galiukas" atitinka realią vietą, profesionaliau
-// nei vien centruota piliulė). Aktyvus (pasirinktas) taškas paryškintas oranžine spalva.
+// translate(-50%,-100%), kad žymeklio GALAS, ne centras, rodytų į koordinatę.
 function priceIcon(minPrice: number, active: boolean) {
   const color = active ? "#FF7A1A" : "#0F597B";
   const carSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -93,19 +89,11 @@ export default function CarResultsMap({
             position={[loc.lat, loc.lng]}
             icon={priceIcon(stat.minPrice, active)}
             eventHandlers={{
-              // Paspaudus tašką IŠ KARTO pritaikomas filtras - nebereikia papildomai
-              // spausti mygtuko pop-up'e. Toggle (atšaukimas pakartotinai paspaudus) logika
-              // sąmoningai NEsprendžiama čia pagal "active" closure reikšmę - react-leaflet
-              // eventHandlers persirišimas su kiekvienu render'u gali laikyti pasenusią
-              // closure reikšmę, tad pats mygtuko paspaudimas visada siunčia tą patį
-              // vietos_id, o toggle sprendžia tėvinis komponentas per setState funkcinę
-              // formą (žr. AutomobiliaiClient.tsx) - tai garantuotai mato naujausią būseną.
+              // Toggle logika tėvo setState funkcinėje formoje, ne čia - eventHandlers
+              // closure čia gali likti pasenusi.
               click: () => onSelectLocation(loc.vietos_id),
             }}
-            // Paprastas naršyklės title (hover tooltip) vietoj Leaflet <Popup> - popup
-            // fiziškai persidengdavo su pačiu žymekliu (custom iconAnchor neatitiko Leaflet
-            // popup pozicionavimo matematikos), todėl antras paspaudimas pataikydavo į
-            // popup, o ne į žymeklį, ir filtro atšaukimas pakartotinai spaudžiant neveikdavo.
+            // Native title tooltip, ne <Popup> - popup persidengė su žymekliu ir "nuvogė" antrą paspaudimą.
             title={`${loc.name} - ${stat.count} ${stat.count === 1 ? "automobilis" : "automobiliai"} nuo ${stat.minPrice} € / parai`}
           />
         );
