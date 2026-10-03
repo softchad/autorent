@@ -13,7 +13,6 @@ export type CustomerInfo = {
   telefono_nr: string;
   gimimo_data: string;
   registracijos_data: string | null;
-  bonus_taskai: number;
 };
 
 type RegisterPayload = {
@@ -25,6 +24,14 @@ type RegisterPayload = {
   slaptazodis: string;
 };
 
+export type ProfileUpdatePayload = Partial<{
+  vardas: string;
+  pavarde: string;
+  el_pastas: string;
+  telefono_nr: string;
+  gimimo_data: string;
+}>;
+
 type CustomerAuthContextValue = {
   customer: CustomerInfo | null;
   token: string | null;
@@ -33,18 +40,17 @@ type CustomerAuthContextValue = {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   applyTokenFromOAuth: (token: string) => Promise<void>;
+  updateProfile: (payload: ProfileUpdatePayload) => Promise<void>;
 };
 
 const CustomerAuthContext = createContext<CustomerAuthContextValue | null>(null);
 
 function storeToken(token: string) {
   localStorage.setItem(STORAGE_KEY, token);
-  document.cookie = `${STORAGE_KEY}=${token}; path=/; SameSite=Lax`;
 }
 
 function clearToken() {
   localStorage.removeItem(STORAGE_KEY);
-  document.cookie = `${STORAGE_KEY}=; path=/; Max-Age=0`;
 }
 
 async function fetchCustomerInfo(token: string): Promise<CustomerInfo | null> {
@@ -56,9 +62,8 @@ async function fetchCustomerInfo(token: string): Promise<CustomerInfo | null> {
 }
 
 // Atskira kliento sesijos būsena, nesusieta su darbuotojų Redux authSlice - kitas
-// localStorage/cookie raktas ("customer_token" vs "token"), kitas backend
-// endpointas (/customer/...), kitas JWT tipas. Žr. backend app/api/deps.py
-// get_current_customer komentarus dėl saugumo ribos tarp šių dviejų sistemų.
+// localStorage raktas ("customer_token" vs "token"), kitas backend endpointas
+// (/customer/...), kitas JWT tipas.
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
@@ -126,6 +131,26 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (payload: ProfileUpdatePayload) => {
+    if (!token) throw new Error("Reikia prisijungti");
+    const res = await fetch(`${API}/api/v1/customer/profile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.detail ?? "Nepavyko atnaujinti profilio");
+    }
+    const data = await res.json();
+    const { access_token, ...info } = data;
+    setCustomer(info);
+    if (access_token) {
+      storeToken(access_token);
+      setTokenState(access_token);
+    }
+  }, [token]);
+
   const logout = useCallback(() => {
     clearToken();
     setCustomer(null);
@@ -133,7 +158,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <CustomerAuthContext.Provider value={{ customer, token, isLoading, login, register, logout, applyTokenFromOAuth }}>
+    <CustomerAuthContext.Provider value={{ customer, token, isLoading, login, register, logout, applyTokenFromOAuth, updateProfile }}>
       {children}
     </CustomerAuthContext.Provider>
   );

@@ -51,7 +51,7 @@ export default function SupportInbox({
   compact?: boolean;
   initialPrefill?: { kategorija: string; tema: string; rezervacijos_id?: number } | null;
 }) {
-  const { conversations, isLoading, refresh: refreshList } = useConversationList(token);
+  const { conversations, isLoading, loadError, refresh: refreshList } = useConversationList(token);
   const { reservations } = useCustomerReservations(token);
   const [openId, setOpenId] = useState<number | null>(null);
   const [composing, setComposing] = useState(false);
@@ -131,7 +131,7 @@ export default function SupportInbox({
               className={
                 m.autoriaus_tipas === "klientas"
                   ? "ml-auto max-w-[85%] rounded-xl rounded-tr-sm bg-[#0F597B]/20 border border-[#0F597B]/30 p-3"
-                  : "mr-auto max-w-[85%] rounded-xl rounded-tl-sm border border-[#1C2B3A] bg-[#0E0B1F] p-3"
+                  : "mr-auto max-w-[85%] rounded-xl rounded-tl-sm border border-[#1C2B3A] bg-[#0B121F] p-3"
               }
             >
               {m.autorius_vardas && <p className="mb-1 text-xs font-semibold text-[#4BAFD4]">{m.autorius_vardas}</p>}
@@ -190,20 +190,24 @@ export default function SupportInbox({
 
       {isLoading && <p className="text-sm text-[#8899AA]">Kraunama...</p>}
 
-      {!isLoading && conversations.length === 0 && (
+      {!isLoading && loadError && (
+        <p className="py-4 text-center text-sm text-red-400">{loadError}</p>
+      )}
+
+      {!isLoading && !loadError && conversations.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <FiInbox className="text-2xl text-[#3D4F63]" />
           <p className="text-sm text-[#8899AA]">Pokalbių dar nėra.</p>
         </div>
       )}
 
-      {!isLoading && conversations.length > 0 && (
+      {!isLoading && !loadError && conversations.length > 0 && (
         <div className={`space-y-2 ${compact ? "max-h-96 overflow-y-auto" : ""}`}>
           {conversations.map((c: Conversation) => (
             <button
               key={c.pokalbio_id}
               onClick={() => setOpenId(c.pokalbio_id)}
-              className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#1C2B3A] bg-[#0E0B1F] p-3.5 text-left hover:border-[#0F597B]/40 transition"
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#1C2B3A] bg-[#0B121F] p-3.5 text-left hover:border-[#0F597B]/40 transition"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

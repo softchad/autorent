@@ -41,26 +41,42 @@ export type ConversationDetail = Conversation & { zinutes: SupportMessage[] };
 export function useConversationList(token: string | null) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
       setConversations([]);
       return;
     }
-    const res = await fetch(`${API}/api/v1/customer/support/conversations`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) setConversations(await res.json());
+    try {
+      const res = await fetch(`${API}/api/v1/customer/support/conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setConversations(await res.json());
+      setLoadError(null);
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setLoadError("Nepavyko įkelti pokalbių sąrašo.");
+      }
+    }
   }, [token]);
 
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
-    refresh().finally(() => setIsLoading(false));
-    const interval = setInterval(refresh, 20000);
-    return () => clearInterval(interval);
+    refresh(controller.signal).finally(() => {
+      if (!controller.signal.aborted) setIsLoading(false);
+    });
+    const interval = setInterval(() => refresh(controller.signal), 20000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [refresh]);
 
-  return { conversations, isLoading, refresh };
+  return { conversations, isLoading, loadError, refresh };
 }
 
 export function useConversation(token: string | null, pokalbioId: number | null) {
@@ -69,12 +85,20 @@ export function useConversation(token: string | null, pokalbioId: number | null)
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token || !pokalbioId) return;
-    const res = await fetch(`${API}/api/v1/customer/support/conversations/${pokalbioId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) setConversation(await res.json());
+    try {
+      const res = await fetch(`${API}/api/v1/customer/support/conversations/${pokalbioId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setConversation(await res.json());
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setError("Nepavyko įkelti pokalbio.");
+      }
+    }
   }, [token, pokalbioId]);
 
   useEffect(() => {
@@ -82,10 +106,16 @@ export function useConversation(token: string | null, pokalbioId: number | null)
       setConversation(null);
       return;
     }
+    const controller = new AbortController();
     setIsLoading(true);
-    refresh().finally(() => setIsLoading(false));
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
+    refresh(controller.signal).finally(() => {
+      if (!controller.signal.aborted) setIsLoading(false);
+    });
+    const interval = setInterval(() => refresh(controller.signal), 5000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [pokalbioId, refresh]);
 
   const send = useCallback(

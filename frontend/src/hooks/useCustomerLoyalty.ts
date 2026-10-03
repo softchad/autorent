@@ -26,9 +26,10 @@ export type LoyaltyStatus = {
 export function useCustomerLoyalty(token: string | null) {
   const [status, setStatus] = useState<LoyaltyStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
       setStatus(null);
       return;
@@ -37,15 +38,24 @@ export function useCustomerLoyalty(token: string | null) {
     try {
       const res = await fetch(`${API}/api/v1/customer/loyalty`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
-      if (res.ok) setStatus(await res.json());
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setStatus(await res.json());
+      setError(null);
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setError("Nepavyko įkelti lojalumo būsenos.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) setIsLoading(false);
     }
   }, [token]);
 
   useEffect(() => {
-    refresh();
+    const controller = new AbortController();
+    refresh(controller.signal);
+    return () => controller.abort();
   }, [refresh]);
 
   const redeem = useCallback(
@@ -69,5 +79,5 @@ export function useCustomerLoyalty(token: string | null) {
     [token, refresh]
   );
 
-  return { status, isLoading, redeemError, redeem };
+  return { status, isLoading, error, redeemError, redeem };
 }

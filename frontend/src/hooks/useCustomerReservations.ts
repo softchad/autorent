@@ -22,8 +22,9 @@ export type CustomerReservation = {
 export function useCustomerReservations(token: string | null) {
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
       setReservations([]);
       return;
@@ -32,18 +33,27 @@ export function useCustomerReservations(token: string | null) {
     try {
       const res = await fetch(`${API}/api/v1/customer/reservations`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
-      if (res.ok) setReservations(await res.json());
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setReservations(await res.json());
+      setError(null);
+    } catch (e) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setError("Nepavyko įkelti rezervacijų.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) setIsLoading(false);
     }
   }, [token]);
 
   useEffect(() => {
-    refresh();
+    const controller = new AbortController();
+    refresh(controller.signal);
+    return () => controller.abort();
   }, [refresh]);
 
-  return { reservations, isLoading, refresh };
+  return { reservations, isLoading, error, refresh };
 }
 
 // Naujos rezervacijos kūrimas - naudojama automobilio detalių puslapyje.
