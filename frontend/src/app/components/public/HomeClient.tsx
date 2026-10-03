@@ -22,55 +22,65 @@ import FaqItem from "@/app/components/public/FaqItem";
 import BrandLogos from "@/app/components/public/BrandLogos";
 import MapTexture from "@/app/components/public/MapTexture";
 import { buildAutomobiliaiHref } from "@/utils/publicSearch";
+import { defaultDateRange } from "@/utils/formatLt";
 import BarChartBox from "@/app/components/BarChartBox";
 import PieChartBox from "@/app/components/PieChartBox";
 import stripes from "@/assets/var2.png";
 import dotsBg from "@/assets/var1.png";
 
-// DĖMESIO: šių 8 nuotraukų (public/images/fleet/) šaltinis NEPATVIRTINTAS - skirtingai
-// nei public/images/brands/CREDITS.md, čia nėra fotografo/licencijos įrašo. Žr.
-// public/images/fleet/CREDITS.md - prieš viešinant/ginant darbą reikia pakeisti
-// patikrintomis nuotraukomis su tikra atribucija.
+// Nuotraukų šaltiniai nepatvirtinti - žr. public/images/fleet/CREDITS.md prieš publikavimą.
+// href - NUSTATYTA TIK kai kortelė realiai atitinka filtruojamą lauką (kebulo_tipas
+// arba kuro_tipas) DB. Grynai estetinės kategorijos (sportinė/prabangos klasė,
+// dinamiškas dizainas...) neturi tokio lauko sistemoje, tad veda į bendrą sąrašą,
+// ne į suklastotą filtrą.
 const fleetPhotos = [
   {
     src: "/images/fleet/hero-dark-car.jpg",
     title: "Verslo ir sportinė klasė",
     desc: "Dinamiškos linijos ir aukšta komplektacija kelionėms, kuriose svarbus pirmas įspūdis.",
+    href: "/automobiliai",
   },
   {
     src: "/images/fleet/silver-sports-car.jpg",
     title: "Sportinė klasė",
     desc: "Aštrios linijos ir įspūdingas pagreitis, kai kelionė turi būti neužmirštama.",
+    href: "/automobiliai",
   },
   {
     src: "/images/fleet/suv-studio.jpg",
     title: "Visureigiai ir šeimyniniai",
     desc: "Daugiau vietos bagažui ir keleiviams, patogu šeimos kelionėms ar važiavimui su įranga.",
+    href: "/automobiliai?kebulas=Visureigis",
   },
   {
     src: "/images/fleet/red-convertible.jpg",
     title: "Kabrioletai",
     desc: "Atviras stogas kelionei, kurioje svarbus ne tik tikslas, bet ir pats vairavimo jausmas.",
+    href: "/automobiliai?kebulas=Kabrioletas",
   },
   {
     src: "/images/fleet/ev-charging.jpg",
     title: "Elektromobiliai",
     desc: "Tyliau, švariau ir pigiau kasdieniam važinėjimui po miestą ar trumpiems maršrutams.",
+    href: "/automobiliai?kuras=elektra",
   },
   {
     src: "/images/fleet/black-sports-car.jpg",
     title: "Prabangos klasė",
     desc: "Aukščiausios klasės komplektacija ir dėmesys kiekvienai detalei.",
+    href: "/automobiliai",
   },
   {
     src: "/images/fleet/sedan-highway.jpg",
     title: "Kelionėms tarp miestų",
     desc: "Ekonomiški ir patikimi automobiliai ilgesniems maršrutams per visą Lietuvą.",
+    href: "/automobiliai?kebulas=Sedanas",
   },
   {
     src: "/images/fleet/grey-sports-car.jpg",
     title: "Dinamiškas dizainas",
     desc: "Aerodinamiškos formos, sukurtos ne tik greičiui, bet ir įspūdžiui kelyje.",
+    href: "/automobiliai",
   },
 ];
 
@@ -80,8 +90,8 @@ const steps = [
     desc: "Naršyk pasiūlymus, palygink kainas pagal kuro tipą ir kėbulo klasę. Viską gali padaryti be registracijos, tiesiog atsidaręs svetainę.",
   },
   {
-    title: "Rezervacija (netrukus)",
-    desc: "Nurodysi paėmimo vietą ir datas, iš karto pamatysi aiškią kainą be paslėptų mokesčių. Rezervavimas internetu bus pasiekiamas kitame etape - kol kas gali peržiūrėti automobilį ir susisiekti tiesiogiai.",
+    title: "Rezervuok internetu",
+    desc: "Nurodysi paėmimo vietą ir datas, iš karto pamatysi aiškią kainą be paslėptų mokesčių. Patvirtinimą gauni iš karto, be skambučių ir laukimo.",
   },
   {
     title: "Atsiimk ir važiuok",
@@ -107,8 +117,8 @@ const whyUs = [
   },
   {
     icon: FiCalendar,
-    title: "Lankstus atšaukimas",
-    desc: "Planai keičiasi, todėl rezervaciją gali koreguoti ar atšaukti prieš sutartą paėmimo laiką.",
+    title: "Lankstus bendravimas",
+    desc: "Planai keičiasi - susisiek su mumis ir padėsime pakoreguoti ar atšaukti rezervaciją prieš paėmimo laiką.",
   },
   {
     icon: FiZap,
@@ -118,7 +128,7 @@ const whyUs = [
   {
     icon: FiThumbsUp,
     title: "Lojalumo programa",
-    desc: "Kiekviena užbaigta nuoma artina prie nuolaidos kitai kelionei.",
+    desc: "Kiekviena užbaigta nuoma artina prie atlygio - progresą sekti gali savo paskyroje.",
   },
 ];
 
@@ -164,9 +174,9 @@ const priceByFuel = [
 
 // Automobilių pasiskirstymas pagal kėbulo tipą, realūs dabartinio parko skaičiai.
 const carsByBody = [
-  { name: "Sedanas", value: 6 },
-  { name: "Hečbekas", value: 2 },
-  { name: "Visureigis", value: 2 },
+  { name: "Sedanas", value: 42 },
+  { name: "Hečbekas", value: 14 },
+  { name: "Visureigis", value: 14 },
 ];
 
 const faqs = [
@@ -176,7 +186,7 @@ const faqs = [
   },
   {
     q: "Ar reikalinga išankstinė registracija?",
-    a: "Naršyti automobilius, filtruoti pagal tipą ir pamatyti orientacines kainas gali visiškai be registracijos. Internetinis rezervacijos patvirtinimas, nuomų istorija ir lojalumo progresas bus pasiekiami kitame etape - kol kas rezervuoti galima susisiekus su mumis tiesiogiai.",
+    a: "Naršyti automobilius, filtruoti pagal tipą ir pamatyti orientacines kainas gali visiškai be registracijos. Rezervacijos patvirtinimui internetu, nuomų istorijai ir lojalumo progresui reikės nemokamos kliento paskyros.",
   },
   {
     q: "Kokie dokumentai reikalingi atsiimant automobilį?",
@@ -184,7 +194,7 @@ const faqs = [
   },
   {
     q: "Ar galiu atšaukti arba pakeisti rezervaciją?",
-    a: "Atšaukimo ir pakeitimo sąlygos bus aiškiai nurodytos patvirtinimo metu, kai internetinis rezervavimas bus pasiekiamas. Kol kas dėl esamų susitarimų kreipkis tiesiogiai telefonu ar el. paštu.",
+    a: "Rezervaciją gali peržiūrėti savo paskyroje. Jei reikia pakeisti datas ar atšaukti, susisiek su mumis telefonu ar el. paštu - padėsime sutvarkyti greitai.",
   },
   {
     q: "Kaip veikia kuro politika?",
@@ -192,11 +202,11 @@ const faqs = [
   },
   {
     q: "Ar kainoje jau įskaičiuotas draudimas?",
-    a: "Pagrindinis draudimas paprastai įtraukiamas į nuomos kainą. Papildomas draudimo apsaugos lygis gali būti pasirenkamas atskirai priklausomai nuo poreikio.",
+    a: "Rodoma kaina apima bazinę nuomos apsaugą. Dėl papildomo draudimo apimties ar konkrečių sąlygų susisiek su mumis tiesiogiai - sutvarkysime prieš atsiėmimą.",
   },
   {
     q: "Ar galima grąžinti automobilį kitame mieste nei buvo paimtas?",
-    a: "Priklausomai nuo padalinio ir pasirinkto automobilio, grąžinimas kitame mieste gali būti galimas. Šią informaciją geriausia patikrinti rezervacijos metu prie konkretaus automobilio.",
+    a: "Internetinė rezervacija kol kas automobilį priskiria vienam padaliniui. Jei reikia grąžinti kitame mieste, susisiek su mumis - tai sutvarkoma individualiai.",
   },
 ];
 
@@ -216,7 +226,7 @@ const locations = [
 
 export default function HomeClient() {
   const router = useRouter();
-  const [search, setSearch] = useState<SearchValue>({ location: "", dateFrom: "", dateTo: "" });
+  const [search, setSearch] = useState<SearchValue>({ location: "", ...defaultDateRange() });
 
   const handleSearch = () => router.push(buildAutomobiliaiHref(search));
 
@@ -225,7 +235,7 @@ export default function HomeClient() {
     // CSS elgesys: overflow-x nustatymas protėvyje sukuria naują scroll konteinerį, kuriame
     // sticky elementas "prilimpa" tik PRIE JO, o ne prie realaus naršyklės lango). Horizontalus
     // persiliejimas jau apsaugotas lokaliai - MapTexture ir Hero sekcija turi savo overflow-hidden.
-    <div className="relative min-h-screen bg-[#0E0B1F]">
+    <div className="relative min-h-screen bg-[#0B121F]">
       <MapTexture />
 
       <div className="relative z-10">
@@ -243,8 +253,8 @@ export default function HomeClient() {
               priority
               className="object-cover opacity-70"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0E0B1F] via-[#0E0B1F]/85 to-[#0E0B1F]/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F] via-transparent to-[#0E0B1F]/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0B121F] via-[#0B121F]/85 to-[#0B121F]/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B121F] via-transparent to-[#0B121F]/60" />
           </div>
 
           <div className="pointer-events-none absolute inset-0">
@@ -262,7 +272,7 @@ export default function HomeClient() {
             </h1>
             <p className="mt-4 text-base sm:text-lg text-[#8899AA] max-w-xl mx-auto">
               Naršyk automobilius ir palygink kainas pagal kuro tipą ir kėbulo klasę - be registracijos ir be
-              paslėptų mokesčių. Rezervavimas internetu bus pasiekiamas kitame etape.
+              paslėptų mokesčių. Rezervuok internetu per kelias minutes, kai surasi tinkamą automobilį.
             </p>
 
             <SearchForm value={search} onChange={setSearch} onSubmit={handleSearch} variant="hero" />
@@ -274,7 +284,7 @@ export default function HomeClient() {
           <div className="flex flex-col divide-y divide-[#1C2B3A] sm:flex-row sm:divide-x sm:divide-y-0 rounded-2xl border border-[#1C2B3A] bg-[#0E1525]/60">
             {[
               { value: "10", label: "miestų Lietuvoje" },
-              { value: "10", label: "automobilių parke" },
+              { value: "70", label: "automobilių parke" },
               { value: "0 €", label: "registracijos mokestis" },
               { value: "~5 min", label: "iki tinkamo automobilio" },
             ].map((f) => (
@@ -286,12 +296,13 @@ export default function HomeClient() {
           </div>
           <p className="mt-6 text-center text-sm text-[#8899AA] max-w-2xl mx-auto">
             AutoRent leidžia palyginti kainas, kėbulo tipus ir kuro rūšis internetu, be registracijos ir be paslėptų
-            mokesčių. Rezervacijos patvirtinimas internetu ir lojalumo progreso sekimas bus pasiekiami kitame etape.
+            mokesčių. Rezervacijos patvirtinimas internetu, nuomų istorija ir lojalumo progreso sekimas pasiekiami
+            susikūrus nemokamą paskyrą.
           </p>
         </section>
 
         {/* Automobilių markės */}
-        <section id="markes" className="border-y border-[#1C2B3A] bg-[#080617]/60 py-10 overflow-hidden">
+        <section id="markes" className="border-y border-[#1C2B3A] bg-[#060A14]/60 py-10 overflow-hidden">
           <p className="text-center text-xs uppercase tracking-widest text-[#3D4F63] mb-6">
             Automobiliai iš populiariausių gamintojų
           </p>
@@ -308,9 +319,10 @@ export default function HomeClient() {
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 auto-rows-[150px] sm:auto-rows-[190px] gap-4">
             {fleetPhotos.map((f, i) => (
-              <div
+              <Link
+                href={f.href}
                 key={f.title}
-                className={`group relative overflow-hidden rounded-xl border border-[#1C2B3A] ${
+                className={`group relative overflow-hidden rounded-xl border border-[#1C2B3A] hover:border-[#0F597B]/50 transition ${
                   i === 0 ? "col-span-2 row-span-2" : ""
                 }`}
               >
@@ -321,14 +333,14 @@ export default function HomeClient() {
                   sizes="(max-width: 640px) 50vw, 25vw"
                   className="object-cover transition duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F] via-[#0E0B1F]/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B121F] via-[#0B121F]/40 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
                   <h3 className="text-[#F7F7F7] font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1">{f.title}</h3>
                   <p className={`text-[11px] sm:text-xs text-[#C5CEDA] leading-relaxed ${i === 0 ? "" : "hidden sm:block"}`}>
                     {f.desc}
                   </p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
           <p className="mt-4 text-center text-xs text-[#3D4F63]">Iliustracinės nuotraukos.</p>
@@ -354,7 +366,7 @@ export default function HomeClient() {
         </section>
 
         {/* Kodėl rinktis AutoRent */}
-        <section className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#080617]">
+        <section className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#060A14]">
           <Image
             src={stripes}
             alt=""
@@ -400,10 +412,10 @@ export default function HomeClient() {
         <section id="akcijos" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="flex items-center gap-2 justify-center mb-3">
             <FiTag className="text-[#4BAFD4]" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#F7F7F7] text-center">Akcijos ir pasiūlymai</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#F7F7F7] text-center">Kainos pagal kuro tipą</h2>
           </div>
           <p className="text-center text-[#8899AA] max-w-xl mx-auto mb-12">
-            Kainos atspindi šiandienos AutoRent automobilių parką pagal kuro tipą. Atnaujiname augant flotilei.
+            Žemiausia kaina kiekvienoje kategorijoje, pagal šiandienos AutoRent automobilių parką.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {deals.map((d) => (
@@ -419,9 +431,9 @@ export default function HomeClient() {
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F] via-[#0E0B1F]/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B121F] via-[#0B121F]/60 to-transparent" />
                 </div>
-                <span className="absolute top-3 left-3 rounded-full bg-[#0E0B1F]/80 backdrop-blur px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#4BAFD4] border border-[#0F597B]/30">
+                <span className="absolute top-3 left-3 rounded-full bg-[#0B121F]/80 backdrop-blur px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#4BAFD4] border border-[#0F597B]/30">
                   {d.tag}
                 </span>
                 <div className="absolute inset-x-0 bottom-0 p-4">
@@ -437,7 +449,7 @@ export default function HomeClient() {
         </section>
 
         {/* Statistika / AutoRent naujienos */}
-        <section id="statistika" className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#080617] py-16">
+        <section id="statistika" className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#060A14] py-16">
           <Image
             src={dotsBg}
             alt=""
@@ -456,7 +468,7 @@ export default function HomeClient() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="bg-[#0E1525] border border-[#1C2B3A] rounded-xl p-6 text-center transition hover:border-[#0F597B]/40 hover:-translate-y-0.5">
                 <FiTruck className="text-2xl text-[#4BAFD4] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#F7F7F7]">10</p>
+                <p className="text-2xl font-bold text-[#F7F7F7]">70</p>
                 <p className="text-xs text-[#8899AA] mt-1">automobilių parke</p>
               </div>
               <div className="bg-[#0E1525] border border-[#1C2B3A] rounded-xl p-6 text-center transition hover:border-[#0F597B]/40 hover:-translate-y-0.5">
@@ -491,14 +503,19 @@ export default function HomeClient() {
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="bg-[#0E1525] border border-[#1C2B3A] rounded-2xl p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-8">
             <FiAward className="text-5xl text-[#4BAFD4] shrink-0" />
-            <div>
+            <div className="flex-1">
               <h3 className="text-xl font-bold text-[#F7F7F7] mb-2">Lojalumo programa</h3>
               <p className="text-sm text-[#8899AA] leading-relaxed max-w-2xl">
-                Kiekviena užbaigta nuoma priartina prie atlygio. Sekk savo kelią profilyje ir pasinaudok nuolaida
-                kitai nuomai. Kuo daugiau keliauji su AutoRent, tuo daugiau sutaupai. Ši funkcija bus prieinama kartu
-                su kliento paskyra.
+                Kiekviena užbaigta nuoma priartina prie atlygio. Sek savo kelią profilyje ir pasinaudok atlygiu
+                kitai nuomai. Kuo daugiau keliauji su AutoRent, tuo daugiau sutaupai.
               </p>
             </div>
+            <Link
+              href="/paskyra"
+              className="shrink-0 bg-[#0F597B] hover:bg-[#0C4A66] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition whitespace-nowrap"
+            >
+              Prisijungti / Registruotis
+            </Link>
           </div>
         </section>
 

@@ -11,7 +11,7 @@ import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
 // Spalvos paimtos iš darbuotojų dashboard StatCard komponento, kad viešas puslapis
 // naudotų tą pačią spalvų kalbą kaip vidinė sistema.
-const AVATAR_COLORS = ["#163858", "#3D3F5A", "#5B2C3A"];
+const AVATAR_COLORS = ["#163858", "#3D3F5A", "#1F4D3D"];
 
 type Review = {
   name: string;
@@ -72,7 +72,7 @@ export default function ContactSection() {
   return (
     <>
       {/* Atsiliepimai */}
-      <section className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#080617] py-16">
+      <section className="relative overflow-hidden border-y border-[#1C2B3A] bg-[#060A14] py-16">
         <Image
           src={dots}
           alt=""

@@ -18,14 +18,19 @@ const carsLinks = [
   { label: "Vilniuje", href: "/automobiliai?location=Vilnius" },
   { label: "Kaune", href: "/automobiliai?location=Kaunas" },
   { label: "Klaipėdoje", href: "/automobiliai?location=Klaip%C4%97da" },
-  { label: "Dažni klausimai", href: "/" },
+  { label: "Dažni klausimai", href: "/#duk" },
 ];
+
+const COMPANY_ADDRESS = "Gedimino pr. 1, Vilnius";
+const COMPANY_PHONE = "+37060000000";
+const COMPANY_PHONE_DISPLAY = "+370 600 00000";
+const COMPANY_EMAIL = "info@autorent.lt";
 
 const socialIcons = [FaFacebook, FaXTwitter, FaInstagram, FaYoutube];
 
 export default function PublicFooter() {
   return (
-    <footer className="border-t border-[#1C2B3A] bg-[#080617]">
+    <footer className="border-t border-[#1C2B3A] bg-[#060A14]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -65,13 +70,27 @@ export default function PublicFooter() {
             <h3 className="text-[#F7F7F7] font-semibold mb-3 text-sm">Kontaktai</h3>
             <ul className="space-y-2 text-sm text-[#8899AA]">
               <li className="flex items-center gap-2">
-                <FiMapPin className="shrink-0" /> Vilnius, Lietuva
+                <FiMapPin className="shrink-0" />
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY_ADDRESS)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#4BAFD4] transition"
+                >
+                  Vilnius Centras, {COMPANY_ADDRESS}
+                </a>
               </li>
               <li className="flex items-center gap-2">
-                <FiPhone className="shrink-0" /> +370 600 00000
+                <FiPhone className="shrink-0" />
+                <a href={`tel:${COMPANY_PHONE}`} className="hover:text-[#4BAFD4] transition">
+                  {COMPANY_PHONE_DISPLAY}
+                </a>
               </li>
               <li className="flex items-center gap-2">
-                <FiMail className="shrink-0" /> info@autorent.lt
+                <FiMail className="shrink-0" />
+                <a href={`mailto:${COMPANY_EMAIL}`} className="hover:text-[#4BAFD4] transition">
+                  {COMPANY_EMAIL}
+                </a>
               </li>
             </ul>
           </div>
@@ -92,13 +111,13 @@ export default function PublicFooter() {
 
           <div className="flex items-center gap-3">
             {socialIcons.map((Icon, i) => (
-              <span
+              <Link
                 key={i}
-                title="Netrukus"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#1C2B3A] text-[#3D4F63] cursor-default"
+                href="/"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#1C2B3A] text-[#3D4F63] hover:border-[#0F597B]/50 hover:text-[#4BAFD4] transition"
               >
                 <Icon className="text-sm" />
-              </span>
+              </Link>
             ))}
           </div>
         </div>

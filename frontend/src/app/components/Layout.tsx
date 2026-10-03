@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // be darbuotojų Sidebar, watermark ar main paddingo.
   const isFullBleed = isPublicPath(pathname ?? "") || pathname === "/login";
   if (isFullBleed) {
-    return <div className="min-h-screen bg-[#0E0B1F]">{children}</div>;
+    return <div className="min-h-screen bg-[#0B121F]">{children}</div>;
   }
 
   return (

@@ -1,16 +1,8 @@
 "use client";
 
-// Abstraktus, nespecifinis "žemėlapio" fonas - stilizuotas gatvių tinklas + upės linija,
-// primenantis tamsų žemėlapį (GTA IV/V minimap dvasia). Ne tikras geografinis žemėlapis,
-// tik dekoratyvi tekstūra po visu turiniu.
-//
-// Svarbu: šis sluoksnis yra "absolute inset-0" ir todėl išsitempia per VISO puslapio
-// aukštį (kelis ekranus), ne tik vieną langą. Jeigu gatvių tinklas būtų viename SVG su
-// viewBox + preserveAspectRatio="slice", jis būtų ištemptas/priartintas, kad "padengtų"
-// visą tą aukštį - todėl tinklelis atrodo milžiniškas ir permirkęs. Sprendimas: pats
-// pasikartojantis tinklas piešiamas kaip CSS background-repeat (fiksuoto pikselių dydžio
-// kafelis, nepriklausomas nuo konteinerio aukščio), o keliai/taškai - atskirame SVG su
-// FIKSUOTU aukščiu (ne visu puslapiu), kad irgi nesiskaičiuotų iš naujo pagal puslapio ilgį.
+// Dekoratyvus gatvių tinklas po turiniu, GTA minimap stiliaus.
+// Tinklelis per CSS background-repeat (fiksuoto dydžio), keliai/taškai atskirame
+// fiksuoto aukščio SVG - kitaip vienas SVG su viewBox ištemptų tinklelį per visą puslapio aukštį.
 const GRID_TILE_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
     <path d="M0 25 H160 M0 70 H160 M0 95 H160 M0 135 H160" stroke="#4BAFD4" stroke-width="1" fill="none" />

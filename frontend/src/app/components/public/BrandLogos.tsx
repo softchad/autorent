@@ -101,10 +101,7 @@ function BrandBadge({ brand }: { brand: Brand }) {
   );
 }
 
-// 4 identiškos kopijos (ne 2) - su plačiu ekranu be max-width apribojimo viena juostos
-// kopija (~1080px) yra siauresnė nei matomas plotas, todėl su 2 kopijomis dešinėje
-// pusėje atsirasdavo tuščias tarpas prieš animacijai "peršokant" atgal. 4 kopijos
-// garantuoja, kad turinio visada užtenka net ir labai plačiuose ekranuose.
+// 4 kopijos, ne 2 - plačiuose ekranuose 2 kopijos paliktų tarpą prieš animacijos šuolį atgal.
 const REPEAT = 4;
 
 export default function BrandLogos() {

@@ -37,7 +37,7 @@ type AutoWithCoords = Automobilis & { coords: LatLngExpression | null };
 
 type MapComponentProps = { cars: Automobilis[] };
 
-// Rodo automobilių žymenis žemėlapyje — naudoja koordinates iš DB arba geokuduoja adresą
+// Be DB koordinačių - geokoduoja adresą.
 export default function MapComponent({ cars }: MapComponentProps) {
   const LOADING_MESSAGES = [
     "Gaunami automobilių adresai...",
