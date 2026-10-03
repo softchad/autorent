@@ -21,11 +21,12 @@ import DatePicker from "./DatePicker";
 import SignInModal from "./SignInModal";
 import StatusBadge from "@/app/components/StatusBadge";
 import { SearchValue } from "./SearchForm";
-import { usePublicCar } from "@/hooks/usePublicCars";
+import { usePublicCar, useCarBusyDates } from "@/hooks/usePublicCars";
 import { getCarPhoto } from "@/utils/carPhoto";
 import { buildAutomobiliaiHref } from "@/utils/publicSearch";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 import { createCustomerReservation, CustomerReservation } from "@/hooks/useCustomerReservations";
+import { localISO, defaultDateRange } from "@/utils/formatLt";
 
 const STATUS_NOTE: Record<string, string> = {
   laisvas: "Šis automobilis šiuo metu laisvas.",
@@ -34,10 +35,17 @@ const STATUS_NOTE: Record<string, string> = {
   remonte: "Šis automobilis šiuo metu remontuojamas.",
 };
 
+function nextDay(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  return localISO(d);
+}
+
 export default function CarDetailClient({ id }: { id: number }) {
   const router = useRouter();
-  const [search, setSearch] = useState<SearchValue>({ location: "", dateFrom: "", dateTo: "" });
-  const { car, isLoading, notFound } = usePublicCar(id, { dateFrom: search.dateFrom, dateTo: search.dateTo });
+  const [search, setSearch] = useState<SearchValue>({ location: "", ...defaultDateRange() });
+  const { car, isLoading, notFound, error: dateRangeError } = usePublicCar(id, { dateFrom: search.dateFrom, dateTo: search.dateTo });
+  const busyDates = useCarBusyDates(id);
   const hasDateRange = Boolean(search.dateFrom && search.dateTo);
 
   const { customer, token } = useCustomerAuth();
@@ -71,7 +79,7 @@ export default function CarDetailClient({ id }: { id: number }) {
 
   return (
     // Be overflow-x-hidden - laužia PublicHeader "sticky" (žr. HomeClient.tsx komentarą).
-    <div className="relative min-h-screen bg-[#0E0B1F]">
+    <div className="relative min-h-screen bg-[#0B121F]">
       <MapTexture />
       <div className="relative z-10">
         <PublicHeader
@@ -116,7 +124,7 @@ export default function CarDetailClient({ id }: { id: number }) {
                       className="object-cover"
                       priority
                     />
-                    <span className="absolute left-3 top-3 rounded-full bg-[#0E0B1F]/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium text-[#8899AA]">
+                    <span className="absolute left-3 top-3 rounded-full bg-[#0B121F]/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium text-[#8899AA]">
                       Iliustracinė nuotrauka
                     </span>
                     <div className="absolute right-3 top-3">
@@ -148,6 +156,9 @@ export default function CarDetailClient({ id }: { id: number }) {
                     <Spec icon={<FiWind />} label="Klimato kontrolė" value={car.klimato_kontrole ? "Yra" : "Nėra"} />
                     <Spec icon={<FiNavigation />} label="Navigacija" value={car.navigacija ? "Yra" : "Nėra"} />
                     <Spec label="Kėbulo tipas" value={car.kebulo_tipas} />
+                    <Spec label="Variklio tūris" value={`${car.variklio_turis} L`} />
+                    <Spec label="Galia" value={`${car.galia_kw} kW`} />
+                    <Spec label="Rida" value={`${car.rida.toLocaleString("lt-LT")} km`} />
                   </div>
 
                   {car.lokacija && (
@@ -213,17 +224,36 @@ export default function CarDetailClient({ id }: { id: number }) {
                         <DatePicker
                           label="Nuo"
                           value={search.dateFrom}
-                          onChange={(v) => setSearch((s) => ({ ...s, dateFrom: v }))}
+                          onChange={(v) =>
+                            setSearch((s) => ({
+                              ...s,
+                              dateFrom: v,
+                              // "Iki" negali likti <= naujos "Nuo" - kitaip trumpam
+                              // atsiranda negaliojantis intervalas ir serveris grąžina
+                              // 400, kol antras laukas spėja atsinaujinti.
+                              dateTo: s.dateTo && s.dateTo > v ? s.dateTo : nextDay(v),
+                            }))
+                          }
+                          allowClear={false}
+                          disabledDates={busyDates}
                         />
                         <DatePicker
                           label="Iki"
                           value={search.dateTo}
                           onChange={(v) => setSearch((s) => ({ ...s, dateTo: v }))}
                           minDate={search.dateFrom}
+                          allowClear={false}
+                          disabledDates={busyDates}
                         />
                       </div>
 
-                      {hasDateRange && (
+                      {dateRangeError && (
+                        <div className="mb-3 rounded-lg px-3 py-2 text-sm font-medium bg-rose-900/30 text-rose-300 border border-rose-700/40">
+                          {dateRangeError}
+                        </div>
+                      )}
+
+                      {!dateRangeError && hasDateRange && (
                         <div
                           className={`mb-3 rounded-lg px-3 py-2 text-sm font-medium ${
                             car.laisvas_pasirinktu_laikotarpiu
