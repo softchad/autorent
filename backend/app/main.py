@@ -16,7 +16,7 @@ from utils.config import settings
 
 logger = logging.getLogger("autorent")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-from app.api.v1.endpoints import (
+from app.api.endpoints import (
     auth, employee, car, reservation, order, geocode, client, invoice, public,
     customer_auth, customer, customer_loyalty, customer_support, staff_support,
 )

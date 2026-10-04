@@ -9,7 +9,7 @@ def mock_geocode_address(monkeypatch):
         # Pakeičia TIKRĄ geocode_address šia - "async def", nes originali funkcija IR YRA async (žr. repositories/geocode.py).
         async def fake_geocode_address(adresas: str):
             return return_value
-        monkeypatch.setattr("app.api.v1.endpoints.geocode.geocode_address", fake_geocode_address)
+        monkeypatch.setattr("app.api.endpoints.geocode.geocode_address", fake_geocode_address)
     return _apply
 
 
