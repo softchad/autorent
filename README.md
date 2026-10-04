@@ -1,6 +1,9 @@
 # AutoRent
 
-Automobilių nuomos valdymo sistema. Darbuotojai valdo automobilius, klientus, rezervacijas, užsakymus ir sąskaitas per vaidmenimis apsaugotą sąsają.
+Automobilių nuomos valdymo sistema su dviem sąsajomis:
+
+- **Darbuotojų administravimo sistema** - automobiliai, klientai, rezervacijos, užsakymai, sąskaitos ir klientų aptarnavimas, apsaugoti vaidmenimis (RBAC).
+- **Vieša kliento svetainė** - automobilių paieška/rezervavimas, kliento paskyra, lojalumo programa ir pagalbos pokalbiai su darbuotojais, be prisijungimo arba su atskira kliento paskyra (slaptažodis arba Google/GitHub).
 
 ---
 
@@ -18,9 +21,9 @@ Automobilių nuomos valdymo sistema. Darbuotojai valdo automobilius, klientus, r
 
 | Sluoksnis | Technologija |
 |-----------|-------------|
-| **Backend** | FastAPI · SQLAlchemy · MySQL · Pydantic v2 |
-| **Frontend** | Next.js 15 · TypeScript · Redux Toolkit (RTK Query) · Tailwind CSS |
-| **Autentifikacija** | JWT · bcrypt · OAuth 2.0 (Google, GitHub) |
+| **Backend** | FastAPI · SQLAlchemy · MySQL · Pydantic v2 · slowapi (rate limiting) |
+| **Frontend** | Next.js 15 (App Router) · TypeScript · Redux Toolkit (RTK Query, darbuotojų sąsajai) · Tailwind CSS |
+| **Autentifikacija** | JWT · bcrypt · OAuth 2.0 (Google, GitHub) - atskiri darbuotojo ir kliento tokenai |
 | **Kiti** | Leaflet · react-pdf · OpenCage Geocoding |
 
 ---
@@ -52,7 +55,6 @@ Automobilių nuomos valdymo sistema. Darbuotojai valdo automobilius, klientus, r
 | `schema.sql` | Atidaryк → `Ctrl+A` → `Ctrl+Enter` |
 | `seed.sql` | Atidaryк → `Ctrl+A` → `Ctrl+Enter` |
 | `triggers.sql` | Kiekvieną `CREATE TRIGGER ... END` bloką **pažymėk atskirai** → `Ctrl+Enter` |
-| `transactions.sql` | `DROP PROCEDURE` eilutę vykdyk atskirai, tada visą `CREATE PROCEDURE ... END` bloką pažymėk → `Ctrl+Enter` |
 
 > **Admin paskyra:** `admin@autorent.lt` / `Admin123!`
 
@@ -71,18 +73,23 @@ Sukurk `backend/.env` failą (nukopijuok iš `backend/.env.example` ir užpildyk
 ```env
 SECRET_KEY=bet_koks_ilgas_raktas
 DATABASE_URL=mysql+pymysql://root:tavo_slaptazodis@localhost:3306/autorent
-SESSION_SECRET_KEY=bet_koks_ilgas_raktas
-OPENCAGE_API_KEY=raktas_is_opencage.com
 FRONTEND_URL=http://localhost:3000
 
-# OAuth (neprivaloma — be šių veikia tik paprastas prisijungimas)
+# Privalomas - OAuth sesijos cookie pasirašymui (min. 32 simboliai)
+SESSION_SECRET_KEY=bet_koks_ilgas_raktas
+
+# Google OAuth - privalomas (žr. GOOGLE_CLIENT_ID/SECRET žemiau), GitHub neprivalomas
 GOOGLE_CLIENT_ID=raktas_is_google_cloud_console
 GOOGLE_CLIENT_SECRET=raktas_is_google_cloud_console
 GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/google/callback
 
+# GitHub OAuth - neprivalomas, be šių GitHub prisijungimas tiesiog neaktyvus
 GITHUB_CLIENT_ID=raktas_is_github_developer_settings
 GITHUB_CLIENT_SECRET=raktas_is_github_developer_settings
 GITHUB_REDIRECT_URL=http://localhost:8000/api/v1/github/callback
+
+# Neprivalomas - be jo žemėlapio adresų paieška tiesiog neveiks
+OPENCAGE_API_KEY=raktas_is_opencage.com
 ```
 
 **Kiekvieną kartą:**
@@ -103,6 +110,12 @@ cd frontend
 npm install
 ```
 
+Sukurk `frontend/.env.local` failą (nukopijuok iš `frontend/.env.local.example`):
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
 **Kiekvieną kartą:**
 ```bash
 cd frontend
@@ -114,25 +127,40 @@ npm run dev
 
 ## Funkcionalumas
 
+### Darbuotojų administravimo sistema (`/dashboard`, `/cars`, `/clients`, ...)
+
 | Modulis | Aprašymas |
 |---------|-----------|
-| **Automobiliai** | CRUD, statusų valdymas, žemėlapis |
-| **Rezervacijos** | Datų rezervavimas |
+| **Automobiliai** | CRUD, statusų valdymas, žemėlapis, panaudojimo statistika |
+| **Rezervacijos** | Datų rezervavimas, SELECT ... FOR UPDATE apsauga nuo persidengimo lenktynių |
 | **Užsakymai** | Nuomos valdymas, kainos įvedimas, būsenų valdymas |
-| **Klientai** | Registras, bonus taškai |
+| **Klientai** | Registras, lojalumo (bonus) taškai (keisti gali tik administratorius) |
 | **Sąskaitos** | Generavimas, PDF atsisiuntimas |
 | **Darbuotojai** | Valdymas, rolės, prisijungimo paskyros |
-| **Pagalbos užklausos** | Klientų užklausų administravimas |
+| **Klientų aptarnavimas** | Pokalbių eilė, priskyrimas, atsakymai, vidinės pastabos |
 | **Profilis** | Paskyros peržiūra ir keitimas |
+
+### Vieša kliento svetainė (`/`, `/automobiliai`, `/paskyra`, ...)
+
+| Modulis | Aprašymas |
+|---------|-----------|
+| **Automobilių paieška** | Filtrai, rikiavimas, žemėlapis, laisvumo tikrinimas pasirinktam laikotarpiui |
+| **Rezervavimas** | Kliento paskyra (slaptažodis arba Google/GitHub) → rezervacijos kūrimas |
+| **Kliento paskyra** | Profilis, rezervacijų istorija, lojalumo progresas ir atlygiai |
+| **Pagalbos pokalbiai** | Klientas rašo darbuotojams, susietas su konkrečia rezervacija |
 
 ---
 
-## Rolės
+## Rolės (darbuotojų sąsaja)
 
-| Rolė | Skaityti | Redaguoti | Trinti |
-|------|:--------:|:---------:|:------:|
-| **Admin** | ✓ | ✓ | ✓ |
-| **Emplo** | ✓ | ✓ | — |
+| Rolė | Skaityti | Redaguoti | Trinti | Administravimas |
+|------|:--------:|:---------:|:------:|:---------------:|
+| **Administratorius** | ✓ | ✓ | ✓ | ✓ |
+| **Vadybininkas** | ✓ | ✓ | — | — |
+| **Mechanikas** | ✓ | ✓ | — | — |
+| **Klientų aptarnavimas** | ✓ | ✓ | — | — |
+
+Klientų aptarnavimo pokalbiai (ne bendras EDIT) matomi tik Administratorius/Vadybininkas/Klientų aptarnavimas rolėms - žr. `backend/app/api/v1/endpoints/staff_support.py`.
 
 ---
 
@@ -144,182 +172,52 @@ npm run dev
 
 ## Projekto struktūra
 
+Aukšto lygio apžvalga - tiksli failų struktūra keičiasi dažniau nei šis README, tad
+žemiau tik aplankų paskirtis. Pilną sąrašą žr. tiesiai repo.
+
 ```
 autorent/
 ├── backend/
-│   ├── .env.example
-│   ├── requirements.txt
 │   ├── app/
-│   │   ├── main.py
+│   │   ├── main.py                    FastAPI app, middleware, rate limiter, routeriai
+│   │   ├── rate_limit.py              bendras slowapi Limiter (main.py + endpoint'ai)
 │   │   ├── api/
-│   │   │   ├── deps.py
-│   │   │   ├── permissions.py
-│   │   │   └── v1/
-│   │   │       └── endpoints/
-│   │   │           ├── auth.py
-│   │   │           ├── car.py
-│   │   │           ├── client.py
-│   │   │           ├── client_support.py
-│   │   │           ├── employee.py
-│   │   │           ├── geocode.py
-│   │   │           ├── invoice.py
-│   │   │           ├── order.py
-│   │   │           └── reservation.py
-│   │   ├── db/
-│   │   │   ├── base.py
-│   │   │   └── session.py
-│   │   ├── models/
-│   │   │   ├── car.py
-│   │   │   ├── client.py
-│   │   │   ├── client_support.py
-│   │   │   ├── employee.py
-│   │   │   ├── invoice.py
-│   │   │   ├── location.py
-│   │   │   ├── order.py
-│   │   │   └── reservation.py
-│   │   ├── repositories/
-│   │   │   ├── car.py
-│   │   │   ├── client.py
-│   │   │   ├── client_support.py
-│   │   │   ├── employee.py
-│   │   │   ├── geocode.py
-│   │   │   ├── invoice.py
-│   │   │   ├── order.py
-│   │   │   └── reservation.py
-│   │   ├── schemas/
-│   │   │   ├── auth.py
-│   │   │   ├── car.py
-│   │   │   ├── client.py
-│   │   │   ├── client_support.py
-│   │   │   ├── employee.py
-│   │   │   ├── geocode.py
-│   │   │   ├── invoice.py
-│   │   │   ├── location.py
-│   │   │   ├── order.py
-│   │   │   └── reservation.py
-│   │   └── services/
-│   │       └── auth_service.py
-│   ├── tests/
-│   │   ├── conftest.py
-│   │   ├── init_test_db.sql
-│   │   ├── api/
-│   │   │   ├── test_auth.py
-│   │   │   ├── test_car.py
-│   │   │   ├── test_car_extended.py
-│   │   │   ├── test_client.py
-│   │   │   ├── test_client_extended.py
-│   │   │   ├── test_client_support.py
-│   │   │   ├── test_employee.py
-│   │   │   ├── test_geocode.py
-│   │   │   ├── test_invoice.py
-│   │   │   ├── test_order.py
-│   │   │   ├── test_reservation.py
-│   │   │   ├── test_reservation_extended.py
-│   │   │   ├── test_roles_permissions.py
-│   │   │   └── test_validation.py
-│   │   ├── services/
-│   │   │   ├── test_auth_service.py
-│   │   │   └── test_permissions.py
-│   │   └── utils/
-│   │       └── test_hateoas.py
-│   └── utils/
-│       ├── config.py
-│       └── hateoas.py
+│   │   │   ├── deps.py                get_current_user / get_current_customer / get_db
+│   │   │   ├── permissions.py         RBAC: Perm enum, ROLE_PERMS, require_perm
+│   │   │   └── v1/endpoints/          darbuotojų endpoint'ai (auth, car, client, employee,
+│   │   │                              order, reservation, invoice, staff_support, geocode)
+│   │   │                              IR kliento endpoint'ai (customer_auth, customer,
+│   │   │                              customer_loyalty, customer_support, public)
+│   │   ├── models/ · schemas/ · repositories/   SQLAlchemy modeliai, Pydantic schemos,
+│   │   │                                         DB prieigos sluoksnis (1 failas/esybė)
+│   │   └── services/                  verslo logika: auth_service, availability_service
+│   │                                   (SELECT ... FOR UPDATE rezervacijų persidengimui),
+│   │                                   support_service
+│   ├── tests/                         pytest - api/ (endpoint'ai, SQLite TestClient) ir
+│   │                                   services/ (vienetų testai)
+│   └── utils/config.py                pydantic Settings, .env skaitymas
 ├── frontend/
-│   ├── next.config.ts
-│   ├── package.json
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   ├── openapi.config.js
-│   ├── public/
-│   │   └── fonts/
-│   │       ├── Roboto-Bold.ttf
-│   │       └── Roboto-Regular.ttf
 │   └── src/
-│       ├── middleware.ts
-│       ├── app/
-│       │   ├── layout.tsx
-│       │   ├── page.tsx
-│       │   ├── globals.css
-│       │   ├── login/
-│       │   │   └── page.tsx
-│       │   ├── oauth/
-│       │   │   ├── page.tsx
-│       │   │   └── OAuthClient.tsx
-│       │   ├── profile/
-│       │   │   └── page.tsx
-│       │   ├── cars/
-│       │   │   └── page.tsx
-│       │   ├── clients/
-│       │   │   └── page.tsx
-│       │   ├── employees/
-│       │   │   └── page.tsx
-│       │   ├── invoices/
-│       │   │   └── page.tsx
-│       │   ├── orders/
-│       │   │   └── page.tsx
-│       │   ├── reservations/
-│       │   │   └── page.tsx
-│       │   ├── support/
-│       │   │   └── page.tsx
-│       │   ├── components/
-│       │   │   ├── ActionButtons.tsx
-│       │   │   ├── BarChartBox.tsx
-│       │   │   ├── BaseModal.tsx
-│       │   │   ├── ClientProvider.tsx
-│       │   │   ├── CreateEntityButton.tsx
-│       │   │   ├── DataTable.tsx
-│       │   │   ├── InvoicePdfDocument.tsx
-│       │   │   ├── InvoicePdfModal.tsx
-│       │   │   ├── Layout.tsx
-│       │   │   ├── LogoutButton.tsx
-│       │   │   ├── MapComponent.tsx
-│       │   │   ├── PieChartBox.tsx
-│       │   │   ├── Sidebar.tsx
-│       │   │   ├── StatCard.tsx
-│       │   │   ├── StatusBadge.tsx
-│       │   │   ├── loadingScreen.tsx
-│       │   │   └── modals/
-│       │   │       └── EntityModal.tsx
-│       │   ├── guards/
-│       │   │   └── AuthGuard.tsx
-│       │   └── providers/
-│       │       └── AuthHydrate.tsx
-│       ├── assets/
-│       │   ├── autorentLOGO.png
-│       │   └── autorenttext.png
-│       ├── hooks/
-│       │   ├── useCarsData.ts
-│       │   ├── useClientsData.ts
-│       │   ├── useDashboardStats.ts
-│       │   ├── useEmployeesData.ts
-│       │   ├── useInvoiceModals.ts
-│       │   ├── useInvoicesData.ts
-│       │   ├── useOrdersData.ts
-│       │   ├── useReservationData.ts
-│       │   └── useSupportData.ts
-│       ├── store/
-│       │   ├── authSlice.ts
-│       │   ├── baseApi.ts
-│       │   ├── carRentalApi.ts
-│       │   ├── enhanceEndpoints.ts
-│       │   ├── hooks.ts
-│       │   ├── index.ts
-│       │   └── store.ts
-│       └── utils/
-│           └── formatApiError.ts
+│       ├── app/                       Next.js App Router
+│       │   ├── (darbuotojų puslapiai) dashboard/, cars/, clients/, employees/, invoices/,
+│       │   │                          orders/, reservations/, support/, login/, profile/
+│       │   ├── (vieši puslapiai)      page.tsx, automobiliai/, paskyra/, apie-mus/,
+│       │   │                          kontaktai/, karjera/, kelioniu-patarimai/, ...
+│       │   ├── components/            darbuotojų UI (DataTable, EntityModal, ...) ir
+│       │   │   └── public/            viešos svetainės komponentai (AutomobiliaiClient,
+│       │   │                          AccountClient, SupportInbox, ...)
+│       │   ├── sitemap.ts / robots.ts
+│       │   └── guards/ · providers/   AuthGuard (darbuotojas), CustomerAuthProvider
+│       ├── hooks/                     RTK Query hook'ai (darbuotojams) + paprasti fetch
+│       │                              hook'ai (klientui): usePublicCars, useCustomerLoyalty,
+│       │                              useCustomerReservations, useCustomerConversations,
+│       │                              useStaffSupport, ...
+│       ├── store/                     Redux Toolkit + RTK Query (darbuotojų API)
+│       └── utils/                     formatLt, formatApiError, carPhoto, locations, ...
 ├── database/
-│   ├── schema.sql
-│   ├── seed.sql
-│   ├── triggers.sql
-│   ├── transactions.sql
-│   └── queries.sql
+│   ├── schema.sql · seed.sql          DDL ir pradiniai duomenys
+│   ├── triggers.sql                   duomenų vientisumo trigeriai
+│   └── queries.sql                    analitinės SQL užklausos
 └── docs/
     └── screenshots/
-        ├── login.png
-        ├── dashboard.png
-        ├── reservations.png
-        ├── clients.png
-        ├── invoice.png
-        └── support.png
 ```
