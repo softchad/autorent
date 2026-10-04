@@ -6,8 +6,7 @@
 -- Kiekvieną bloką nuo CREATE TRIGGER iki END pažymėk atskirai ir paleisk Ctrl+Enter
 
 -- ----------------------------------------------------------------
--- Klientų amžiaus patikrinimas
--- Draudžia registruoti klientus jaunesnius nei 18 metų
+-- Klientų amžiaus patikrinimas - draudžia registruoti klientus jaunesnius nei 18 metų
 -- ----------------------------------------------------------------
 
 CREATE TRIGGER check_gimimo_data
@@ -33,8 +32,7 @@ BEGIN
 END
 
 -- ----------------------------------------------------------------
--- Užsakymo datų patikrinimas
--- Grąžinimo data negali būti ankstesnė nei nuomos data
+-- Užsakymo datų patikrinimas - grąžinimo data negali būti ankstesnė nei nuomos data
 -- ----------------------------------------------------------------
 
 CREATE TRIGGER check_grazinimo_data

@@ -1,8 +1,6 @@
 -- ================================================================
 -- AutoRent | seed.sql
--- Pradiniai duomenys testavimui ir demonstracijai - simuliuoja ~1 metus
--- veikiančios įmonės duomenis (žr. žemiau eilučių skaičius kiekvienoje
--- lentelėje). Prieš vykdant išvalo visas lenteles.
+-- Pradiniai duomenys testavimui ir demonstracijai - simuliuoja ~1 metus veikiančios įmonės duomenis (žr. žemiau eilučių skaičius kiekvienoje lentelėje); prieš vykdant išvalo visas lenteles.
 -- ================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -20,15 +18,10 @@ TRUNCATE TABLE `Darbuotojai`;
 TRUNCATE TABLE `Klientai`;
 
 -- ----------------------------------------------------------------
--- Klientai (IDs 1–10)
+-- Klientai (IDs 1–11)
 -- ----------------------------------------------------------------
 
--- Jonas Petrauskas turi demonstracinį slaptažodį "Klientas123!", Aistė
--- Kazlauskienė - "Klientas2123!" (bcrypt hash abiem), kad būtų galima iškart
--- išbandyti DU vienalaikius kliento prisijungimus (pvz. live chat demonstracijai
--- dviejuose naršyklės languose) - žr. customer_auth.py. Likę klientai neturi
--- prisijungimo (juos sukūrė darbuotojas), kol patys neužsiregistruos arba
--- neprisijungs per Google.
+-- Jonas Petrauskas turi demonstracinį slaptažodį "Klientas123!", Aistė Kazlauskienė - "Klientas2123!" (bcrypt hash abiem), kad būtų galima iškart išbandyti DU vienalaikius kliento prisijungimus (pvz. live chat demonstracijai dviejuose naršyklės languose); likę klientai neturi prisijungimo (juos sukūrė darbuotojas), kol patys neužsiregistruos arba neprisijungs per Google.
 INSERT INTO `Klientai` (`vardas`, `pavarde`, `el_pastas`, `telefono_nr`, `gimimo_data`, `registracijos_data`, `slaptazodis`)
 VALUES
 ('Jonas',    'Petrauskas',     'jonas.petrauskas@example.com',     '+37061234567', '1990-05-12', '2025-10-20 10:30:00', '$2b$12$zLIYwoRF5HYDlsBz5KV4SeilF4W0KlibQK7f4/PqZun0vt6Us5VU6'),
@@ -40,7 +33,8 @@ VALUES
 ('Mantas',   'Šimkus',         'mantas.simkus@example.com',        '+37068991234', '1987-12-05', '2025-11-10 19:10:00', NULL),
 ('Dovilė',   'Butkutė',        'dovile.butkute@example.com',       '+37065432109', '1994-06-14', '2025-11-20 15:05:00', NULL),
 ('Karolis',  'Rutkauskas',     'karolis.rutkauskas@example.com',   '+37069987654', '1990-09-02', '2025-12-05 11:40:00', NULL),
-('Rasa',     'Grigaliūnaitė',  'rasa.grigaliunaite@example.com',   '+37061122334', '1986-01-28', '2025-12-15 13:55:00', NULL);
+('Rasa',     'Grigaliūnaitė',  'rasa.grigaliunaite@example.com',   '+37061122334', '1986-01-28', '2025-12-15 13:55:00', NULL),
+('Edvinas',  'Stankevičius',   'edvinas.stankevicius@example.com', '+37062233445', '1991-04-17', '2025-12-20 10:05:00', NULL);
 
 -- ----------------------------------------------------------------
 -- Pristatymo_Vietos (IDs 1–10)
@@ -60,12 +54,7 @@ VALUES
 ('Telšiai',          'Žemaitijos g. 7, Telšiai',         'Telšiai');
 
 -- ----------------------------------------------------------------
--- Darbuotojai (IDs 1–11)
--- Po 1 demonstracinis slaptažodis KIEKVIENAM realiam vaidmeniui (Admin,
--- Rasa=Vadybininkas, Mindaugas=Mechanikas, Inga=Klientų aptarnavimas), kad
--- būtų galima iš tikro prisijungti ir patikrinti RBAC apribojimus per UI,
--- ne vien skaityti kodą. Likę darbuotojai neturi prisijungimo (demo apimties
--- ribojimas - jų nereikia realiam testavimui).
+-- Darbuotojai (IDs 1–11) - po 1 demonstracinis slaptažodis KIEKVIENAM realiam vaidmeniui (Admin, Rasa=Vadybininkas, Mindaugas=Mechanikas, Inga=Klientų aptarnavimas), kad būtų galima iš tikro prisijungti ir patikrinti RBAC apribojimus per UI, ne vien skaityti kodą; likę darbuotojai neturi prisijungimo (demo apimties ribojimas - jų nereikia realiam testavimui).
 -- ----------------------------------------------------------------
 
 INSERT INTO `Darbuotojai` (
@@ -106,9 +95,7 @@ INSERT INTO `Automobiliai` (
 ('Nissan',        'Qashqai',  2018, 'NIS666', 'SJNFAAJ11U236547', 'Juoda',     'Visureigis', 'pusiau automatinė', 1.6,  96, 'benzinas',  78000, 5, TRUE,  TRUE,   55.00, 'laisvas',    '2026-11-15', 9, NULL),
 ('Skoda',         'Superb',   2020, 'SKD777', 'TMBJJ9NP2L128765', 'Žalia',     'Sedanas',    'automatinė',        2.0, 140, 'dyzelinas', 41000, 5, TRUE,  TRUE,   60.00, 'laisvas',    '2027-05-30', 10, 'Talpus ir komfortiškas');
 
--- Papildomas parkas (60 automobiliai, po 6 kiekvienoje vietoje) - demonstruoja
--- realų, turtingą įmonės parką, ne vieną automobilį per padalinį (žr. žemėlapio
--- "nuo X€" žymeklius - kiekviena vieta dabar turi keletą pasiūlymų, ne vieną).
+-- Papildomas parkas (60 automobiliai, po 6 kiekvienoje vietoje) - demonstruoja realų, turtingą įmonės parką, ne vieną automobilį per padalinį (žr. žemėlapio "nuo X€" žymeklius - kiekviena vieta dabar turi keletą pasiūlymų, ne vieną).
 INSERT INTO `Automobiliai` (
    `marke`, `modelis`, `metai`, `numeris`, `vin_kodas`,
   `spalva`, `kebulo_tipas`, `pavaru_deze`, `variklio_turis`, `galia_kw`,
@@ -177,9 +164,7 @@ INSERT INTO `Automobiliai` (
 ('Skoda', 'Superb', 2021, 'THN 573', 'PLJEN7RKZ36VJ7ZRU', 'Žalia', 'Sedanas', 'automatinė', 2.0, 140, 'dyzelinas', 74509, 5, TRUE, TRUE, 60.00, 'laisvas', '2027-12-13', 10, NULL);
 
 -- ----------------------------------------------------------------
--- Uzsakymai (119 eil.) — ~12 mėnesių nuomos istorija (2025-11 .. 2026-10),
--- daugiausia 'užbaigta'/'atšaukta' senesniuose mėnesiuose, 'vykdoma' dabar
--- aktyvioms nuomoms, keli artimiausio laikotarpio 'patvirtinta'/'laukiama'.
+-- Uzsakymai (119 eil.) — ~12 mėnesių nuomos istorija (2025-11 .. 2026-10), daugiausia 'užbaigta'/'atšaukta' senesniuose mėnesiuose, 'vykdoma' dabar aktyvioms nuomoms, keli artimiausio laikotarpio 'patvirtinta'/'laukiama'.
 -- ----------------------------------------------------------------
 
 INSERT INTO `Uzsakymai` (
@@ -308,11 +293,7 @@ INSERT INTO `Uzsakymai` (
 (3, 23, 2, '2026-10-28', '2026-11-01', 10, 7, 320.00, 'laukiama', FALSE);
 
 -- ----------------------------------------------------------------
--- Rezervavimas (35 + 708 + 17 papildomų = 760 eil.) — išankstinis, ateities susidomėjimas
--- (šiandien .. vasaris), NESUSIETAS automatiškai su Uzsakymai (žr. 16 skyrių
--- dokumente BAIGIAMOJO_DARBO_PASIRUOSIMAS.md - žinomas apribojimas). Papildomas
--- 708 eil. blokas žemiau užtikrina, kad KIEKVIENAM automobiliui lapkritis-vasaris
--- mėnesiai turėtų bent ~40% užimtų dienų (kalendoriaus demonstracijai).
+-- Rezervavimas (35 + 708 + 17 papildomų = 760 eil.) — išankstinis, ateities susidomėjimas (šiandien .. vasaris), NESUSIETAS automatiškai su Uzsakymai (žinomas, sąmoningas apribojimas - rezervacija NEpersikelia į užsakymą automatiškai, darbuotojas kuria užsakymą atskirai); papildomas 708 eil. blokas žemiau užtikrina, kad KIEKVIENAM automobiliui lapkritis-vasaris mėnesiai turėtų bent ~40% užimtų dienų (kalendoriaus demonstracijai).
 -- ----------------------------------------------------------------
 
 INSERT INTO `Rezervavimas` (
@@ -354,9 +335,7 @@ INSERT INTO `Rezervavimas` (
 (9, 22, '2026-12-12', '2026-12-16', 'patvirtinta'),
 (10, 28, '2026-12-03', '2026-12-08', 'patvirtinta');
 
--- Papildomas lapkričio-vasario užimtumas (visi 70 automobiliai) - kiekvienam
--- automobiliui bent ~40% dienų kiekviename iš šių 4 mėnesių pažymėtos užimtos,
--- kad kalendoriaus demonstracijoje matytųsi realus, pastebimas užimtumas.
+-- Papildomas lapkričio-vasario užimtumas (visi 70 automobiliai) - kiekvienam automobiliui bent ~40% dienų kiekviename iš šių 4 mėnesių pažymėtos užimtos, kad kalendoriaus demonstracijoje matytųsi realus, pastebimas užimtumas.
 INSERT INTO `Rezervavimas` (`kliento_id`, `automobilio_id`, `rezervacijos_pradzia`, `rezervacijos_pabaiga`, `busena`) VALUES
 (11, 21, '2026-11-01', '2026-11-09', 'laukia'),
 (10, 21, '2026-11-12', '2026-11-16', 'laukia'),
@@ -1067,8 +1046,7 @@ INSERT INTO `Rezervavimas` (`kliento_id`, `automobilio_id`, `rezervacijos_pradzi
 (1, 90, '2027-02-10', '2027-02-17', 'patvirtinta'),
 (8, 90, '2027-02-19', '2027-02-21', 'patvirtinta');
 
--- Papildomas tikslinimas (17 eil.) - keliems automobiliams/mėnesiams aukščiau
--- esantis blokas šiek tiek nesiekė 40% ribos, šis blokas pridengia skirtumą.
+-- Papildomas tikslinimas (17 eil.) - keliems automobiliams/mėnesiams aukščiau esantis blokas šiek tiek nesiekė 40% ribos, šis blokas pridengia skirtumą.
 INSERT INTO `Rezervavimas` (`kliento_id`, `automobilio_id`, `rezervacijos_pradzia`, `rezervacijos_pabaiga`, `busena`) VALUES
 (3, 64, '2027-02-21', '2027-02-23', 'patvirtinta'),
 (6, 54, '2026-11-17', '2026-11-19', 'patvirtinta'),
@@ -1089,8 +1067,7 @@ INSERT INTO `Rezervavimas` (`kliento_id`, `automobilio_id`, `rezervacijos_pradzi
 (6, 89, '2027-02-22', '2027-02-23', 'patvirtinta');
 
 -- ----------------------------------------------------------------
--- Saskaitos (94 eil.) — sąskaita kuriama tik 'patvirtinta'/'vykdoma'/
--- 'užbaigta' užsakymams (ne 'laukiama'/'atšaukta').
+-- Saskaitos (94 eil.) — sąskaita kuriama tik 'patvirtinta'/'vykdoma'/'užbaigta' užsakymams (ne 'laukiama'/'atšaukta').
 -- ----------------------------------------------------------------
 
 INSERT INTO `Saskaitos` (`uzsakymo_id`, `suma`, `saskaitos_data`) VALUES
@@ -1190,10 +1167,7 @@ INSERT INTO `Saskaitos` (`uzsakymo_id`, `suma`, `saskaitos_data`) VALUES
 (118, 400.00, '2026-10-25 08:15:00');
 
 -- ----------------------------------------------------------------
--- Pokalbiai / Pokalbio_Zinutes / Pokalbio_Pastabos — pirmieji 6 pokalbiai
--- rankomis parašyti taip, kad apimtų VISAS 4 busenas ir visas 6 kategorijas
--- (žr. backend app/services/support_service.py busenų taisykles), likę 12
--- sugeneruoti, kad modulis atrodytų kaip metus veikiančios aptarnavimo eilės.
+-- Pokalbiai / Pokalbio_Zinutes / Pokalbio_Pastabos — pirmieji 6 pokalbiai rankomis parašyti taip, kad apimtų VISAS 4 busenas ir visas 6 kategorijas (žr. backend app/services/support_service.py busenų taisykles), likę 12 sugeneruoti, kad modulis atrodytų kaip metus veikiančios aptarnavimo eilės.
 -- ----------------------------------------------------------------
 
 INSERT INTO `Pokalbiai` (

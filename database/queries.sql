@@ -30,12 +30,12 @@ WHERE registracijos_data >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH);
 
 -- 4. Darbuotojai, dirbantys daugiau nei 5 metus
 SELECT *
-FROM darbuotojai
+FROM Darbuotojai
 WHERE isidarbinimo_data <= DATE_SUB(CURDATE(), INTERVAL 5 YEAR);
 
 -- 5. Darbuotojas su didžiausiu atlyginimu
 SELECT *
-FROM darbuotojai
+FROM Darbuotojai
 ORDER BY atlyginimas DESC
 LIMIT 1;
 
@@ -45,16 +45,16 @@ LIMIT 1;
 
 -- 6. Klientai, kurie turi aktyvias rezervacijas
 SELECT DISTINCT kliento_id
-FROM rezervavimas r
+FROM Rezervavimas r
 WHERE rezervacijos_pabaiga >= CURDATE();
 
 -- 7. Vidutinė rezervacijos trukmė dienomis
 SELECT AVG(DATEDIFF(rezervacijos_pabaiga, rezervacijos_pradzia)) AS vidutine_rezervacijos_trukme_dienomis
-FROM rezervavimas r;
+FROM Rezervavimas r;
 
 -- 8. Kiek pristatymo vietų turime kiekviename mieste?
 SELECT miestas, COUNT(*) AS vietu_kiekis
-FROM pristatymo_vietos
+FROM Pristatymo_Vietos
 GROUP BY miestas
 ORDER BY vietu_kiekis DESC;
 

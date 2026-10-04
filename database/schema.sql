@@ -7,10 +7,7 @@
 -- Pagrindiniai subjektai (be priklausomybių)
 -- ----------------------------------------------------------------
 
--- Klientai — sistemos naudotojai su bonus taškų sistema
--- slaptazodis: NULL reiškia, kad klientas dar neturi savo prisijungimo (įrašą
--- sukūrė darbuotojas), arba prisijungia tik per Google - atskira, ne darbuotojo,
--- paskyros sistema (žr. backend app/api/v1/endpoints/customer_auth.py).
+-- Klientai — sistemos naudotojai su bonus taškų sistema; slaptazodis NULL reiškia, kad klientas dar neturi savo prisijungimo (įrašą sukūrė darbuotojas) arba prisijungia tik per Google - atskira, ne darbuotojo, paskyros sistema.
 CREATE TABLE `Klientai` (
   `kliento_id`         INTEGER      PRIMARY KEY AUTO_INCREMENT,
   `vardas`             VARCHAR(255) NOT NULL,
@@ -114,26 +111,23 @@ CREATE TABLE `Saskaitos` (
 -- Klientų aptarnavimas
 -- ----------------------------------------------------------------
 
--- Pokalbiai — kliento aptarnavimo byla (viena konkreti problema). Kelios žinutės
--- vienoje byloje, ne vienas klausimas+atsakymas įraše. busena reiškia KAS TURI
--- VEIKTI toliau (žr. specifikacijos 8 skyrių), ne vien "atsakyta/neatsakyta".
+-- Pokalbiai — kliento aptarnavimo byla (viena konkreti problema, kelios žinutės vienoje byloje, ne vienas klausimas+atsakymas įraše); busena reiškia KAS TURI VEIKTI toliau, ne vien "atsakyta/neatsakyta".
 CREATE TABLE `Pokalbiai` (
-  `pokalbio_id`               INTEGER      PRIMARY KEY AUTO_INCREMENT,
-  `kliento_id`                INTEGER      NOT NULL,
-  `darbuotojo_id`              INTEGER      NULL,
-  `tema`                       VARCHAR(150) NOT NULL,
-  `kategorija`                  ENUM('rezervacija','atsiemimas_grazinimas','automobilis','saskaita','paskyra','kita') NOT NULL DEFAULT 'kita',
-  `busena`                      ENUM('atvira','sprendziama','laukiama_kliento','isspresta') NOT NULL DEFAULT 'atvira',
-  `rezervacijos_id`             INTEGER      NULL,
-  `sprendimo_santrauka`         TEXT         NULL,
-  `kliento_paskutinis_matytas`  INTEGER      NULL,
-  `darbuotojo_paskutinis_matytas` INTEGER    NULL,
-  `sukurimo_data`               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `atnaujinimo_data`            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `pokalbio_id`                   INTEGER      PRIMARY KEY AUTO_INCREMENT,
+  `kliento_id`                    INTEGER      NOT NULL,
+  `darbuotojo_id`                 INTEGER      NULL,
+  `tema`                          VARCHAR(150) NOT NULL,
+  `kategorija`                    ENUM('rezervacija','atsiemimas_grazinimas','automobilis','saskaita','paskyra','kita') NOT NULL DEFAULT 'kita',
+  `busena`                        ENUM('atvira','sprendziama','laukiama_kliento','isspresta') NOT NULL DEFAULT 'atvira',
+  `rezervacijos_id`               INTEGER      NULL,
+  `sprendimo_santrauka`           TEXT         NULL,
+  `kliento_paskutinis_matytas`    INTEGER      NULL,
+  `darbuotojo_paskutinis_matytas` INTEGER      NULL,
+  `sukurimo_data`                 TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `atnaujinimo_data`              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Pokalbio_Zinutes — viešos, klientui IR darbuotojui matomos žinutės. Niekada
--- neperrašomos - klaida taisoma nauja žinute, ne UPDATE.
+-- Pokalbio_Zinutes — viešos, klientui IR darbuotojui matomos žinutės; niekada neperrašomos - klaida taisoma nauja žinute, ne UPDATE.
 CREATE TABLE `Pokalbio_Zinutes` (
   `zinutes_id`      INTEGER      PRIMARY KEY AUTO_INCREMENT,
   `pokalbio_id`     INTEGER      NOT NULL,
@@ -144,9 +138,7 @@ CREATE TABLE `Pokalbio_Zinutes` (
   `sukurimo_data`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Pokalbio_Pastabos — VIDINĖS pastabos, atskira lentelė (ne CSS-paslėpta žymė
--- Pokalbio_Zinutes viduje), kad klientui skirtas API endpointas jų fiziškai
--- negalėtų atsitiktinai grąžinti.
+-- Pokalbio_Pastabos — VIDINĖS pastabos, atskira lentelė (ne CSS-paslėpta žymė Pokalbio_Zinutes viduje), kad klientui skirtas API endpointas jų fiziškai negalėtų atsitiktinai grąžinti.
 CREATE TABLE `Pokalbio_Pastabos` (
   `pastabos_id`   INTEGER   PRIMARY KEY AUTO_INCREMENT,
   `pokalbio_id`   INTEGER   NOT NULL,
@@ -155,10 +147,7 @@ CREATE TABLE `Pokalbio_Pastabos` (
   `sukurimo_data` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Lojalumo_Atlygiai — kliento uždirbti atlygiai už kas 5 užbaigtas nuomas.
--- etapo_numeris = kiek penketukų nuomų jau uždirbta (1, 2, 3...), unikalu kiekvienam
--- klientui - taip vienas etapas negali sukurti dviejų atlygių net jei būsena
--- perskaičiuojama pakartotinai. Žr. backend customer_loyalty.py.
+-- Lojalumo_Atlygiai — kliento uždirbti atlygiai už kas 5 užbaigtas nuomas; etapo_numeris = kiek penketukų nuomų jau uždirbta (1, 2, 3...), unikalu kiekvienam klientui - taip vienas etapas negali sukurti dviejų atlygių net jei būsena perskaičiuojama pakartotinai (žr. backend customer_loyalty.py).
 CREATE TABLE `Lojalumo_Atlygiai` (
   `atlygio_id`      INTEGER      PRIMARY KEY AUTO_INCREMENT,
   `kliento_id`      INTEGER      NOT NULL,
@@ -167,6 +156,18 @@ CREATE TABLE `Lojalumo_Atlygiai` (
   `busena`          ENUM('neisnaudotas', 'isnaudotas') NOT NULL DEFAULT 'neisnaudotas',
   `panaudojimo_data` TIMESTAMP   NULL,
   UNIQUE (`kliento_id`, `etapo_numeris`)
+);
+
+-- Nuolaidos_Kodai — "AUTORENT" + 6 skaitmenys formato kodai, išduoti klientui arba automatiškai per lojalumo programą (kilme='lojalumas'), arba darbuotojo ranka sprendžiant aptarnavimo problemą (kilme='aptarnavimas'); žr. backend discount_code_service.py.
+CREATE TABLE `Nuolaidos_Kodai` (
+  `kodo_id`           INTEGER       PRIMARY KEY AUTO_INCREMENT,
+  `kodas`             VARCHAR(20)   NOT NULL UNIQUE,
+  `kliento_id`        INTEGER       NOT NULL,
+  `verte_eur`         DECIMAL(10,2) NOT NULL,
+  `kilme`             ENUM('lojalumas', 'aptarnavimas') NOT NULL,
+  `pastaba`           VARCHAR(255)  NULL,
+  `sukurimo_data`     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  `panaudojimo_data`  TIMESTAMP     NULL
 );
 
 -- ================================================================
@@ -191,6 +192,9 @@ ALTER TABLE `Saskaitos`
   ADD FOREIGN KEY (`uzsakymo_id`) REFERENCES `Uzsakymai` (`uzsakymo_id`);
 
 ALTER TABLE `Lojalumo_Atlygiai`
+  ADD FOREIGN KEY (`kliento_id`) REFERENCES `Klientai` (`kliento_id`);
+
+ALTER TABLE `Nuolaidos_Kodai`
   ADD FOREIGN KEY (`kliento_id`) REFERENCES `Klientai` (`kliento_id`);
 
 ALTER TABLE `Pokalbiai`
