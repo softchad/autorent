@@ -11,7 +11,7 @@ export type PublicCar = {
   metai: number;
   spalva: string;
   kebulo_tipas: string;
-  "pavarų_deze": string;
+  "pavaru_deze": string;
   variklio_turis: number;
   galia_kw: number;
   kuro_tipas: string;

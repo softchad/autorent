@@ -57,7 +57,7 @@ CREATE TABLE `Automobiliai` (
   `vin_kodas`            VARCHAR(17)  NOT NULL UNIQUE,
   `spalva`               VARCHAR(255) NOT NULL,
   `kebulo_tipas`         VARCHAR(255) NOT NULL,
-  `pavarų_deze`          ENUM('mechaninė', 'automatinė', 'pusiau automatinė') NOT NULL,
+  `pavaru_deze`          ENUM('mechaninė', 'automatinė', 'pusiau automatinė') NOT NULL,
   `variklio_turis`       DECIMAL(3,1) NOT NULL,
   `galia_kw`             INTEGER      NOT NULL,
   `kuro_tipas`           ENUM('benzinas', 'dyzelinas', 'elektra', 'hibridas', 'dujos') NOT NULL,

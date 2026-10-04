@@ -21,7 +21,7 @@ class PublicCarOut(BaseModel):
     metai: int
     spalva: str
     kebulo_tipas: str
-    pavarų_deze: str
+    pavaru_deze: str
     variklio_turis: float
     galia_kw: int
     kuro_tipas: str
@@ -85,7 +85,7 @@ def get_public_cars(
     if kuro_tipas:
         query = query.filter(Car.kuro_tipas == kuro_tipas)
     if pavaru_deze:
-        query = query.filter(Car.pavarų_deze == pavaru_deze)
+        query = query.filter(Car.pavaru_deze == pavaru_deze)
     if min_kaina is not None:
         query = query.filter(Car.kaina_parai >= min_kaina)
     if max_kaina is not None:

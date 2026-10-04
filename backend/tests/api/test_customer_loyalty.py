@@ -46,7 +46,7 @@ def _make_car(auth_headers, kaina_parai=40.0):
         json={
             "marke": "Toyota", "modelis": "Corolla", "metai": 2021,
             "numeris": f"LOY{uuid4().hex[:3].upper()}", "vin_kodas": uuid4().hex[:16].upper(),
-            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavarų_deze": "automatinė",
+            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavaru_deze": "automatinė",
             "variklio_turis": 1.6, "galia_kw": 97, "kuro_tipas": "benzinas",
             "rida": 15000, "sedimos_vietos": 5, "klimato_kontrole": True, "navigacija": True,
             "kaina_parai": kaina_parai, "automobilio_statusas": "laisvas",

@@ -28,7 +28,7 @@ def _make_car(auth_headers, statusas="laisvas", vin=None, numeris=None, pastabos
             "marke": "Toyota", "modelis": "Corolla", "metai": 2021,
             "numeris": numeris or f"PUB{uuid4().hex[:3].upper()}",
             "vin_kodas": vin or uuid4().hex[:16].upper(),
-            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavarų_deze": "automatinė",
+            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavaru_deze": "automatinė",
             "variklio_turis": 1.6, "galia_kw": 97, "kuro_tipas": "benzinas",
             "rida": 15000, "sedimos_vietos": 5, "klimato_kontrole": True, "navigacija": True,
             "kaina_parai": 40.00, "automobilio_statusas": statusas,
@@ -112,7 +112,7 @@ def test_public_cars_filter_by_marke(auth_headers):
         json={
             "marke": "Honda", "modelis": "Civic", "metai": 2022,
             "numeris": f"HON{uuid4().hex[:3].upper()}", "vin_kodas": uuid4().hex[:16].upper(),
-            "spalva": "Balta", "kebulo_tipas": "Sedanas", "pavarų_deze": "automatinė",
+            "spalva": "Balta", "kebulo_tipas": "Sedanas", "pavaru_deze": "automatinė",
             "variklio_turis": 1.5, "galia_kw": 90, "kuro_tipas": "benzinas",
             "rida": 5000, "sedimos_vietos": 5, "klimato_kontrole": True, "navigacija": False,
             "kaina_parai": 35.0, "automobilio_statusas": "laisvas",

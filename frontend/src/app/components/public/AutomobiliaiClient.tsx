@@ -197,7 +197,7 @@ function ResultCard({ car, isTopPick }: { car: PublicCar; isTopPick: boolean }) 
             <FiUsers className="text-[#4BAFD4]" /> {car.sedimos_vietos}
           </span>
           <span className="flex items-center gap-1">
-            <FiSettings className="text-[#4BAFD4]" /> {car["pavarų_deze"]}
+            <FiSettings className="text-[#4BAFD4]" /> {car["pavaru_deze"]}
           </span>
           <span className="flex items-center gap-1">
             <FiDroplet className="text-[#4BAFD4]" /> {car.kuro_tipas}
@@ -281,7 +281,7 @@ export default function AutomobiliaiClient() {
       marke: count("marke"),
       kebuloTipas: count("kebulo_tipas"),
       kuroTipas: count("kuro_tipas"),
-      pavaruDeze: count("pavarų_deze"),
+      pavaruDeze: count("pavaru_deze"),
     };
   }, [cars]);
 
@@ -291,7 +291,7 @@ export default function AutomobiliaiClient() {
       if (marke.length && !marke.includes(c.marke)) return false;
       if (kebuloTipas.length && !kebuloTipas.includes(c.kebulo_tipas)) return false;
       if (kuroTipas.length && !kuroTipas.includes(c.kuro_tipas)) return false;
-      if (pavaruDeze.length && !pavaruDeze.includes(c["pavarų_deze"])) return false;
+      if (pavaruDeze.length && !pavaruDeze.includes(c["pavaru_deze"])) return false;
       if (minKaina && c.kaina_parai < Number(minKaina)) return false;
       if (maxKaina && c.kaina_parai > Number(maxKaina)) return false;
       if (sedimosVietos && c.sedimos_vietos < sedimosVietos) return false;

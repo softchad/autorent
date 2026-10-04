@@ -15,7 +15,7 @@ class Car(Base):
     vin_kodas = Column(String(17), unique=True, nullable=False)
     spalva = Column(String(50), nullable=False)
     kebulo_tipas = Column(String(50), nullable=False)
-    pavarų_deze = Column(String(50), nullable=False)
+    pavaru_deze = Column(String(50), nullable=False)
     variklio_turis = Column(DECIMAL(3,1), nullable=False)
     galia_kw = Column(Integer, nullable=False)
     kuro_tipas = Column(String(20), nullable=False)

@@ -19,7 +19,7 @@ def unique_vin():
 VALID_CAR = {
     "marke": "Toyota", "modelis": "Corolla", "metai": 2022,
     "spalva": "Balta", "kebulo_tipas": "Sedanas",
-    "pavarų_deze": "automatinė", "variklio_turis": 1.8,
+    "pavaru_deze": "automatinė", "variklio_turis": 1.8,
     "galia_kw": 103, "kuro_tipas": "benzinas",
     "rida": 10000, "sedimos_vietos": 5,
     "klimato_kontrole": True, "navigacija": False,
@@ -85,7 +85,7 @@ def ensure_location(db_session):
     ("rida", -1),                    # rida negali būti neigiama
     ("sedimos_vietos", 1),           # per mažai (< 2)
     ("sedimos_vietos", 10),          # per daug (> 9)
-    ("pavarų_deze", "robotas"),      # ne VALID_PAVARŲ_DEZE
+    ("pavaru_deze", "robotas"),      # ne VALID_PAVARŲ_DEZE
     ("kuro_tipas", "vandenilis"),    # ne VALID_KURO_TIPAS
     ("automobilio_statusas", "parduotas"),  # ne VALID_STATUSAS
 ])

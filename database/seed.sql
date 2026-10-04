@@ -91,7 +91,7 @@ ALTER TABLE `Automobiliai` AUTO_INCREMENT = 21;
 
 INSERT INTO `Automobiliai` (
    `marke`, `modelis`, `metai`, `numeris`, `vin_kodas`,
-  `spalva`, `kebulo_tipas`, `pavarų_deze`, `variklio_turis`, `galia_kw`,
+  `spalva`, `kebulo_tipas`, `pavaru_deze`, `variklio_turis`, `galia_kw`,
   `kuro_tipas`, `rida`, `sedimos_vietos`, `klimato_kontrole`, `navigacija`,
   `kaina_parai`, `automobilio_statusas`, `technikines_galiojimas`, `dabartine_vieta_id`, `pastabos`
 ) VALUES
@@ -111,7 +111,7 @@ INSERT INTO `Automobiliai` (
 -- "nuo X€" žymeklius - kiekviena vieta dabar turi keletą pasiūlymų, ne vieną).
 INSERT INTO `Automobiliai` (
    `marke`, `modelis`, `metai`, `numeris`, `vin_kodas`,
-  `spalva`, `kebulo_tipas`, `pavarų_deze`, `variklio_turis`, `galia_kw`,
+  `spalva`, `kebulo_tipas`, `pavaru_deze`, `variklio_turis`, `galia_kw`,
   `kuro_tipas`, `rida`, `sedimos_vietos`, `klimato_kontrole`, `navigacija`,
   `kaina_parai`, `automobilio_statusas`, `technikines_galiojimas`, `dabartine_vieta_id`, `pastabos`
 ) VALUES

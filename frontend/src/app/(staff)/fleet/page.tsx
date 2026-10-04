@@ -174,7 +174,7 @@ export default function CarsPage() {
                   vin_kodas: updated.vin_kodas,
                   spalva: updated.spalva,
                   kebulo_tipas: updated.kebulo_tipas,
-                  pavarų_deze: updated.pavarų_deze,
+                  pavaru_deze: updated.pavaru_deze,
                   variklio_turis: updated.variklio_turis,
                   galia_kw: updated.galia_kw,
                   kuro_tipas: updated.kuro_tipas,

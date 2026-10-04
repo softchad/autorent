@@ -20,7 +20,7 @@ class CarBase(BaseModel):
     vin_kodas: str
     spalva: str
     kebulo_tipas: str
-    pavarų_deze: str
+    pavaru_deze: str
     variklio_turis: float
     galia_kw: int
     kuro_tipas: str
@@ -69,9 +69,9 @@ class CarBase(BaseModel):
             raise ValueError("Galia (kW) turi būti teigiamas skaičius")
         return v
 
-    @field_validator("pavarų_deze")
+    @field_validator("pavaru_deze")
     @classmethod
-    def validate_pavarų_deze(cls, v: str) -> str:
+    def validate_pavaru_deze(cls, v: str) -> str:
         if v not in VALID_PAVARŲ_DEZE:
             raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARŲ_DEZE)}")
         return v
@@ -104,7 +104,7 @@ class CarUpdate(BaseModel):
     vin_kodas: Optional[str] = None
     spalva: Optional[str] = None
     kebulo_tipas: Optional[str] = None
-    pavarų_deze: Optional[str] = None
+    pavaru_deze: Optional[str] = None
     variklio_turis: Optional[float] = None
     galia_kw: Optional[int] = None
     kuro_tipas: Optional[str] = None
@@ -153,9 +153,9 @@ class CarUpdate(BaseModel):
             raise ValueError("Galia (kW) turi būti teigiamas skaičius")
         return v
 
-    @field_validator("pavarų_deze")
+    @field_validator("pavaru_deze")
     @classmethod
-    def validate_pavarų_deze(cls, v: str) -> str:
+    def validate_pavaru_deze(cls, v: str) -> str:
         if v is not None and v not in VALID_PAVARŲ_DEZE:
             raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARŲ_DEZE)}")
         return v

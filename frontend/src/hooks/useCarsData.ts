@@ -24,7 +24,7 @@ export function useCarsData() {
     { name: "spalva", label: "Spalva", required: true },
     { name: "kebulo_tipas", label: "Kėbulo tipas", required: true },
     {
-      name: "pavarų_deze",
+      name: "pavaru_deze",
       label: "Pavarų dėžė",
       type: "select",
       required: true,

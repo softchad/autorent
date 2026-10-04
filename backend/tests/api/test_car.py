@@ -29,7 +29,7 @@ CAR_SAMPLE = {
     "vin_kodas": "JH4TB2H26CC000000",
     "spalva": "Mėlyna",
     "kebulo_tipas": "Sedanas",
-    "pavarų_deze": "automatinė",
+    "pavaru_deze": "automatinė",
     "variklio_turis": 1.8,
     "galia_kw": 103,
     "kuro_tipas": "benzinas",
@@ -100,7 +100,7 @@ def test_update_car_not_found(client, auth_headers):
 
 @pytest.mark.parametrize("field,value", [
     ("kuro_tipas", "visiskai_neteisinga"),
-    ("pavarų_deze", "lygtinė"),
+    ("pavaru_deze", "lygtinė"),
     ("rida", -500),
     ("sedimos_vietos", 99),
     ("galia_kw", -10),

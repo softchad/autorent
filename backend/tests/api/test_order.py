@@ -27,7 +27,7 @@ def prepared_order(client, auth_headers, ensure_place_exists):
         json={
             "marke": "Toyota", "modelis": "Corolla", "metai": 2021,
             "numeris": f"ABC{uuid4().hex[:3].upper()}", "vin_kodas": uuid4().hex[:16].upper(),
-            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavarų_deze": "automatinė",
+            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavaru_deze": "automatinė",
             "variklio_turis": 1.6, "galia_kw": 97, "kuro_tipas": "benzinas",
             "rida": 15000, "sedimos_vietos": 5, "klimato_kontrole": True, "navigacija": True,
             "kaina_parai": 40.00, "automobilio_statusas": "laisvas",
@@ -149,7 +149,7 @@ def test_create_order_client_conflict_rejected(client, auth_headers, prepared_or
         json={
             "marke": "Honda", "modelis": "Civic", "metai": 2021,
             "numeris": f"CON{uuid4().hex[:3].upper()}", "vin_kodas": uuid4().hex[:16].upper(),
-            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavarų_deze": "automatinė",
+            "spalva": "Juoda", "kebulo_tipas": "Sedanas", "pavaru_deze": "automatinė",
             "variklio_turis": 1.5, "galia_kw": 90, "kuro_tipas": "benzinas",
             "rida": 10000, "sedimos_vietos": 5, "klimato_kontrole": True, "navigacija": False,
             "kaina_parai": 35.0, "automobilio_statusas": "laisvas",

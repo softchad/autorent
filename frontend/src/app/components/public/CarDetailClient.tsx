@@ -151,7 +151,7 @@ export default function CarDetailClient({ id }: { id: number }) {
 
                   <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <Spec icon={<FiUsers />} label="Sėdimos vietos" value={String(car.sedimos_vietos)} />
-                    <Spec icon={<FiSettings />} label="Pavarų dėžė" value={car["pavarų_deze"]} />
+                    <Spec icon={<FiSettings />} label="Pavarų dėžė" value={car["pavaru_deze"]} />
                     <Spec icon={<FiDroplet />} label="Kuro tipas" value={car.kuro_tipas} />
                     <Spec icon={<FiWind />} label="Klimato kontrolė" value={car.klimato_kontrole ? "Yra" : "Nėra"} />
                     <Spec icon={<FiNavigation />} label="Navigacija" value={car.navigacija ? "Yra" : "Nėra"} />

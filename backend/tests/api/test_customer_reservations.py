@@ -31,7 +31,7 @@ def _make_car(auth_headers, kaina_parai=50.0, statusas="laisvas"):
             "vin_kodas": uuid4().hex[:16].upper(),
             "spalva": "Mėlyna",
             "kebulo_tipas": "Hečbekas",
-            "pavarų_deze": "mechaninė",
+            "pavaru_deze": "mechaninė",
             "variklio_turis": 1.0,
             "galia_kw": 53,
             "kuro_tipas": "benzinas",

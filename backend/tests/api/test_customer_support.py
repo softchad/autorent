@@ -51,7 +51,7 @@ def _create_car(db_session):
     car = Car(
         marke="Toyota", modelis="Corolla", metai=2022,
         numeris=f"SUP{uuid4().hex[:3].upper()}", vin_kodas=uuid4().hex[:17].upper(),
-        spalva="Pilka", kebulo_tipas="Sedanas", pavarų_deze="automatinė",
+        spalva="Pilka", kebulo_tipas="Sedanas", pavaru_deze="automatinė",
         variklio_turis=1.6, galia_kw=90, kuro_tipas="benzinas", rida=5000,
         sedimos_vietos=5, kaina_parai=35.0, automobilio_statusas="laisvas",
         technikines_galiojimas=date(2027, 1, 1), dabartine_vieta_id=1,

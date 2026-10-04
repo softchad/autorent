@@ -844,7 +844,7 @@ export type CarOut = {
   vin_kodas: string;
   spalva: string;
   kebulo_tipas: string;
-  pavarų_deze: string;
+  pavaru_deze: string;
   variklio_turis: number;
   galia_kw: number;
   kuro_tipas: string;
@@ -871,7 +871,7 @@ export type CarCreate = {
   vin_kodas: string;
   spalva: string;
   kebulo_tipas: string;
-  pavarų_deze: string;
+  pavaru_deze: string;
   variklio_turis: number;
   galia_kw: number;
   kuro_tipas: string;
@@ -893,7 +893,7 @@ export type CarUpdate = {
   vin_kodas?: string | null;
   spalva?: string | null;
   kebulo_tipas?: string | null;
-  pavarų_deze?: string | null;
+  pavaru_deze?: string | null;
   variklio_turis?: number | null;
   galia_kw?: number | null;
   kuro_tipas?: string | null;
@@ -1112,7 +1112,7 @@ export type PublicCarOut = {
   metai: number;
   spalva: string;
   kebulo_tipas: string;
-  pavarų_deze: string;
+  pavaru_deze: string;
   variklio_turis: number;
   galia_kw: number;
   kuro_tipas: string;

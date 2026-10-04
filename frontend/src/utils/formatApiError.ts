@@ -19,7 +19,7 @@ const fieldLabels: Record<string, string> = {
   vin_kodas: "VIN kodas",
   spalva: "Spalva",
   kebulo_tipas: "Kėbulo tipas",
-  pavarų_deze: "Pavarų dėžė",
+  pavaru_deze: "Pavarų dėžė",
   variklio_turis: "Variklio tūris",
   galia_kw: "Galia (kW)",
   kuro_tipas: "Kuro tipas",
