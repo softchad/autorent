@@ -1,6 +1,5 @@
 {
     "name": "autorent-frontend",
-    "homepage": "https://gabwowce.github.io/car-rental-frontend",
     "version": "0.1.0",
     "private": true,
     "scripts": {
@@ -9,11 +8,10 @@
         "start": "next start",
         "lint": "next lint",
         "docs": "typedoc",
-        "gen:api": "cross-env rtk-query-codegen --config openapi.config.js"
+        "gen:api": "rtk-query-codegen-openapi openapi.config.js"
     },
     "dependencies": {
         "@headlessui/react": "^2.2.4",
-        "@heroicons/react": "^2.2.0",
         "@react-pdf/renderer": "^4.5.1",
         "@reduxjs/toolkit": "^2.8.2",
         "clsx": "^2.1.1",
@@ -28,14 +26,12 @@
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3",
-        "@fontsource/roboto": "^5.2.10",
         "@rtk-query/codegen-openapi": "^2.0.0",
         "@tailwindcss/postcss": "^4",
         "@types/leaflet": "^1.9.18",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
-        "cross-env": "^10.1.0",
         "eslint": "^9",
         "eslint-config-next": "15.3.1",
         "tailwindcss": "^4",
