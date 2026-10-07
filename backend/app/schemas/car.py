@@ -6,7 +6,7 @@ from datetime import date
 from app.schemas.location import LocationOut
 
 # Turi atitikti database/schema.sql ENUM reikšmes TIKSLIAI - jei DB leidžia naują reikšmę, ją reikia pridėti IR čia.
-VALID_PAVARŲ_DEZE  = {"mechaninė", "automatinė", "pusiau automatinė"}
+VALID_PAVARU_DEZE  = {"mechaninė", "automatinė", "pusiau automatinė"}
 VALID_KURO_TIPAS   = {"benzinas", "dyzelinas", "elektra", "hibridas", "dujos"}
 VALID_STATUSAS     = {"laisvas", "isnuomotas", "servise", "remonte"}
 
@@ -72,8 +72,8 @@ class CarBase(BaseModel):
     @field_validator("pavaru_deze")
     @classmethod
     def validate_pavaru_deze(cls, v: str) -> str:
-        if v not in VALID_PAVARŲ_DEZE:
-            raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARŲ_DEZE)}")
+        if v not in VALID_PAVARU_DEZE:
+            raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARU_DEZE)}")
         return v
 
     @field_validator("kuro_tipas")
@@ -156,8 +156,8 @@ class CarUpdate(BaseModel):
     @field_validator("pavaru_deze")
     @classmethod
     def validate_pavaru_deze(cls, v: str) -> str:
-        if v is not None and v not in VALID_PAVARŲ_DEZE:
-            raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARŲ_DEZE)}")
+        if v is not None and v not in VALID_PAVARU_DEZE:
+            raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARU_DEZE)}")
         return v
 
     @field_validator("kuro_tipas")

@@ -1,5 +1,6 @@
 # Automobilių CRUD (sukurti/skaityti/atnaujinti/ištrinti) endpointai - darbuotojų administravimo sąsajai.
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload  # joinedload - iš karto "pasiimame" susietą lokaciją vienu DB kreipiniu, ne atskiru papildomu
 from sqlalchemy.exc import IntegrityError  # klaida, kurią duomenų bazė meta, kai veiksmas atmetamas dėl susijusių įrašų (žr. delete_car žemiau)
 from typing import List
@@ -8,6 +9,7 @@ from app.models.car import Car
 from app.models.location import Location
 from app.schemas.car import CarOut, CarCreate, CarUpdate  # "formos" - CarCreate/CarUpdate apibrėžia, kokius laukus PRIIMAME, CarOut - kokius GRĄŽINAME
 from app.schemas.location import LocationOut
+from app.services import availability_service  # get_busy_car_ids - naudojama get_available_cars žemiau, kad "laisvas" apibrėžimas niekada neišsiskirtų nuo order.py/reservation.py booking'o taisyklių
 from utils.hateoas import generate_links  # prideda prie atsakymo nuorodas ("links"), kokius veiksmus su šiuo įrašu galima atlikti toliau
 from app.api.deps import get_current_user
 from app.api.permissions import require_perm, Perm  # tikrina, ar prisijungusio darbuotojo rolė turi reikiamą teisę (VIEW/EDIT/ADMIN) veiksmui
@@ -47,6 +49,26 @@ def _car_out(car: Car) -> dict:
 def get_all_cars(db: Session = Depends(get_db)):
     cars = db.query(Car).options(joinedload(Car.lokacija)).all()
     return [_car_out(car) for car in cars]
+
+
+# Grąžina TIK LAISVUS automobilius pasirinktam laikotarpiui - naudoja TĄ PAČIĄ availability_service.get_busy_car_ids logiką, kaip public.py/customer.py (klientams), kad darbuotojų ir klientų pusės "laisvas" apibrėžimas niekada neišsiskirtų. Naudojama kuriant užsakymą/rezervaciją, kad darbuotojas iš karto matytų TIK realiai pasiekiamus automobilius, ne gautų 409 po pateikimo.
+@router.get("/available", response_model=List[CarOut], operation_id="getAvailableCars",
+            dependencies=[Depends(require_perm(Perm.VIEW))])
+def get_available_cars(
+    date_from: date = Query(..., description="YYYY-MM-DD"),
+    date_to: date = Query(..., description="YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+):
+    if date_from >= date_to:
+        raise HTTPException(status_code=400, detail="`date_from` turi būti ankstesnė nei `date_to`.")
+
+    busy_car_ids = availability_service.get_busy_car_ids(db, date_from, date_to)
+    cars_query = db.query(Car).options(joinedload(Car.lokacija)).filter(
+        ~Car.automobilio_statusas.in_(availability_service.NOT_BOOKABLE_STATUSES)
+    )
+    if busy_car_ids:
+        cars_query = cars_query.filter(~Car.automobilio_id.in_(busy_car_ids))
+    return [_car_out(car) for car in cars_query.all()]
 
 
 # Sukuria naują automobilį - reikalauja EDIT teisės (aukštesnė nei VIEW aukščiau).
