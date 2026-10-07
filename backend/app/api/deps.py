@@ -5,14 +5,19 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
-from app.repositories.employee import get_by_email
-from app.repositories.client import get_by_email as get_client_by_email
 from app.services.auth_service import SECRET_KEY, ALGORITHM
 from app.models.employee import Employee
 from app.models.client import Client
 
 # OAuth2PasswordBearer - FastAPI priemonė, kuri automatiškai iš "Authorization: Bearer <token>" HTTP antraštės išima PATĮ tokeną (tekstu); "tokenUrl" tik Swagger UI'ui parodyti, KUR gauti tokeną, pats sargas jo neskambina.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
+
+# Darbuotojo/kliento paieška pagal el. paštą - viena vieta VISIEMS autentikacijos keliams (šis failas, auth.py, customer_auth.py, employee.py, client.py), kad PATS ieškojimo būdas (el_pastas stulpelis) niekada neišsiskirtų tarp jų.
+def get_employee_by_email(db: Session, email: str) -> Employee | None:
+    return db.query(Employee).filter(Employee.el_pastas == email).first()
+
+def get_client_by_email(db: Session, email: str) -> Client | None:
+    return db.query(Client).filter(Client.el_pastas == email).first()
 
 
 # "dependency" (priklausomybė) - FastAPI funkcija, kurią endpoint'as nurodo per Depends(...) ir kuri paleidžiama AUTOMATIŠKAI prieš patį endpoint'o kodą; čia - duoda VIENĄ DB "session" (laikiną ryšį su duomenų baze VIENAI užklausai) ir garantuoja, kad jis bus uždarytas, kai užklausa pasibaigs.
@@ -46,7 +51,7 @@ def get_current_user(
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    user = get_by_email(db, email)
+    user = get_employee_by_email(db, email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user

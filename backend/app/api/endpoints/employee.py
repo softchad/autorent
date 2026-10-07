@@ -2,10 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError  # klaida, kurią duomenų bazė meta, kai veiksmas atmetamas dėl susijusių įrašų (žr. delete_employee žemiau)
-from app.repositories import employee as employee_repo
+from app.models.employee import Employee
 from app.schemas.employee import EmployeeOut, EmployeeUpdate
 from app.schemas.employee import EmployeeCreate
-from app.api.deps import get_db
+from app.api.deps import get_db, get_employee_by_email
 from app.services.auth_service import get_password_hash  # slaptažodžio šifravimas - DB niekada nelaiko tikro slaptažodžio, tik jo hash'ą
 from utils.hateoas import generate_links
 from app.api.deps import get_current_user
@@ -24,12 +24,15 @@ router = APIRouter(
 @router.post("/", response_model=EmployeeOut, operation_id="createEmployee",
              dependencies=[Depends(require_perm(Perm.ADMIN))])
 def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
-    if employee_repo.get_by_email(db, data.el_pastas):
+    if get_employee_by_email(db, data.el_pastas):
         raise HTTPException(status_code=409, detail="Toks el. paštas jau užregistruotas")
 
     employee_dict = data.dict()
     employee_dict["slaptazodis"] = get_password_hash(employee_dict["slaptazodis"])
-    employee = employee_repo.create_employee(db, employee_dict)
+    employee = Employee(**employee_dict)
+    db.add(employee)
+    db.commit()
+    db.refresh(employee)
     return {
         **employee.__dict__,
         "links": generate_links("employees", employee.darbuotojo_id, ["update", "delete"])
@@ -39,7 +42,7 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=list[EmployeeOut], operation_id="getAllEmployees",
             dependencies=[Depends(require_perm(Perm.VIEW))])
 def get_employees(db: Session = Depends(get_db)):
-    employees = employee_repo.get_all(db)
+    employees = db.query(Employee).all()
     return [
         {
             **emp.__dict__,
@@ -69,10 +72,13 @@ def update_employee(
     if "slaptazodis" in updates:
         updates["slaptazodis"] = get_password_hash(updates["slaptazodis"])
 
-    updated = employee_repo.update(db, employee_id, updates)
-
+    updated = db.query(Employee).filter(Employee.darbuotojo_id == employee_id).first()
     if not updated:
         raise HTTPException(status_code=404, detail="Darbuotojas nerastas")
+    for key, value in updates.items():
+        setattr(updated, key, value)
+    db.commit()
+    db.refresh(updated)
 
     return {
         **updated.__dict__,
@@ -83,14 +89,16 @@ def update_employee(
 @router.delete("/{employee_id}", operation_id="deleteEmployee",
                dependencies=[Depends(require_perm(Perm.ADMIN))])
 def delete_employee(employee_id: int, db: Session = Depends(get_db)):
+    employee = db.query(Employee).filter(Employee.darbuotojo_id == employee_id).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Darbuotojas nerastas")
     try:
-        deleted = employee_repo.delete(db, employee_id)
+        db.delete(employee)
+        db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=409,
             detail="Darbuotojo ištrinti negalima - su juo susiję užsakymai ar kiti įrašai.",
         )
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Darbuotojas nerastas")
     return {"message": "Employee deleted successfully"}
