@@ -1,7 +1,14 @@
 # EmailStr - Pydantic įmontuotas tipas, kuris PATS patikrina, ar reikšmė atrodo kaip el. paštas (turi "@" ir domeną) - atmeta neteisingą formatą AUTOMATIŠKAI, papildomo field_validator nereikia.
 from pydantic import BaseModel, EmailStr, field_validator
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional, List, Dict
+
+
+# Tiksli amžiaus patikra (metai/mėnuo/diena, ne tik metų skirtumas) - naudojama ABIEJUOSE validatoriuose žemiau, kad klientas (nesvarbu, ar jis save registruoja, ar darbuotojas sukuria ČIA) būtų TIK pilnametis (žr. nuomos-taisykles puslapį frontend'e, 1 skyrius).
+def _is_at_least_18(v: date) -> bool:
+    today = datetime.now(timezone.utc).date()
+    age = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+    return age >= 18
 
 
 # database/schema.sql reikalauja vardą/pavardę/telefono numerį/gimimo datą kaip NOT NULL - šie 4 laukai TURI būti privalomi ir ČIA, kitaip API priimtų klientą be jų, o įrašymas į tikrą MySQL DB lūžtų su neaiškia klaida (SQLite testuose tai tyliai "praeitų").
@@ -27,6 +34,18 @@ class ClientBase(BaseModel):
     def validate_telefono(cls, v: str) -> str:
         if len(v.strip()) < 6:
             raise ValueError("Telefono numeris per trumpas")
+        return v
+
+    # Trys taisyklės - nei ateityje, nei prieš 1900 m., nei nepilnametis - suderinta su customer_auth.py (kliento savarankiškos registracijos) riba, kad galiotų TA PATI, nesvarbu, kas klientą sukūrė.
+    @field_validator("gimimo_data")
+    @classmethod
+    def validate_gimimo_data(cls, v: date) -> date:
+        if v > datetime.now(timezone.utc).date():
+            raise ValueError("Gimimo data negali būti ateityje")
+        if v.year < 1900:
+            raise ValueError("Neteisinga gimimo data")
+        if not _is_at_least_18(v):
+            raise ValueError("Klientas turi būti pilnametis (18+ metų)")
         return v
 
 
@@ -57,6 +76,20 @@ class ClientUpdate(BaseModel):
     def validate_telefono(cls, v: Optional[str]) -> Optional[str]:
         if v and len(v.strip()) < 6:
             raise ValueError("Telefono numeris per trumpas")
+        return v
+
+    # Tos pačios trys taisyklės kaip ClientBase aukščiau, su "None" tolerancija (laukas PASIRENKAMAS dalinio atnaujinimo metu).
+    @field_validator("gimimo_data")
+    @classmethod
+    def validate_gimimo_data(cls, v: Optional[date]) -> Optional[date]:
+        if v is None:
+            return v
+        if v > datetime.now(timezone.utc).date():
+            raise ValueError("Gimimo data negali būti ateityje")
+        if v.year < 1900:
+            raise ValueError("Neteisinga gimimo data")
+        if not _is_at_least_18(v):
+            raise ValueError("Klientas turi būti pilnametis (18+ metų)")
         return v
 
 
