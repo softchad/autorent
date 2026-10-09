@@ -230,3 +230,64 @@ def test_full_staff_workflow_reply_note_resolve_seen(auth_headers):
         headers=support_headers,
     )
     assert seen.status_code == 200, seen.text
+
+
+# Aptarnavimo darbuotojas gali išduoti kompensacijos kodą TO pokalbio klientui - kliento_id turi būti išvestas iš PAČIO pokalbio (žr. GenerateDiscountCodeRequest komentarą), ne iš užklausos kūno, kodas turi gautis "aptarnavimas" kilmės.
+def test_issue_discount_code_for_conversation(auth_headers):
+    _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    pokalbio_id = _make_conversation()
+
+    resp = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/discount-code",
+        json={"verte_eur": 10.0, "priezastis": "Atsiprašome dėl vėlavimo"},
+        headers=support_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["kodas"].startswith("AUTORENT")
+    assert body["kilme"] == "aptarnavimas"
+    assert body["verte_eur"] == 10.0
+
+
+# Mechanikas NĖRA aptarnavimo rolė - neturi galėti išduoti kompensacijos kodų, net jei žinotų pokalbio_id.
+def test_issue_discount_code_requires_support_access(auth_headers):
+    _, mech_headers = _make_employee_headers(auth_headers, "Mechanikas")
+    pokalbio_id = _make_conversation()
+
+    resp = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/discount-code",
+        json={"verte_eur": 10.0, "priezastis": "Bandymas"},
+        headers=mech_headers,
+    )
+    assert resp.status_code == 403
+
+
+# "priezastis" yra darbuotojo VIDINĖ pastaba (žr. discount_code.py list_discount_codes "pastaba=None") - klientas savo PAČIO kodų sąraše NIEKADA neturi jos pamatyti, net jei kodas tikrai jo.
+def test_issued_discount_code_reason_hidden_from_customer(auth_headers):
+    _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    email = f"hiddenreason{uuid4().hex[:8]}@example.com"
+    register = client.post(
+        "/api/v1/customer/register",
+        json={
+            "vardas": "Klientas", "pavarde": "Testas", "el_pastas": email,
+            "telefono_nr": "+37061234567", "gimimo_data": "1995-01-01", "slaptazodis": "Testinis123!",
+        },
+    )
+    customer_token = register.json()["access_token"]
+    customer_headers = {"Authorization": f"Bearer {customer_token}"}
+    convo = client.post(
+        "/api/v1/customer/support/conversations",
+        json={"tema": "Klausimas", "pranesimas": "Sveiki", "kategorija": "kita"},
+        headers=customer_headers,
+    )
+    pokalbio_id = convo.json()["pokalbio_id"]
+
+    client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/discount-code",
+        json={"verte_eur": 10.0, "priezastis": "SLAPTA darbuotojo priežastis"},
+        headers=support_headers,
+    )
+
+    codes = client.get("/api/v1/customer/discount-codes", headers=customer_headers).json()
+    assert len(codes) == 1
+    assert codes[0]["pastaba"] is None
