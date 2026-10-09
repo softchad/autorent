@@ -11,7 +11,7 @@ class InvoiceBase(BaseModel):
 class InvoiceCreate(InvoiceBase):
     pass
 
-# Papildo InvoiceBase kliento/užsakymo info (kliento_id, status, vardas/pavardė) - šie laukai FIZIŠKAI yra KITOSE lentelėse, surenkami per JOIN repozitorijoje (žr. repositories/invoice.py get_invoice), ne pačioje Saskaitos lentelėje.
+# Papildo InvoiceBase kliento/užsakymo info (kliento_id, status, vardas/pavardė) - šie laukai FIZIŠKAI yra KITOSE lentelėse, surenkami per JOIN tiesiog endpoint'e (žr. endpoints/invoice.py), ne pačioje Saskaitos lentelėje.
 class InvoiceOut(InvoiceBase):
     invoice_id: int
     order_id: int
