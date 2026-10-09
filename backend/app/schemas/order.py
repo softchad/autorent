@@ -42,8 +42,9 @@ class OrderBase(BaseModel):
         return self
 
 
+# "nuolaidos_kodas" NEgali būti OrderBase dalis - jis NIEKADA nesaugomas Uzsakymai lentelėje (žr. order.py endpoint'ą), tik VIENKARTINIS nurodymas, kiek atimti iš bendra_kaina kūrimo metu.
 class OrderCreate(OrderBase):
-    pass
+    nuolaidos_kodas: Optional[str] = None
 
 
 # NEgali paveldėti OrderBase - leidžia keisti TIK 3 laukus (žr. order.py endpoint'o komentarą, kodėl klientas/automobilis/kaina nekeičiami per PUT). validate_dates iš OrderBase ČIA NEPASIEKIAMA (nuomos_data nėra šios schemos lauko dalis) - tad TA PATI patikra atliekama RANKA endpoint'e (order.py), prieš priskiriant naują grazinimo_data.

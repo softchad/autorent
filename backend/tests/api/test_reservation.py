@@ -282,6 +282,37 @@ def test_update_reservation_conflict_rejected(client, auth_headers, created_rese
     client.delete(f"/api/v1/reservations/{other_id}", headers=auth_headers)
 
 
+# "Uzsakymai" lentelėje JAU yra aktyvus (vykdoma) užsakymas tam pačiam automobiliui/datoms - nauja REZERVACIJA tomis pačiomis dienomis turi būti atmesta, net jei Rezervavimas lentelėje pačioje nieko nėra (žr. availability_service.car_has_conflict - tikrina ABI lenteles, ne tik Rezervavimas).
+def test_create_reservation_rejected_when_car_has_active_order(client, auth_headers, res_dependencies):
+    kliento_id, automobilio_id = res_dependencies
+    emp_resp = client.post("/api/v1/employees/", json={
+        "vardas": "Testas", "pavarde": "Darbuotojas",
+        "el_pastas": f"ordconflict{uuid.uuid4().hex[:6]}@viko.lt",
+        "slaptazodis": "slaptas123!", "telefono_nr": "+37060000003",
+        "pareigos": "Vadybininkas", "atlyginimas": 1800.00, "isidarbinimo_data": "2023-01-01",
+    }, headers=auth_headers)
+    assert emp_resp.status_code == 200, emp_resp.json()
+    emp_id = emp_resp.json()["darbuotojo_id"]
+
+    order_resp = client.post("/api/v1/orders/", json={
+        "kliento_id": kliento_id, "automobilio_id": automobilio_id, "darbuotojo_id": emp_id,
+        "nuomos_data": "2031-09-01", "grazinimo_data": "2031-09-05",
+        "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+        "bendra_kaina": 100.0, "uzsakymo_busena": "vykdoma", "turi_papildomas_paslaugas": False,
+    }, headers=auth_headers)
+    assert order_resp.status_code == 200, order_resp.json()
+    order_id = order_resp.json()["uzsakymo_id"]
+
+    resp = client.post("/api/v1/reservations/", json={
+        "kliento_id": kliento_id, "automobilio_id": automobilio_id,
+        "rezervacijos_pradzia": "2031-09-02", "rezervacijos_pabaiga": "2031-09-04",
+        "busena": "laukia",
+    }, headers=auth_headers)
+    assert resp.status_code == 409
+
+    client.delete(f"/api/v1/orders/{order_id}", headers=auth_headers)
+
+
 # Patikrina, kad getLatestReservations grąžina papildomą AUTOMOBILIO/KLIENTO info (JOIN, žr. get_latest_reservations_with_details) - ne tik pačios rezervacijos laukus.
 def test_get_latest_reservations(client, auth_headers, created_reservation):
     resp = client.get("/api/v1/reservations/latest", params={"limit": 50}, headers=auth_headers)

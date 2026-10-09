@@ -1,9 +1,12 @@
 # Rezervacijų CRUD endpointai - darbuotojų pusėje IŠ ANKSTO pažymima, kad klientas ateityje pasiims konkretų automobilį (dar NE realus užsakymas, žr. order.py).
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.schemas import reservation as schemas
-from app.repositories import reservation as repo
+from app.models.reservation import Reservation
+from app.models.car import Car
+from app.models.client import Client
 from app.services import availability_service  # availability_service.lock_car_row - naudojamas žemiau, prieš tikrinant laisvumą
 from utils.hateoas import generate_links  # naudojama create/update žemiau (prideda TIK "delete" nuorodą) - skirtinga nuo _reservation_links aukščiau, kuri skirta PERŽIŪROS sąrašams su klientas/automobilis nuorodomis
 from app.api.deps import get_current_user
@@ -14,7 +17,6 @@ router = APIRouter(
     tags=["Reservations"],
     dependencies=[Depends(get_current_user)]
 )
-
 
 # Savos rankos nuorodos (ne utils/hateoas.generate_links, kaip žemiau create/update) - šios PRIDEDA nuorodas į SUSIJUSĮ klientą ir automobilį, kad sąrašą rodantis frontend'as galėtų iš karto nueiti pažiūrėti juos, bet SĄMONINGAI neduoda "delete" nuorodos tiesiog peržiūros sąraše.
 def _reservation_links(res) -> list[dict]:
@@ -29,8 +31,29 @@ def _reservation_links(res) -> list[dict]:
 @router.get("/latest", response_model=list[schemas.ReservationSummary],
             operation_id="getLatestReservations", dependencies=[Depends(require_perm(Perm.VIEW))])
 def get_latest_reservations(db: Session = Depends(get_db), limit: int = 5):
-    results = repo.get_latest_reservations_with_details(db, limit=limit)
-    # Laukai surenkami RANKA, ne "**r.__dict__" (kaip get_all_reservations žemiau) - "results" yra atskirų stulpelių rinkiniai iš JOIN užklausos (repo.py), ne pilni Reservation objektai, tad "__dict__" tiesiog neturėtų tų pačių laukų.
+    # Grąžina N naujausių rezervacijų KARTU su automobilio ir kliento info (JOIN) - naudojama rodyti, su kokiu automobiliu/klientu susijusi kiekviena, be atskiros užklausos kiekvienai eilutei.
+    results = (
+        db.query(
+            Reservation.rezervacijos_id,
+            Reservation.kliento_id,
+            Reservation.automobilio_id,
+            Reservation.rezervacijos_pradzia,
+            Reservation.rezervacijos_pabaiga,
+            Reservation.busena,
+            Car.marke,
+            Car.modelis,
+            Client.vardas,
+            Client.pavarde,
+        )
+        .join(Car, Reservation.automobilio_id == Car.automobilio_id)
+        .join(Client, Reservation.kliento_id == Client.kliento_id)
+        # Atšauktos NEĖINA į "limit" - kitaip, jei kelios iš NAUJAUSIŲ būtų atšauktos, dashboard'as gautų MAŽIAU nei "limit" įrašų, nors senesnių galiojančių rezervacijų yra daugiau.
+        .filter(Reservation.busena != "atšaukta")
+        .order_by(desc(Reservation.rezervacijos_pradzia))
+        .limit(limit)
+        .all()
+    )
+    # Laukai surenkami RANKA, ne "**r.__dict__" (kaip get_all_reservations žemiau) - "results" yra atskirų stulpelių rinkiniai iš JOIN užklausos aukščiau, ne pilni Reservation objektai, tad "__dict__" tiesiog neturėtų tų pačių laukų.
     return [
         {
             "rezervacijos_id": r.rezervacijos_id,
@@ -52,7 +75,7 @@ def get_latest_reservations(db: Session = Depends(get_db), limit: int = 5):
 @router.get("/", response_model=list[schemas.ReservationOut], operation_id="getAllReservations",
             dependencies=[Depends(require_perm(Perm.VIEW))])
 def get_all_reservations(db: Session = Depends(get_db)):
-    reservations = repo.get_all(db)
+    reservations = db.query(Reservation).all()
     return [
         {**res.__dict__, "links": _reservation_links(res)}
         for res in reservations
@@ -62,14 +85,18 @@ def get_all_reservations(db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.ReservationOut, operation_id="createReservation",
              dependencies=[Depends(require_perm(Perm.EDIT))])
 def create_reservation(reservation: schemas.ReservationCreate, db: Session = Depends(get_db)):
-    # SELECT ... FOR UPDATE - užrakina automobilio eilutę, kad du vienu metu kuriami rezervavimai dėl TO PATIES automobilio negalėtų abu pamatyti "laisva" prieš bet kuriam užsicommit'inant.
+    # SELECT ... FOR UPDATE - užrakina automobilio eilutę, kad du vienu metu kuriami rezervavimai/užsakymai dėl TO PATIES automobilio negalėtų abu pamatyti "laisva" prieš bet kuriam užsicommit'inant.
     availability_service.lock_car_row(db, reservation.automobilio_id)
-    if reservation.busena != "atšaukta" and repo.find_conflict(
+    # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - automobilis, kurį kažkas JAU nuomojasi (Uzsakymai), negali būti vėl rezervuotas tomis pačiomis dienomis.
+    if reservation.busena != "atšaukta" and availability_service.car_has_conflict(
         db, reservation.automobilio_id, reservation.rezervacijos_pradzia, reservation.rezervacijos_pabaiga
     ):
         raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
 
-    created = repo.create(db, reservation)
+    created = Reservation(**reservation.dict())
+    db.add(created)
+    db.commit()
+    db.refresh(created)
     return {
         **created.__dict__,
         "links": generate_links("reservations", created.rezervacijos_id, ["delete"])
@@ -79,7 +106,7 @@ def create_reservation(reservation: schemas.ReservationCreate, db: Session = Dep
 @router.put("/{rezervacijos_id}", response_model=schemas.ReservationOut, operation_id="updateReservation",
             dependencies=[Depends(require_perm(Perm.EDIT))])
 def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate, db: Session = Depends(get_db)):
-    existing = repo.get_by_id(db, rezervacijos_id)
+    existing = db.query(Reservation).filter(Reservation.rezervacijos_id == rezervacijos_id).first()
     if not existing:
         raise HTTPException(status_code=404, detail="Rezervacija nerasta")
 
@@ -94,8 +121,9 @@ def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate,
         raise HTTPException(status_code=400, detail="Pabaigos data turi būti vėlesnė nei pradžios data")
 
     availability_service.lock_car_row(db, automobilio_id)
-    if busena != "atšaukta" and repo.find_conflict(
-        db, automobilio_id, pradzia, pabaiga, exclude_id=rezervacijos_id
+    # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - "exclude_reservation_id" - redaguojant ESAMĄ rezervaciją, ji PATI neturi būti laikoma "konfliktu" su savimi.
+    if busena != "atšaukta" and availability_service.car_has_conflict(
+        db, automobilio_id, pradzia, pabaiga, exclude_reservation_id=rezervacijos_id
     ):
         raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
 
@@ -113,8 +141,10 @@ def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate,
 @router.delete("/{rezervacijos_id}", operation_id="deleteReservation",
                dependencies=[Depends(require_perm(Perm.ADMIN))])
 def delete_reservation(rezervacijos_id: int, db: Session = Depends(get_db)):
-    success = repo.delete(db, rezervacijos_id)
-    if not success:
+    reservation = db.query(Reservation).filter(Reservation.rezervacijos_id == rezervacijos_id).first()
+    if not reservation:
         raise HTTPException(status_code=404, detail="Rezervacija nerasta")
+    db.delete(reservation)
+    db.commit()
     return {"ok": True}
 

@@ -69,3 +69,34 @@ def get_busy_ranges_for_car(
 # "SELECT ... FOR UPDATE" - užrakina automobilio eilutę, kad konkurentai dėl TO PATIES automobilio booking'o negalėtų abu vienu metu pamatyti "laisva" (be šito persidengimo patikra turėtų check-then-insert lenktynių spragą). Kviesti PRIEŠ conflict patikrą, toje pačioje transakcijoje.
 def lock_car_row(db: Session, automobilio_id: int) -> Car | None:
     return db.query(Car).filter(Car.automobilio_id == automobilio_id).with_for_update().first()
+
+
+# Patikrina, ar automobilis UŽIMTAS [date_from, date_to) laikotarpiu KURIOJE NORS iš dviejų lentelių (Rezervavimas ARBA Uzsakymai) - BENDRA funkcija order.py IR reservation.py endpoint'ams, kad rezervacija ir užsakymas dėl TO PATIES automobilio niekada negalėtų abu praeiti NEPRIKLAUSOMAS (vienos lentelės) patikras ir dubliuotis. "exclude_*_id" - redaguojamas įrašas pats savaime nelaikomas konfliktu su savimi.
+def car_has_conflict(
+    db: Session,
+    automobilio_id: int,
+    date_from: date,
+    date_to: date,
+    exclude_reservation_id: int | None = None,
+    exclude_order_id: int | None = None,
+) -> bool:
+    reservation_query = db.query(Reservation).filter(
+        Reservation.automobilio_id == automobilio_id,
+        Reservation.busena.in_(BLOCKING_RESERVATION_STATUSES),
+        Reservation.rezervacijos_pradzia < date_to,
+        Reservation.rezervacijos_pabaiga > date_from,
+    )
+    if exclude_reservation_id is not None:
+        reservation_query = reservation_query.filter(Reservation.rezervacijos_id != exclude_reservation_id)
+    if reservation_query.first() is not None:
+        return True
+
+    order_query = db.query(Order).filter(
+        Order.automobilio_id == automobilio_id,
+        Order.uzsakymo_busena.in_(BLOCKING_ORDER_STATUSES),
+        Order.nuomos_data < date_to,
+        Order.grazinimo_data > date_from,
+    )
+    if exclude_order_id is not None:
+        order_query = order_query.filter(Order.uzsakymo_id != exclude_order_id)
+    return order_query.first() is not None
