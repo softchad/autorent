@@ -6,7 +6,7 @@ import pytest
 def mock_geocode_address(monkeypatch):
     # Grąžina funkciją, kurią testas iškviečia SU NORIMA reikšme (žr. naudojimą žemiau) - fixture PATI negali žinoti, ką konkretus testas norės gauti, tad šis "apgaubimo" sluoksnis leidžia tai nurodyti vėliau.
     def _apply(return_value):
-        # Pakeičia TIKRĄ geocode_address šia - "async def", nes originali funkcija IR YRA async (žr. repositories/geocode.py).
+        # Pakeičia TIKRĄ geocode_address šia - "async def", nes originali funkcija IR YRA async (žr. services/geocode_service.py).
         async def fake_geocode_address(adresas: str):
             return return_value
         monkeypatch.setattr("app.api.endpoints.geocode.geocode_address", fake_geocode_address)

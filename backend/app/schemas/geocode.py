@@ -5,7 +5,7 @@ class GeocodeRequest(BaseModel):
     # "Field(..., min_length=1)" - "..." (Ellipsis) Pydantic'e reiškia "PRIVALOMAS, be numatytosios reikšmės"; min_length=1 atmeta tuščią eilutę ("") PRIEŠ pasiekiant tinklo kodą.
     adresas: str = Field(..., min_length=1)
 
-# lat/lng - platuma/ilguma; grąžinama iš OpenCage (žr. repositories/geocode.py).
+# lat/lng - platuma/ilguma; grąžinama iš OpenCage (žr. services/geocode_service.py).
 class GeocodeResponse(BaseModel):
     lat: float
     lng: float

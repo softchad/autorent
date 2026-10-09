@@ -1,7 +1,7 @@
 # Adreso (teksto) pavertimas žemėlapio koordinatėmis (lat/lng) - naudojama darbuotojų žemėlapio komponente, piešiant automobilių/vietų žymeklius pagal adresą iš DB.
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.geocode import GeocodeRequest, GeocodeResponse
-from app.repositories.geocode import geocode_address  # kreipiasi į IŠORINĮ OpenCage geokodavimo servisą internetu - žr. repositories/geocode.py
+from app.services.geocode_service import geocode_address  # kreipiasi į IŠORINĮ OpenCage geokodavimo servisą internetu - žr. services/geocode_service.py
 from app.api.deps import get_current_user
 
 # Tik prisijungusiems darbuotojams - OpenCage servisas turi mokamą/ribotą užklausų kvotą, tad viešai neatveriame, kad svetimi nenaudotų jos be apribojimų.

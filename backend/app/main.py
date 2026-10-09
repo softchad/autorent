@@ -18,7 +18,7 @@ logger = logging.getLogger("autorent")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 from app.api.endpoints import (
     auth, employee, car, reservation, order, geocode, client, invoice, public,
-    customer_auth, customer, customer_loyalty, customer_support, staff_support,
+    customer_auth, customer, customer_loyalty, customer_support, staff_support, discount_code,
 )
 
 app = FastAPI(title="AutoRent API", version="1.0.0")
@@ -73,6 +73,7 @@ app.include_router(public.router,        prefix="/api/v1", tags=["Public"])
 app.include_router(customer_auth.router, prefix="/api/v1", tags=["Customer Auth"])
 app.include_router(customer.router,      prefix="/api/v1", tags=["Customer"])
 app.include_router(customer_loyalty.router, prefix="/api/v1", tags=["Customer Loyalty"])
+app.include_router(discount_code.router, prefix="/api/v1", tags=["Customer Loyalty"])
 app.include_router(customer_support.router, prefix="/api/v1", tags=["Customer Support"])
 
 # Log'inam klaidą PRIEŠ grąžinant bendrą pranešimą - kitaip ji niekur serveryje neužfiksuota.
