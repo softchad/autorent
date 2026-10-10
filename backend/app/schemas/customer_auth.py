@@ -3,6 +3,13 @@ from datetime import date, datetime, timezone
 from pydantic import BaseModel, EmailStr, field_validator
 
 
+# Tiksli amžiaus patikra (metai/mėnuo/diena, ne tik metų skirtumas) - naudojama ABIEJUOSE validatoriuose žemiau, kad nuomoti automobilį galėtų TIK pilnamečiai (žr. nuomos-taisykles puslapį frontend'e, 1 skyrius).
+def _is_at_least_18(v: date) -> bool:
+    today = datetime.now(timezone.utc).date()
+    age = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+    return age >= 18
+
+
 # Nauja kliento REGISTRACIJA - visi laukai privalomi, nes tai PIRMAS kartas, kai klientas atsiranda DB.
 class CustomerRegisterRequest(BaseModel):
     vardas: str
@@ -41,6 +48,8 @@ class CustomerRegisterRequest(BaseModel):
             raise ValueError("Gimimo data negali būti ateityje")
         if v.year < 1900:
             raise ValueError("Neteisinga gimimo data")
+        if not _is_at_least_18(v):
+            raise ValueError("Registruotis gali tik pilnamečiai (18+ metų) klientai")
         return v
 
 
@@ -101,6 +110,8 @@ class CustomerProfileUpdate(BaseModel):
             raise ValueError("Gimimo data negali būti ateityje")
         if v.year < 1900:
             raise ValueError("Neteisinga gimimo data")
+        if not _is_at_least_18(v):
+            raise ValueError("Klientas turi būti pilnametis (18+ metų)")
         return v
 
 

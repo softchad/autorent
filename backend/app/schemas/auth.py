@@ -1,5 +1,5 @@
 # Darbuotojų (ne kliento, žr. customer_auth.py) prisijungimo/profilio formos - naudojamos auth.py endpoint'uose.
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date
 
 class LoginRequest(BaseModel):
@@ -25,3 +25,11 @@ class UserInfo(BaseModel):
 class ChangePasswordRequest(BaseModel):
     senas_slaptazodis: str
     naujas_slaptazodis: str
+
+    # Tas pats minimalus ilgis kaip EmployeeCreate.validate_slaptazodis (schemas/employee.py) - be šio, keičiant slaptažodį (ne pirmą kartą nustatant jį) šis apribojimas visai NEgaliotų.
+    @field_validator("naujas_slaptazodis")
+    @classmethod
+    def validate_naujas_slaptazodis(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Slaptažodis turi būti bent 8 simbolių ilgio")
+        return v

@@ -22,7 +22,8 @@ from app.schemas.support import (
     StaffConversationSummaryOut,
     StaffConversationDetailOut,
 )
-from app.services import support_service  # bendra pokalbių logika (sukūrimas, žinutės, būsenų perėjimai) - naudoja IR šis failas, IR kliento pusės customer_support.py
+from app.schemas.discount_code import GenerateDiscountCodeRequest, DiscountCodeOut
+from app.services import support_service, discount_code_service  # bendra pokalbių logika (sukūrimas, žinutės, būsenų perėjimai) - naudoja IR šis failas, IR kliento pusės customer_support.py
 from app.services.support_service import SUPPORT_ROLES
 
 router = APIRouter(prefix="/support", tags=["Staff Support"])
@@ -295,3 +296,27 @@ def mark_seen(
     convo = _get_conversation(db, pokalbio_id)
     support_service.mark_seen(db, convo, is_staff=True, last_seen_id=request.zinutes_id)
     return _to_summary(db, convo)
+
+
+# Darbuotojas išduoda nuolaidos kodą TAM pokalbio klientui, pvz. atsiprašant už nesklandumą - kliento_id visada iš PAČIO pokalbio (žr. GenerateDiscountCodeRequest komentarą), ne iš užklausos kūno.
+@router.post("/conversations/{pokalbio_id}/discount-code", response_model=DiscountCodeOut, operation_id="issueSupportDiscountCode")
+def issue_discount_code(
+    pokalbio_id: int, request: GenerateDiscountCodeRequest, db: Session = Depends(get_db),
+    current_user: Employee = Depends(require_support_access),
+):
+    convo = _get_conversation(db, pokalbio_id)
+    # issue_code TIK flush'ina (neCOMMIT'ina, žr. discount_code_service.py) - čia, skirtingai nei customer_loyalty.py redeem_reward, nėra kito įrašo, su kuriuo reikėtų commit'inti KARTU, tad commit'iname IŠ KARTO.
+    code = discount_code_service.issue_code(
+        db, convo.kliento_id, request.verte_eur, "aptarnavimas", f"{request.priezastis} (pokalbis #{pokalbio_id})"
+    )
+    db.commit()
+    db.refresh(code)
+    return DiscountCodeOut(
+        kodo_id=code.kodo_id,
+        kodas=code.kodas,
+        verte_eur=code.verte_eur,
+        kilme=code.kilme,
+        pastaba=code.pastaba,
+        sukurimo_data=code.sukurimo_data,
+        panaudojimo_data=code.panaudojimo_data,
+    )

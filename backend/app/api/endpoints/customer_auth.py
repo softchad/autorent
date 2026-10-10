@@ -12,9 +12,9 @@ from app.schemas.customer_auth import (
     CustomerProfileUpdateOut,
 )
 from app.rate_limit import limiter  # apsauga nuo per dažno spėliojimo iš eilės (@limiter.limit(...) žemiau)
-from app.repositories import client as client_repo  # DB užklausos Klientai lentelei
+from app.models.client import Client
 from app.services.auth_service import verify_password, create_access_token, get_password_hash  # slaptažodžio tikrinimas/šifravimas, JWT "bilieto" kūrimas
-from app.api.deps import get_db, get_current_customer  # get_current_customer - "kas prisijungęs" KLIENTAMS, atskiras nuo darbuotojų get_current_user (JWT turi skirtingą "type" reikšmę)
+from app.api.deps import get_db, get_current_customer, get_client_by_email  # get_current_customer - "kas prisijungęs" KLIENTAMS, atskiras nuo darbuotojų get_current_user (JWT turi skirtingą "type" reikšmę)
 
 router = APIRouter(prefix="/customer", tags=["Customer Auth"])
 
@@ -23,13 +23,16 @@ router = APIRouter(prefix="/customer", tags=["Customer Auth"])
 @router.post("/register", response_model=CustomerTokenResponse, operation_id="customerRegister")
 @limiter.limit("10/minute")
 def register(payload: CustomerRegisterRequest, request: Request, db: Session = Depends(get_db)):
-    if client_repo.get_by_email(db, payload.el_pastas):
+    if get_client_by_email(db, payload.el_pastas):
         raise HTTPException(status_code=409, detail="Klientas su šiuo el. paštu jau užregistruotas")
 
     data = payload.dict()
     data["slaptazodis"] = get_password_hash(data.pop("slaptazodis"))
     try:
-        customer = client_repo.create_customer(db, data)
+        customer = Client(**data)
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
     except IntegrityError:
         # Reta lenktynių spraga - du vienalaikiai prašymai su tuo pačiu el. paštu abu praėjo patikrą aukščiau; šitas IntegrityError pagauna antrąjį.
         db.rollback()
@@ -43,8 +46,8 @@ def register(payload: CustomerRegisterRequest, request: Request, db: Session = D
 @router.post("/login", response_model=CustomerTokenResponse, operation_id="customerLogin")
 @limiter.limit("5/minute")
 def login(payload: CustomerLoginRequest, request: Request, db: Session = Depends(get_db)):
-    customer = client_repo.get_by_email(db, payload.el_pastas)
-    # "not customer.slaptazodis" - jei klientas registravosi TIK per Google (slaptažodžio neturi) arba yra anonimizuotas (žr. client.py repo.anonymize), slaptažodžiu prisijungti negalima.
+    customer = get_client_by_email(db, payload.el_pastas)
+    # "not customer.slaptazodis" - jei klientas registravosi TIK per Google (slaptažodžio neturi) arba yra anonimizuotas (žr. client.py delete_client - ten slaptazodis nustatomas į None), slaptažodžiu prisijungti negalima.
     if not customer or not customer.slaptazodis or not verify_password(payload.slaptazodis, customer.slaptazodis):
         raise HTTPException(status_code=401, detail="Neteisingas el. paštas arba slaptažodis")
 
@@ -68,7 +71,7 @@ def update_profile(
     updates = payload.dict(exclude_unset=True)
     email_changed = "el_pastas" in updates and updates["el_pastas"] != current_customer.el_pastas
 
-    if email_changed and client_repo.get_by_email(db, updates["el_pastas"]):
+    if email_changed and get_client_by_email(db, updates["el_pastas"]):
         raise HTTPException(status_code=409, detail="Šis el. paštas jau naudojamas kitos paskyros")
 
     for field, value in updates.items():
