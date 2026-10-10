@@ -8,7 +8,7 @@ import { useMeApiV1MeGetQuery } from "@/store/carRentalApi";
 
 type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?: string };
 import CreateEntityButton from "@/app/components/CreateEntityButton";
-import LoadingScreen from "@/app/components/loadingScreen";
+import LoadingScreen from "@/app/components/LoadingScreen";
 import { useEmployeesData } from "@/hooks/useEmployeesData";
 import { formatApiError } from "@/utils/formatApiError";
 

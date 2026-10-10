@@ -5,7 +5,7 @@ import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import EntityModal from "@/app/components/modals/EntityModal";
 import StatusBadge from "@/app/components/StatusBadge";
-import LoadingScreen from "@/app/components/loadingScreen";
+import LoadingScreen from "@/app/components/LoadingScreen";
 import { useOrdersData } from "@/hooks/useOrdersData";
 import type { OrderOut } from "@/store/carRentalApi";
 import CreateEntityButton from "@/app/components/CreateEntityButton";

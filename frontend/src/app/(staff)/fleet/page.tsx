@@ -18,7 +18,7 @@ const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
 });
 import EntityModal from "@/app/components/modals/EntityModal";
 import { useCarsData } from "@/hooks/useCarsData";
-import LoadingScreen from "@/app/components/loadingScreen";
+import LoadingScreen from "@/app/components/LoadingScreen";
 import {
   useUpdateCarMutation,
   useDeleteCarMutation,

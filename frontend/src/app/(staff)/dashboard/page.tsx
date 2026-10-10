@@ -15,7 +15,7 @@ import DataTable from "@/app/components/DataTable";
 import StatCard from "@/app/components/StatCard";
 import BarChartBox from "@/app/components/BarChartBox";
 import PieChartBox from "@/app/components/PieChartBox";
-import LoadingScreen from "@/app/components/loadingScreen";
+import LoadingScreen from "@/app/components/LoadingScreen";
 import EntityModal, { FieldConfig } from "@/app/components/modals/EntityModal";
 import { useUpdateReservationMutation } from "@/store/carRentalApi";
 import StatusBadge from "@/app/components/StatusBadge";
