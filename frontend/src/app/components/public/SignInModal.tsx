@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { FiX, FiBriefcase, FiEye, FiEyeOff } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
-import logo from "@/assets/autorentLOGO.png";
+import logo from "@/assets/logo-mark.png";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";

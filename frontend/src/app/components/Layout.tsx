@@ -5,8 +5,8 @@ import Sidebar from "./Sidebar";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-import image from "@/assets/autorentLOGO.png";
-import image2 from "@/assets/var1.png";
+import image from "@/assets/logo-mark.png";
+import image2 from "@/assets/texture-dots.png";
 import { isPublicPath } from "@/utils/publicRoutes";
 
 export default function Layout({ children }: { children: React.ReactNode }) {

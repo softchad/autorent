@@ -19,7 +19,7 @@ import {
 } from "react-icons/fi";
 import { FaRoad } from "react-icons/fa6";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import logo from "@/assets/autorenttextLOGO.png";
+import logo from "@/assets/logo-full.png";
 import SearchForm, { SearchValue } from "./SearchForm";
 import SignInModal from "./SignInModal";
 import ClientAvatar from "./ClientAvatar";

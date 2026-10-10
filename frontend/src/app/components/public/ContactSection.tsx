@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { FaStar } from "react-icons/fa";
 import { FiUser, FiLogIn } from "react-icons/fi";
-import dots from "@/assets/var1.png";
+import dots from "@/assets/texture-dots.png";
 import SignInModal from "./SignInModal";
 import SupportInbox from "./SupportInbox";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";

@@ -25,8 +25,8 @@ import { buildAutomobiliaiHref } from "@/utils/publicSearch";
 import { defaultDateRange } from "@/utils/formatLt";
 import BarChartBox from "@/app/components/BarChartBox";
 import PieChartBox from "@/app/components/PieChartBox";
-import stripes from "@/assets/var2.png";
-import dotsBg from "@/assets/var1.png";
+import stripes from "@/assets/texture-stripes.png";
+import dotsBg from "@/assets/texture-dots.png";
 
 // Nuotraukų šaltiniai nepatvirtinti - žr. public/images/fleet/CREDITS.md prieš publikavimą.
 // href - NUSTATYTA TIK kai kortelė realiai atitinka filtruojamą lauką (kebulo_tipas

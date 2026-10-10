@@ -9,7 +9,7 @@ import {
   FiHome, FiTruck, FiCalendar, FiClipboard,
   FiUsers, FiHelpCircle, FiFileText, FiBriefcase, FiUser,
 } from "react-icons/fi";
-import image from "@/assets/autorenttextLOGO.png";
+import image from "@/assets/logo-full.png";
 
 const menu = [
   { label: "Dashboard",          href: "/dashboard",   icon: FiHome },

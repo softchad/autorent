@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { FiMail, FiMapPin, FiPhone } from "react-icons/fi";
 import { FaFacebook, FaXTwitter, FaYoutube, FaInstagram } from "react-icons/fa6";
-import logo from "@/assets/autorenttextLOGO.png";
+import logo from "@/assets/logo-full.png";
 
 const companyLinks = [
   { label: "Apie mus", href: "/apie-mus" },
