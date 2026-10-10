@@ -113,7 +113,8 @@ def test_loyalty_reward_earned_at_fifth_completed_order(auth_headers):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["uzbaigtu_nuomu_skaicius"] == 5
-    assert body["progresas_dabartiniame_etape"] == 0
+    # Progresas rodo PILNĄ etapo_dydis (5), NE 0 - atlygis dar neišsnaudotas, tad juosta neturi "nutilti" tuščia, kol klientas pats jo nepasiima (žr. customer_loyalty.py get_loyalty_status).
+    assert body["progresas_dabartiniame_etape"] == 5
     assert len(body["atlygiai"]) == 1
     assert body["atlygiai"][0]["busena"] == "neisnaudotas"
 
@@ -147,7 +148,7 @@ def test_loyalty_multiple_milestones_create_multiple_rewards(auth_headers):
     assert {r["etapo_numeris"] for r in body["atlygiai"]} == {1, 2}
 
 
-# Pagrindinis "laimingas kelias" - uždirbtas atlygis sėkmingai panaudojamas, būsena pasikeičia į "isnaudotas".
+# Pagrindinis "laimingas kelias" - uždirbtas atlygis sėkmingai panaudojamas, būsena pasikeičia į "isnaudotas" IR sugeneruojamas tikras "AUTORENT"+6-skaitmenų kodas, kurį klientas po to randa IR redeem atsakyme, IR /customer/discount-codes sąraše.
 def test_redeem_reward(auth_headers):
     token, kliento_id = _registered_customer()
     car_id = _make_car(auth_headers)
@@ -160,7 +161,19 @@ def test_redeem_reward(auth_headers):
 
     resp = client.post(f"/api/v1/customer/loyalty/rewards/{atlygio_id}/redeem", headers=headers)
     assert resp.status_code == 200, resp.text
-    assert resp.json()["busena"] == "isnaudotas"
+    body = resp.json()
+    assert body["busena"] == "isnaudotas"
+    assert body["kodas"].startswith("AUTORENT")
+    assert len(body["kodas"]) == len("AUTORENT") + 6
+
+    codes = client.get("/api/v1/customer/discount-codes", headers=headers).json()
+    assert len(codes) == 1
+    assert codes[0]["kodas"] == body["kodas"]
+    assert codes[0]["kilme"] == "lojalumas"
+
+    # Po panaudojimo progresas turi NUKRISTI į 0, ne likti 5 - atlygis jau nebe neišsnaudotas (žr. get_loyalty_status šaką aukščiau).
+    after = client.get("/api/v1/customer/loyalty", headers=headers).json()
+    assert after["progresas_dabartiniame_etape"] == 0
 
 
 # Antras bandymas panaudoti TĄ PATĮ atlygį turi atmesti - apsauga nuo dvigubo panaudojimo (žr. redeem_reward with_for_update() customer_loyalty.py faile).

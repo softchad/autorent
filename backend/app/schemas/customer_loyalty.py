@@ -13,11 +13,15 @@ class LoyaltyRewardOut(BaseModel):
     panaudojimo_data: datetime | None = None
 
 
-# Bendra kliento lojalumo būsena - naudojama paskyros puslapyje parodyti progresą iki kito atlygio.
+# Bendra kliento lojalumo būsena - naudojama paskyros puslapyje parodyti progresą iki kito atlygio. "progresas_dabartiniame_etape" lieka LYGUS "etapo_dydis" (ne krenta į 0), kol naujausias uždirbtas atlygis dar neišnaudotas - kitaip klientas savo PASKUTINIO etapo užbaigimo net nepamatytų, juosta jau rodytų kitą, tuščią etapą.
 class LoyaltyStatusOut(BaseModel):
     uzbaigtu_nuomu_skaicius: int
-    # Kiek nuomų jau įskaičiuota į DABARTINĮ, dar nebaigtą etapą (0 iki etapo_dydis-1) - ne bendras visų laikų skaičius.
     progresas_dabartiniame_etape: int
     etapo_dydis: int
     atlygio_verte_eur: float
     atlygiai: list[LoyaltyRewardOut]
+
+
+# Atlygio panaudojimo atsakymas - skirtingai nuo LoyaltyRewardOut aukščiau, prideda PATĮ sugeneruotą nuolaidos kodą, kurį klientas turi pamatyti IŠ KARTO (žr. customer_loyalty.py redeem_reward).
+class RedeemRewardOut(LoyaltyRewardOut):
+    kodas: str
