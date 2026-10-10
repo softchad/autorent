@@ -85,7 +85,7 @@ def ensure_location(db_session):
     ("rida", -1),                    # rida negali būti neigiama
     ("sedimos_vietos", 1),           # per mažai (< 2)
     ("sedimos_vietos", 10),          # per daug (> 9)
-    ("pavaru_deze", "robotas"),      # ne VALID_PAVARŲ_DEZE
+    ("pavaru_deze", "robotas"),      # ne VALID_PAVARU_DEZE
     ("kuro_tipas", "vandenilis"),    # ne VALID_KURO_TIPAS
     ("automobilio_statusas", "parduotas"),  # ne VALID_STATUSAS
 ])
