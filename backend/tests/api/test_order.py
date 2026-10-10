@@ -1,6 +1,7 @@
 import pytest
 from uuid import uuid4
 from app.models import Location
+from app.models.discount_code import DiscountCode
 
 
 # Location(1) BŪTINA, kad automobilis (dabartine_vieta_id NOT NULL) galėtų egzistuoti - API neturi vietos KŪRIMO endpoint'o, tad vieta įterpiama TIESIAI per db_session.
@@ -245,6 +246,134 @@ def test_delete_order_not_found(client, auth_headers):
     resp = client.delete("/api/v1/orders/999999", headers=auth_headers)
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Užsakymas nerastas"
+
+
+# Galiojantis, TAM klientui priklausantis nuolaidos kodas turi TIKSLIAI sumažinti bendra_kaina ir pažymėti kodą panaudotu - ne tik priimti jį be poveikio.
+def test_create_order_with_valid_discount_code_reduces_price(client, auth_headers, prepared_order, db_session):
+    code = DiscountCode(
+        kodas=f"AUTORENT{uuid4().hex[:6].upper()}", kliento_id=prepared_order["client_id"],
+        verte_eur=15.0, kilme="aptarnavimas",
+    )
+    db_session.add(code)
+    db_session.commit()
+
+    data = {
+        "kliento_id": prepared_order["client_id"], "automobilio_id": prepared_order["car_id"],
+        "darbuotojo_id": prepared_order["emp_id"],
+        "nuomos_data": "2024-09-01", "grazinimo_data": "2024-09-03",
+        "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+        "bendra_kaina": 100, "uzsakymo_busena": "patvirtinta", "turi_papildomas_paslaugas": False,
+        "nuolaidos_kodas": code.kodas,
+    }
+    resp = client.post("/api/v1/orders/", json=data, headers=auth_headers)
+    assert resp.status_code == 200, resp.text
+    order = resp.json()
+    assert order["bendra_kaina"] == 85.0
+
+    db_session.refresh(code)
+    assert code.panaudojimo_data is not None
+    client.delete(f"/api/v1/orders/{order['uzsakymo_id']}", headers=auth_headers)
+
+
+# Neegzistuojantis/svetimas/jau panaudotas kodas turi grąžinti aiškų 400 PRIEŠ įrašant užsakymą - ne tyliai ignoruoti nuolaidą, kad darbuotojas nepagalvotų, jog ji pritaikyta, kai realiai ne.
+def test_create_order_with_invalid_discount_code_rejected(client, auth_headers, prepared_order):
+    data = {
+        "kliento_id": prepared_order["client_id"], "automobilio_id": prepared_order["car_id"],
+        "darbuotojo_id": prepared_order["emp_id"],
+        "nuomos_data": "2024-09-10", "grazinimo_data": "2024-09-12",
+        "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+        "bendra_kaina": 100, "uzsakymo_busena": "patvirtinta", "turi_papildomas_paslaugas": False,
+        "nuolaidos_kodas": "AUTORENT999999",
+    }
+    resp = client.post("/api/v1/orders/", json=data, headers=auth_headers)
+    assert resp.status_code == 400
+
+
+# "Rezervavimas" lentelėje JAU yra aktyvi (patvirtinta) rezervacija tam pačiam automobiliui/datoms - naujas UŽSAKYMAS tomis pačiomis dienomis turi būti atmestas, net jei Uzsakymai lentelėje pačioje nieko nėra (žr. availability_service.car_has_conflict - tikrina ABI lenteles, ne tik Uzsakymai).
+def test_create_order_rejected_when_car_has_active_reservation(client, auth_headers, prepared_order):
+    res_resp = client.post(
+        "/api/v1/reservations/",
+        json={
+            "kliento_id": prepared_order["client_id"], "automobilio_id": prepared_order["car_id"],
+            "rezervacijos_pradzia": "2025-03-01", "rezervacijos_pabaiga": "2025-03-05",
+            "busena": "patvirtinta",
+        },
+        headers=auth_headers,
+    )
+    assert res_resp.status_code == 200, res_resp.json()
+    res_id = res_resp.json()["rezervacijos_id"]
+
+    resp = client.post(
+        "/api/v1/orders/",
+        json={
+            "kliento_id": prepared_order["client_id"], "automobilio_id": prepared_order["car_id"],
+            "darbuotojo_id": prepared_order["emp_id"],
+            "nuomos_data": "2025-03-02", "grazinimo_data": "2025-03-04",
+            "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+            "bendra_kaina": 100.0, "uzsakymo_busena": "patvirtinta", "turi_papildomas_paslaugas": False,
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 409
+
+    client.delete(f"/api/v1/reservations/{res_id}", headers=auth_headers)
+
+
+# Užsakymas gali būti sukurtas TIESIAI su uzsakymo_busena="atšaukta" (VALID_BUSENA tai leidžia, pvz. istoriniam įrašui) net TOMIS PAČIOMIS dienomis kaip kito aktyvaus užsakymo - "atšaukta" savaime negali konfliktuoti su kuo nors. KITAS klientas (ne prepared_order's) - kitaip susidurtume su ATSKIRA (klientų) konflikto taisykle, ne ta, kurią čia tikriname.
+def test_create_order_atsaukta_bypasses_conflict_check(client, auth_headers, prepared_order):
+    other_client_resp = client.post(
+        "/api/v1/clients/",
+        json={
+            "vardas": "Kitas", "pavarde": "Atsaukejas",
+            "el_pastas": f"atsaukta{uuid4().hex[:8]}@viko.lt",
+            "telefono_nr": "+37060000088", "slaptazodis": "SlaptasAT123!",
+            "gimimo_data": "1990-01-01", "registracijos_data": "2024-06-01",
+        },
+        headers=auth_headers,
+    )
+    other_client_id = other_client_resp.json()["kliento_id"]
+
+    resp = client.post(
+        "/api/v1/orders/",
+        json={
+            "kliento_id": other_client_id, "automobilio_id": prepared_order["car_id"],
+            "darbuotojo_id": prepared_order["emp_id"],
+            "nuomos_data": "2024-06-03", "grazinimo_data": "2024-06-06",
+            "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+            "bendra_kaina": 50.0, "uzsakymo_busena": "atšaukta", "turi_papildomas_paslaugas": False,
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.json()
+    client.delete(f"/api/v1/orders/{resp.json()['uzsakymo_id']}", headers=auth_headers)
+
+
+# update_order turi PAKARTOTINAI tikrinti konfliktą, kai pratęsiama grazinimo_data - ne tik create_order metu (žr. availability_service.car_has_conflict naudojimą update_order viduje).
+def test_update_order_rejects_conflict_on_date_extension(client, auth_headers, prepared_order):
+    # NAUJAS užsakymas TAM PAČIAM automobiliui, DAR NESIKERTANTIS su prepared_order's (06-01..06-10) - pradedamas PRIEŠ jį.
+    other_resp = client.post(
+        "/api/v1/orders/",
+        json={
+            "kliento_id": prepared_order["client_id"], "automobilio_id": prepared_order["car_id"],
+            "darbuotojo_id": prepared_order["emp_id"],
+            "nuomos_data": "2024-05-01", "grazinimo_data": "2024-05-05",
+            "paemimo_vietos_id": 1, "grazinimo_vietos_id": 1,
+            "bendra_kaina": 80.0, "uzsakymo_busena": "patvirtinta", "turi_papildomas_paslaugas": False,
+        },
+        headers=auth_headers,
+    )
+    assert other_resp.status_code == 200, other_resp.json()
+    other_id = other_resp.json()["uzsakymo_id"]
+
+    # Pratęsiame grazinimo_data TOLI Į PRIEKĮ, kol ji atsiduria prepared_order's aktyvaus užsakymo (06-01..06-10) viduje.
+    resp = client.put(
+        f"/api/v1/orders/{other_id}",
+        json={"grazinimo_data": "2024-06-05"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 409
+
+    client.delete(f"/api/v1/orders/{other_id}", headers=auth_headers)
 
 
 # PASTABA: kliento anonimizacijos elgsena (klientas su baigtais užsakymais ištrinamas anonimizuojant asmeninius duomenis, ne pašalinant eilutę) čia TYČIA nebandoma automatiniu testu - šio modulio "client"/"db_session" fixture'ai dalijasi VIENĄ bendrą transakciją visam failui, o `db.rollback()`, kurio reikia po IntegrityError, tokioje sąrankoje nutrina VISŲ šio failo testų duomenis, ne tik nepavykusį veiksmą; elgsena patikrinta rankiniu būdu prieš tikrą MySQL DB ir veikia teisingai.
