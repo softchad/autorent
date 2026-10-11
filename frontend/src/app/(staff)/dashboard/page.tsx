@@ -17,7 +17,7 @@ import BarChartBox from "@/app/components/BarChartBox";
 import PieChartBox from "@/app/components/PieChartBox";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import EntityModal, { FieldConfig } from "@/app/components/modals/EntityModal";
-import { useUpdateReservationMutation } from "@/store/carRentalApi";
+import { useUpdateReservationMutation } from "@/store/autorentApi";
 import StatusBadge from "@/app/components/StatusBadge";
 import React, { useState } from "react";
 

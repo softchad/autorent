@@ -1,18 +1,18 @@
 "use client";
 
-import {
-  useChangePasswordMutation,
-  useMeApiV1MeGetQuery,
-} from "@/store/carRentalApi";
+import { useChangePasswordMutation, useGetCurrentUserQuery } from "@/store/autorentApi";
 import { FormEvent, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { decodeJwt } from "@/utils/jwt";
+import { formatApiError } from "@/utils/formatApiError";
 
+// Darbuotojo SAVO profilio puslapis - informacija apie save, sesijos (JWT) info IR slaptažodžio keitimas.
 export default function ProfilePage() {
-  const { data: user, isLoading, isError, error } = useMeApiV1MeGetQuery();
+  const { data: user, isLoading, isError, error } = useGetCurrentUserQuery();
   const [changePassword, { isLoading: isChanging }] =
     useChangePasswordMutation();
 
+  // JWT "iat"/"exp" (issued at/expires) laukai saugomi SEKUNDĖMIS nuo 1970-01-01, bet JS Date konstruktorius tikisi MILISEKUNDŽIŲ - todėl "* 1000".
   const token = useAppSelector((s) => s.auth.token);
   const tokenPayload = token ? decodeJwt(token) : null;
   const loginTime = tokenPayload?.iat ? new Date(tokenPayload.iat * 1000) : null;
@@ -23,8 +23,10 @@ export default function ProfilePage() {
   const [repeatPassword, setRepeatPassword] = useState("");
   const [message, setMessage] = useState("");
 
+  // Slaptažodžių sutapimo (naujas/pakartotas) patikra vyksta KLIENTO pusėje, PRIEŠ siunčiant į backend - backend'as (change_password auth.py) šios poros apskritai nežino, jam siunčiamas TIK "naujas_slaptazodis".
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setMessage("");
     if (newPassword !== repeatPassword) {
       setMessage("Slaptažodžiai nesutampa.");
       return;
@@ -41,15 +43,16 @@ export default function ProfilePage() {
       setNewPassword("");
       setRepeatPassword("");
       setMessage("");
-    } catch {
-      alert("Nepavyko pakeisti slaptažodžio.");
+    } catch (err) {
+      // "formatApiError" - be jo, pvz. "Neteisingas dabartinis slaptažodis" (žr. auth.py change_password) niekada nepasiektų vartotojo, liktų tik bendra žinutė.
+      setMessage(formatApiError(err, "Nepavyko pakeisti slaptažodžio."));
     }
   };
 
-  if (isLoading) return <p className="text-white">Loading...</p>;
+  if (isLoading) return <p className="text-white">Kraunama...</p>;
   if (isError)
-    return <p className="text-red-400">Error: {(error as { status?: number })?.status}</p>;
-  if (!user) return <p className="text-white">User data not found.</p>;
+    return <p className="text-red-400">{formatApiError(error, "Nepavyko įkelti profilio duomenų.")}</p>;
+  if (!user) return <p className="text-white">Vartotojo duomenys nerasti.</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 text-white">
@@ -105,47 +108,46 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {user.pareigos !== "Svečias" && (
-        <section className="bg-[#0E1525] p-6 rounded-xl shadow-xl">
-          <h2 className="text-lg font-semibold mb-4 text-white">
-            Keisti slaptažodį
-          </h2>
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 gap-4 max-w-md"
+      {/* Rodoma VISIEMS, be sąlygos - patikrinau ROLE_PERMS (permissions.py), "Svečias" NĖRA reali, DB egzistuojanti pareigybė (nė vienas darbuotojas negali turėti šios reikšmės), tad slaptažodžio keitimas prasmingas KIEKVIENAM realiam darbuotojui. */}
+      <section className="bg-[#0E1525] p-6 rounded-xl shadow-xl">
+        <h2 className="text-lg font-semibold mb-4 text-white">
+          Keisti slaptažodį
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 gap-4 max-w-md"
+        >
+          <input
+            type="password"
+            placeholder="Dabartinis slaptažodis"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
+          />
+          <input
+            type="password"
+            placeholder="Naujas slaptažodis"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
+          />
+          <input
+            type="password"
+            placeholder="Pakartokite naują slaptažodį"
+            value={repeatPassword}
+            onChange={(e) => setRepeatPassword(e.target.value)}
+            className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
+          />
+          <button
+            type="submit"
+            className="bg-[#0F597B] text-white py-2 rounded hover:bg-[#0C374D] disabled:opacity-60"
+            disabled={isChanging}
           >
-            <input
-              type="password"
-              placeholder="Dabartinis slaptažodis"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
-            />
-            <input
-              type="password"
-              placeholder="Naujas slaptažodis"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
-            />
-            <input
-              type="password"
-              placeholder="Pakartokite naują slaptažodį"
-              value={repeatPassword}
-              onChange={(e) => setRepeatPassword(e.target.value)}
-              className="border border-gray-700 bg-[#1E2B45] text-white p-2 rounded"
-            />
-            <button
-              type="submit"
-              className="bg-[#0F597B] text-white py-2 rounded hover:bg-[#0C374D] disabled:opacity-60"
-              disabled={isChanging}
-            >
-              {isChanging ? "Keičiama..." : "Išsaugoti pakeitimus"}
-            </button>
-            {message && <p className="text-sm text-red-400">{message}</p>}
-          </form>
-        </section>
-      )}
+            {isChanging ? "Keičiama..." : "Išsaugoti pakeitimus"}
+          </button>
+          {message && <p className="text-sm text-red-400">{message}</p>}
+        </form>
+      </section>
     </div>
   );
 }

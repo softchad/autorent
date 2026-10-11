@@ -6,7 +6,7 @@ import {
   useGetStaffConversationsQuery,
   useGetAllClientsQuery,
   useGetLatestReservationsQuery,
-} from "@/store/carRentalApi";
+} from "@/store/autorentApi";
 
 export function useDashboardStats() {
   const {

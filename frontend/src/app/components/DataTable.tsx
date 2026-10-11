@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { FiChevronLeft, FiChevronRight, FiChevronUp, FiChevronDown } from "react-icons/fi";
 
 export type Column<T> = {
   label: string;
+  // "| string" (ne TIK "keyof T") - visi šio projekto puslapiai apibrėžia "columns" masyvą BE aiškios ": Column<T>[]" anotacijos, tad TypeScript jų string accessor'ius (pvz. "el_pastas") infera kaip PLATŲ "string", ne siaurą literalą; be šio "| string" tokie (realūs, teisingi) accessor'iai nebeatitiktų tipo. Kiekvienas realus accessor VISADA yra tikras T lauko vardas - tai pasitikima pačiais puslapiais, ne priverstinai tikrinama čia.
   accessor: keyof T | string | ((row: T) => React.ReactNode);
   className?: string;
-  // Reikalinga rūšiavimui, kai accessor yra funkcija (grąžina React elementą,
-  // kurio tiesiogiai palyginti negalima) - pvz. formatuotai kainai ar datai.
+  // Reikalinga rūšiavimui, kai accessor yra funkcija (grąžina React elementą, kurio tiesiogiai palyginti negalima) - pvz. formatuotai kainai ar datai.
   sortValue?: (row: T) => string | number | Date | null | undefined;
 };
 
@@ -17,12 +17,14 @@ export type DataTableProps<T> = {
   itemsPerPage?: number;
 };
 
+// Reikšmė, pagal kurią lyginama rūšiuojant - "sortValue" turi pirmenybę (žr. komentarą aukščiau), kitaip imama TIESIOG lauko reikšmė, nebent accessor yra funkcija be "sortValue" (tada rūšiavimas tai eilutei neleidžiamas, žr. isSortable žemiau, tad čia tiesiog grąžinama undefined).
 function getSortValue<T>(col: Column<T>, row: T): string | number | Date | null | undefined {
   if (col.sortValue) return col.sortValue(row);
   if (typeof col.accessor === "function") return undefined;
   return row[col.accessor as keyof T] as unknown as string | number | Date;
 }
 
+// Bendra lentelė su rūšiavimu ir puslapiavimu - naudojama VISUOSE darbuotojų CRUD puslapiuose (clients/employees/fleet/invoices/orders/reservations/dashboard).
 export default function DataTable<T>({
   columns,
   data,
@@ -33,6 +35,7 @@ export default function DataTable<T>({
   const [sortIndex, setSortIndex] = useState<number | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  // Stulpelis rūšiuojamas, jei accessor yra TIESIOG lauko vardas (visada palyginamas), arba jei funkcinis accessor'ius turi papildomą "sortValue" - grynos funkcijos be jo negalima rūšiuoti, nes jos grąžina React elementą, kurio tiesiogiai palyginti negalima.
   const isSortable = (col: Column<T>) => typeof col.accessor !== "function" || !!col.sortValue;
 
   const handleSort = (index: number) => {
@@ -47,6 +50,7 @@ export default function DataTable<T>({
     setCurrentPage(1);
   };
 
+  // Nulinis (null/undefined) reikšmes VISADA stumia į sąrašo galą, nepriklausomai nuo rūšiavimo tvarkos - kitaip jos "šokinėtų" tarp pradžios/galo kaskart pakeičiant kryptį, kas atrodytų netvarkingai.
   const sortedData = useMemo(() => {
     if (sortIndex === null) return data;
     const col = columns[sortIndex];
@@ -70,6 +74,11 @@ export default function DataTable<T>({
 
   const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
 
+  // "currentPage" yra VIDINĖ šio komponento būsena, tad NIEKAS automatiškai nepastebi, kai tėvas pakeičia "data" (pvz. paieškos/filtro laukelis virš lentelės sumažina rezultatų skaičių) ir "totalPages" nukrenta ŽEMIAU dabartinio puslapio - be šio efekto "paginatedData" žemiau tiesiog nukirstų TUŠTUMĄ (slice() už masyvo galo), rodydama "Įrašų nerasta", nors realių atitikmenų yra, tiesiog ankstesniame puslapyje.
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(start, start + itemsPerPage);
@@ -79,6 +88,7 @@ export default function DataTable<T>({
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
+  // Puslapių mygtukų sąrašas su "…" tarpais, kai puslapių daug - rodo PIRMĄ, PASKUTINĮ IR ±1 aplink dabartinį, be galo ilgo sąrašo didelėms lentelėms.
   const pageNumbers = useMemo(() => {
     const pages: (number | "…")[] = [];
     if (totalPages <= 7) {

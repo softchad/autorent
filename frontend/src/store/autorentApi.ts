@@ -1,33 +1,27 @@
 import { baseApi as api } from "./baseApi";
 const injectedRtkApi = api.injectEndpoints({
   endpoints: (build) => ({
-    githubLoginApiV1GithubLoginGet: build.query<
-      GithubLoginApiV1GithubLoginGetApiResponse,
-      GithubLoginApiV1GithubLoginGetApiArg
-    >({
+    githubLogin: build.query<GithubLoginApiResponse, GithubLoginApiArg>({
       query: () => ({ url: `/api/v1/github/login` }),
     }),
-    githubCallbackApiV1GithubCallbackGet: build.query<
-      GithubCallbackApiV1GithubCallbackGetApiResponse,
-      GithubCallbackApiV1GithubCallbackGetApiArg
+    githubCallback: build.query<
+      GithubCallbackApiResponse,
+      GithubCallbackApiArg
     >({
       query: () => ({ url: `/api/v1/github/callback` }),
     }),
-    googleLoginApiV1GoogleLoginGet: build.query<
-      GoogleLoginApiV1GoogleLoginGetApiResponse,
-      GoogleLoginApiV1GoogleLoginGetApiArg
-    >({
+    googleLogin: build.query<GoogleLoginApiResponse, GoogleLoginApiArg>({
       query: () => ({ url: `/api/v1/google/login` }),
     }),
-    customerGoogleLoginApiV1CustomerGoogleLoginGet: build.query<
-      CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiResponse,
-      CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiArg
+    customerGoogleLogin: build.query<
+      CustomerGoogleLoginApiResponse,
+      CustomerGoogleLoginApiArg
     >({
       query: () => ({ url: `/api/v1/customer/google/login` }),
     }),
-    googleCallbackApiV1GoogleCallbackGet: build.query<
-      GoogleCallbackApiV1GoogleCallbackGetApiResponse,
-      GoogleCallbackApiV1GoogleCallbackGetApiArg
+    googleCallback: build.query<
+      GoogleCallbackApiResponse,
+      GoogleCallbackApiArg
     >({
       query: () => ({ url: `/api/v1/google/callback` }),
     }),
@@ -41,7 +35,10 @@ const injectedRtkApi = api.injectEndpoints({
     logout: build.mutation<LogoutApiResponse, LogoutApiArg>({
       query: () => ({ url: `/api/v1/logout`, method: "POST" }),
     }),
-    meApiV1MeGet: build.query<MeApiV1MeGetApiResponse, MeApiV1MeGetApiArg>({
+    getCurrentUser: build.query<
+      GetCurrentUserApiResponse,
+      GetCurrentUserApiArg
+    >({
       query: () => ({ url: `/api/v1/me` }),
     }),
     changePassword: build.mutation<
@@ -297,6 +294,16 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.seenRequest,
       }),
     }),
+    issueSupportDiscountCode: build.mutation<
+      IssueSupportDiscountCodeApiResponse,
+      IssueSupportDiscountCodeApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/support/conversations/${queryArg.pokalbioId}/discount-code`,
+        method: "POST",
+        body: queryArg.generateDiscountCodeRequest,
+      }),
+    }),
     getAllInvoices: build.query<
       GetAllInvoicesApiResponse,
       GetAllInvoicesApiArg
@@ -428,6 +435,12 @@ const injectedRtkApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
+    getCustomerDiscountCodes: build.query<
+      GetCustomerDiscountCodesApiResponse,
+      GetCustomerDiscountCodesApiArg
+    >({
+      query: () => ({ url: `/api/v1/customer/discount-codes` }),
+    }),
     getCustomerConversations: build.query<
       GetCustomerConversationsApiResponse,
       GetCustomerConversationsApiArg
@@ -475,22 +488,20 @@ const injectedRtkApi = api.injectEndpoints({
   }),
   overrideExisting: false,
 });
-export { injectedRtkApi as carRentalApi };
-export type GithubLoginApiV1GithubLoginGetApiResponse =
+export { injectedRtkApi as autorentApi };
+export type GithubLoginApiResponse = /** status 200 Successful Response */ any;
+export type GithubLoginApiArg = void;
+export type GithubCallbackApiResponse =
   /** status 200 Successful Response */ any;
-export type GithubLoginApiV1GithubLoginGetApiArg = void;
-export type GithubCallbackApiV1GithubCallbackGetApiResponse =
+export type GithubCallbackApiArg = void;
+export type GoogleLoginApiResponse = /** status 200 Successful Response */ any;
+export type GoogleLoginApiArg = void;
+export type CustomerGoogleLoginApiResponse =
   /** status 200 Successful Response */ any;
-export type GithubCallbackApiV1GithubCallbackGetApiArg = void;
-export type GoogleLoginApiV1GoogleLoginGetApiResponse =
+export type CustomerGoogleLoginApiArg = void;
+export type GoogleCallbackApiResponse =
   /** status 200 Successful Response */ any;
-export type GoogleLoginApiV1GoogleLoginGetApiArg = void;
-export type CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiResponse =
-  /** status 200 Successful Response */ any;
-export type CustomerGoogleLoginApiV1CustomerGoogleLoginGetApiArg = void;
-export type GoogleCallbackApiV1GoogleCallbackGetApiResponse =
-  /** status 200 Successful Response */ any;
-export type GoogleCallbackApiV1GoogleCallbackGetApiArg = void;
+export type GoogleCallbackApiArg = void;
 export type LoginApiResponse =
   /** status 200 Successful Response */ TokenResponse;
 export type LoginApiArg = {
@@ -498,9 +509,9 @@ export type LoginApiArg = {
 };
 export type LogoutApiResponse = /** status 200 Successful Response */ any;
 export type LogoutApiArg = void;
-export type MeApiV1MeGetApiResponse =
+export type GetCurrentUserApiResponse =
   /** status 200 Successful Response */ UserInfo;
-export type MeApiV1MeGetApiArg = void;
+export type GetCurrentUserApiArg = void;
 export type ChangePasswordApiResponse =
   /** status 200 Successful Response */ any;
 export type ChangePasswordApiArg = {
@@ -659,6 +670,12 @@ export type MarkStaffConversationSeenApiArg = {
   pokalbioId: number;
   seenRequest: SeenRequest;
 };
+export type IssueSupportDiscountCodeApiResponse =
+  /** status 200 Successful Response */ DiscountCodeOut;
+export type IssueSupportDiscountCodeApiArg = {
+  pokalbioId: number;
+  generateDiscountCodeRequest: GenerateDiscountCodeRequest;
+};
 export type GetAllInvoicesApiResponse =
   /** status 200 Successful Response */ InvoiceOut[];
 export type GetAllInvoicesApiArg = void;
@@ -734,10 +751,13 @@ export type GetCustomerLoyaltyStatusApiResponse =
   /** status 200 Successful Response */ LoyaltyStatusOut;
 export type GetCustomerLoyaltyStatusApiArg = void;
 export type RedeemCustomerLoyaltyRewardApiResponse =
-  /** status 200 Successful Response */ LoyaltyRewardOut;
+  /** status 200 Successful Response */ RedeemRewardOut;
 export type RedeemCustomerLoyaltyRewardApiArg = {
   atlygioId: number;
 };
+export type GetCustomerDiscountCodesApiResponse =
+  /** status 200 Successful Response */ DiscountCodeOut[];
+export type GetCustomerDiscountCodesApiArg = void;
 export type GetCustomerConversationsApiResponse =
   /** status 200 Successful Response */ ConversationSummaryOut[];
 export type GetCustomerConversationsApiArg = void;
@@ -801,7 +821,7 @@ export type EmployeeOut = {
   vardas: string;
   pavarde: string;
   el_pastas: string;
-  telefono_nr?: string | null;
+  telefono_nr: string;
   pareigos: string;
   atlyginimas: number;
   isidarbinimo_data: string;
@@ -814,7 +834,7 @@ export type EmployeeCreate = {
   vardas: string;
   pavarde: string;
   el_pastas: string;
-  telefono_nr?: string | null;
+  telefono_nr: string;
   pareigos: string;
   atlyginimas: number;
   isidarbinimo_data: string;
@@ -974,6 +994,7 @@ export type OrderCreate = {
   bendra_kaina: number;
   uzsakymo_busena: string;
   turi_papildomas_paslaugas: boolean;
+  nuolaidos_kodas?: string | null;
 };
 export type OrderUpdate = {
   uzsakymo_busena?: string | null;
@@ -981,11 +1002,11 @@ export type OrderUpdate = {
   turi_papildomas_paslaugas?: boolean | null;
 };
 export type ClientOut = {
-  vardas?: string | null;
-  pavarde?: string | null;
+  vardas: string;
+  pavarde: string;
   el_pastas: string;
-  telefono_nr?: string | null;
-  gimimo_data?: string | null;
+  telefono_nr: string;
+  gimimo_data: string;
   registracijos_data?: string | null;
   kliento_id: number;
   links: {
@@ -993,11 +1014,11 @@ export type ClientOut = {
   }[];
 };
 export type ClientCreate = {
-  vardas?: string | null;
-  pavarde?: string | null;
+  vardas: string;
+  pavarde: string;
   el_pastas: string;
-  telefono_nr?: string | null;
-  gimimo_data?: string | null;
+  telefono_nr: string;
+  gimimo_data: string;
   registracijos_data?: string | null;
 };
 export type ClientUpdate = {
@@ -1079,6 +1100,19 @@ export type ResolveRequest = {
 };
 export type SeenRequest = {
   zinutes_id: number;
+};
+export type DiscountCodeOut = {
+  kodo_id: number;
+  kodas: string;
+  verte_eur: number;
+  kilme: string;
+  pastaba?: string | null;
+  sukurimo_data?: string | null;
+  panaudojimo_data?: string | null;
+};
+export type GenerateDiscountCodeRequest = {
+  verte_eur: number;
+  priezastis: string;
 };
 export type InvoiceOut = {
   order_id: number;
@@ -1199,6 +1233,15 @@ export type LoyaltyStatusOut = {
   atlygio_verte_eur: number;
   atlygiai: LoyaltyRewardOut[];
 };
+export type RedeemRewardOut = {
+  atlygio_id: number;
+  etapo_numeris: number;
+  busena: string;
+  verte_eur: number;
+  sukurimo_data?: string | null;
+  panaudojimo_data?: string | null;
+  kodas: string;
+};
 export type ConversationSummaryOut = {
   pokalbio_id: number;
   tema: string;
@@ -1236,14 +1279,14 @@ export type MessageCreate = {
   tekstas: string;
 };
 export const {
-  useGithubLoginApiV1GithubLoginGetQuery,
-  useGithubCallbackApiV1GithubCallbackGetQuery,
-  useGoogleLoginApiV1GoogleLoginGetQuery,
-  useCustomerGoogleLoginApiV1CustomerGoogleLoginGetQuery,
-  useGoogleCallbackApiV1GoogleCallbackGetQuery,
+  useGithubLoginQuery,
+  useGithubCallbackQuery,
+  useGoogleLoginQuery,
+  useCustomerGoogleLoginQuery,
+  useGoogleCallbackQuery,
   useLoginMutation,
   useLogoutMutation,
-  useMeApiV1MeGetQuery,
+  useGetCurrentUserQuery,
   useChangePasswordMutation,
   useSwaggerLoginMutation,
   useGetAllEmployeesQuery,
@@ -1277,6 +1320,7 @@ export const {
   useAddStaffNoteMutation,
   useResolveStaffConversationMutation,
   useMarkStaffConversationSeenMutation,
+  useIssueSupportDiscountCodeMutation,
   useGetAllInvoicesQuery,
   useCreateInvoiceMutation,
   useDeleteInvoiceMutation,
@@ -1292,6 +1336,7 @@ export const {
   useCreateCustomerReservationMutation,
   useGetCustomerLoyaltyStatusQuery,
   useRedeemCustomerLoyaltyRewardMutation,
+  useGetCustomerDiscountCodesQuery,
   useGetCustomerConversationsQuery,
   useCreateCustomerConversationMutation,
   useGetCustomerConversationQuery,

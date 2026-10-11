@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import BaseModal from "@/app/components/BaseModal";
-import { useCreateInvoiceMutation } from "@/store/carRentalApi";
-import type { OrderOut, InvoiceOut } from "@/store/carRentalApi";
+import { useCreateInvoiceMutation } from "@/store/autorentApi";
+import type { OrderOut, InvoiceOut } from "@/store/autorentApi";
 
 interface Props {
   orders: OrderOut[];

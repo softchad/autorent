@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiSend, FiLock, FiCheckCircle, FiInbox, FiRepeat } from "react-icons/fi";
+import { FiSend, FiLock, FiCheckCircle, FiInbox, FiRepeat, FiTag } from "react-icons/fi";
 import {
   useStaffConversationList,
   useStaffConversation,
   QueueFilter,
 } from "@/hooks/useStaffSupport";
-import { useMeApiV1MeGetQuery, useGetAllEmployeesQuery } from "@/store/carRentalApi";
+import { useGetCurrentUserQuery, useGetAllEmployeesQuery, useIssueSupportDiscountCodeMutation } from "@/store/autorentApi";
+import { formatApiError } from "@/utils/formatApiError";
 
 // Tas pats SUPPORT_ROLES/MANAGER_ROLES rinkinys kaip backend staff_support.py -
 // tik UI lygmeniu (realus apribojimas visada tikrinamas serveryje per require_support_manager).
@@ -39,10 +40,12 @@ const BUSENA_LABEL: Record<string, { label: string; className: string }> = {
   isspresta: { label: "Išspręsta", className: "bg-emerald-900/40 text-emerald-300 border-emerald-700/40" },
 };
 
+// Trumpas datos+laiko formatas žinutėms/pastaboms - "lt-LT" lokalė duoda lietuvišką tvarką (diena.mėnuo.metai), ne JAV formatą.
 function fmt(iso: string): string {
   return new Date(iso).toLocaleString("lt-LT", { dateStyle: "short", timeStyle: "short" });
 }
 
+// Spalvota žymė pokalbio būsenai - "?? {...}" atsarginis variantas rodo PAČIĄ reikšmę kaip etiketę, jei ji nepažįstama (DB turėtų grąžinti tik 4 žinomas būsenas, žr. BUSENA_LABEL aukščiau, bet tai apsauga nuo netikėtos reikšmės, ne tyliai dingstantis UI elementas).
 function StatusPill({ busena }: { busena: string }) {
   const info = BUSENA_LABEL[busena] ?? { label: busena, className: "bg-slate-700/40 text-slate-300 border-slate-600/40" };
   return (
@@ -52,13 +55,14 @@ function StatusPill({ busena }: { busena: string }) {
   );
 }
 
+// Darbuotojų aptarnavimo skydelis - eilė kairėje (filtruojama), pasirinktas pokalbis dešinėje (žinutės+pastabos, atsakymas, prisiėmimas, perdavimas, išsprendimas).
 export default function SupportPage() {
   const [filter, setFilter] = useState<QueueFilter>("needs_reply");
   const { conversations, isLoading, refresh: refreshList } = useStaffConversationList(filter);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const { conversation, actionError, claim, reassign, reply, addNote, resolve, markSeen } = useStaffConversation(selectedId);
 
-  const { data: currentUser } = useMeApiV1MeGetQuery();
+  const { data: currentUser } = useGetCurrentUserQuery();
   const { data: employees = [] } = useGetAllEmployeesQuery();
   const canReassign = !!currentUser && MANAGER_ROLES.has(currentUser.pareigos);
   const reassignOptions = employees.filter(
@@ -73,13 +77,21 @@ export default function SupportPage() {
   const [reassignTarget, setReassignTarget] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
+  const [issueDiscountCode] = useIssueSupportDiscountCodeMutation();
+  const [showDiscountForm, setShowDiscountForm] = useState(false);
+  const [discountValue, setDiscountValue] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Priklauso IR nuo pokalbio_id, ne tik žinučių skaičiaus - be pokalbio_id, persijungus iš vieno pokalbio į KITĄ su TOKIU PAT žinučių skaičiumi, šis effect'as nepersileistų (skaičius liktų "tas pats"), tad naujo pokalbio paskutinė žinutė niekada nebūtų pažymėta kaip matyta.
   useEffect(() => {
     if (!conversation) return;
     const last = conversation.zinutes[conversation.zinutes.length - 1];
     if (last) markSeen(last.zinutes_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation?.zinutes.length]);
+  }, [conversation?.pokalbio_id, conversation?.zinutes.length]);
 
+  // Pasirinkus KITĄ bylą sąraše, visi veiksmų formos laukai atstatomi į pradinę būseną - kitaip, pvz., į naują bylą pereitų senas, dar neišsiųstas atsakymo tekstas.
   const handleSelect = (id: number) => {
     setSelectedId(id);
     setMode("reply");
@@ -87,6 +99,23 @@ export default function SupportPage() {
     setShowResolve(false);
     setShowReassign(false);
     setReassignTarget("");
+    setShowDiscountForm(false);
+    setDiscountValue("");
+    setDiscountReason("");
+    setDiscountError(null);
+  };
+
+  // "claim" (žr. useStaffSupport.ts) PATI atnaujina "actionError", bet NE sąrašą kairėje - refreshList() čia BŪTINAS, kitaip "Nepriskirta" žyma sąraše liktų sena iki kito 20s polling ciklo.
+  const handleClaim = async () => {
+    setBusy(true);
+    try {
+      await claim();
+      refreshList();
+    } catch {
+      // klaida rodoma per actionError
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleReassign = async () => {
@@ -104,6 +133,31 @@ export default function SupportPage() {
     }
   };
 
+  // Sugeneruoja nuolaidos kodą TAM pokalbio klientui ir IŠ KARTO įrašo jį į atsakymo laukelį (ne išsiunčia automatiškai) - darbuotojas pats peržiūri/papildo žinutę prieš paspaudžiant "Siųsti", tad klientas kodą sužino IR per pokalbį, IR vėliau savo paskyroje.
+  const handleIssueDiscount = async () => {
+    if (!conversation) return;
+    const verte = Number(discountValue);
+    if (!verte || verte <= 0 || !discountReason.trim()) return;
+    setBusy(true);
+    setDiscountError(null);
+    try {
+      const result = await issueDiscountCode({
+        pokalbioId: conversation.pokalbio_id,
+        generateDiscountCodeRequest: { verte_eur: verte, priezastis: discountReason.trim() },
+      }).unwrap();
+      setMode("reply");
+      setText((t) => `${t ? t + "\n" : ""}Suteikėme Jums ${result.verte_eur} € nuolaidos kodą: ${result.kodas}. Jį galėsite panaudoti kito užsakymo metu.`);
+      setShowDiscountForm(false);
+      setDiscountValue("");
+      setDiscountReason("");
+    } catch (e) {
+      setDiscountError(formatApiError(e, "Nepavyko sugeneruoti kodo"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Vienas mygtukas, dvi reikšmės - "mode" (reply/note) nusako, ar tekstas keliauja kaip VIEŠAS atsakymas klientui (busena -> "sprendziama"), ar VIDINĖ pastaba (klientas jos NIEKADA nemato).
   const handleSend = async () => {
     if (!text.trim()) return;
     setBusy(true);
@@ -122,6 +176,7 @@ export default function SupportPage() {
     }
   };
 
+  // Tas pats atsakymo tekstas kaip handleSend aukščiau, bet busena keliauja į "laukiama_kliento" - naudojama, kai darbuotojas atsakė IR dabar laukia KLIENTO sekančio žingsnio, ne savo.
   const handleWaitForClient = async () => {
     if (!text.trim()) return;
     setBusy(true);
@@ -136,6 +191,7 @@ export default function SupportPage() {
     }
   };
 
+  // Pažymi bylą kaip "isspresta" su privalomu paaiškinimu, KODĖL ji išspręsta - santrauka rodoma IR šiai bylai ateityje grąžus (žr. support_service.py - kliento žinutė grąžina bylą į "atvira", bet santrauka NEIŠTRINAMA).
   const handleResolve = async () => {
     if (!santrauka.trim()) return;
     setBusy(true);
@@ -234,8 +290,9 @@ export default function SupportPage() {
                   <StatusPill busena={conversation.busena} />
                   {!conversation.darbuotojo_id && (
                     <button
-                      onClick={() => claim()}
-                      className="rounded-lg bg-[#0F597B] hover:bg-[#0C4A66] text-white text-xs font-semibold px-3 py-1.5 transition"
+                      onClick={handleClaim}
+                      disabled={busy}
+                      className="rounded-lg bg-[#0F597B] hover:bg-[#0C4A66] disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 transition"
                     >
                       Prisiimti
                     </button>
@@ -257,8 +314,42 @@ export default function SupportPage() {
                       <FiRepeat /> Perduoti
                     </button>
                   )}
+                  <button
+                    onClick={() => setShowDiscountForm((v) => !v)}
+                    title="Išduoti nuolaidos kodą klientui"
+                    className="flex items-center gap-1.5 rounded-lg border border-[#1C2B3A] bg-[#1A2238] hover:bg-[#1E2A47] text-[#F7F7F7] text-xs font-semibold px-3 py-1.5 transition"
+                  >
+                    <FiTag /> Nuolaidos kodas
+                  </button>
                 </div>
               </div>
+              {showDiscountForm && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-[#1C2B3A] bg-[#0E0B1F] p-2">
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.5"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    placeholder="€ vertė"
+                    className="w-24 rounded-lg border border-[#1C2B3A] bg-[#1A2238] px-2 py-1.5 text-xs text-[#F7F7F7] placeholder-[#3D4F63] focus:outline-none focus:border-[#0F597B]"
+                  />
+                  <input
+                    value={discountReason}
+                    onChange={(e) => setDiscountReason(e.target.value)}
+                    placeholder="Priežastis (klientas jos nemato)"
+                    className="min-w-[200px] flex-1 rounded-lg border border-[#1C2B3A] bg-[#1A2238] px-2 py-1.5 text-xs text-[#F7F7F7] placeholder-[#3D4F63] focus:outline-none focus:border-[#0F597B]"
+                  />
+                  <button
+                    onClick={handleIssueDiscount}
+                    disabled={busy || !discountValue || !discountReason.trim()}
+                    className="rounded-lg bg-[#0F597B] hover:bg-[#0C4A66] disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 transition"
+                  >
+                    Generuoti
+                  </button>
+                  {discountError && <p className="w-full text-xs text-red-400">{discountError}</p>}
+                </div>
+              )}
               {conversation.sprendimo_santrauka && (
                 <p className="mt-2 rounded-lg border border-emerald-700/30 bg-emerald-900/20 p-2 text-xs text-emerald-300">
                   Sprendimas: {conversation.sprendimo_santrauka}

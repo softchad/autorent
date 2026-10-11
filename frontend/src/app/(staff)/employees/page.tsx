@@ -2,19 +2,22 @@
 import { useState } from "react";
 import DataTable, { Column } from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
-import EntityModal, { FieldConfig } from "@/app/components/modals/EntityModal";
-import type { EmployeeOut } from "@/store/carRentalApi";
-import { useMeApiV1MeGetQuery } from "@/store/carRentalApi";
-
-type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?: string };
-import CreateEntityButton from "@/app/components/CreateEntityButton";
+import EntityModal, { FieldConfig } from "@/app/components/staff/EntityModal";
+import type { EmployeeOut } from "@/store/autorentApi";
+import { useGetCurrentUserQuery } from "@/store/autorentApi";
+import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import { useEmployeesData } from "@/hooks/useEmployeesData";
 import { formatApiError } from "@/utils/formatApiError";
 
+// Papildo EmployeeOut tik KŪRIMO formai reikalingais laukais (slaptažodis/pakartotas slaptažodis) - atsakyme (EmployeeOut) jų nėra, nes backend niekad nerodo slaptažodžio.
+type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?: string };
+
+// Darbuotojų administravimo lentelė (sąrašas/paieška/rolės filtras/CRUD per modalą) - visa duomenų/API logika laikoma useEmployeesData.ts hook'e.
 export default function EmployeesPage() {
-  const { data: currentUser } = useMeApiV1MeGetQuery();
-  const isAdmin = currentUser?.pareigos === "Administratorius" || currentUser?.pareigos === "Admin";
+  const { data: currentUser } = useGetCurrentUserQuery();
+  // Tiksliai "Administratorius" - patikrinau backend'o ROLE_PERMS (permissions.py), ten "Admin" (angliškas) NIEKADA nepripažįstamas kaip administratoriaus teisė, tad ta alternatyva čia buvo klaidinanti.
+  const isAdmin = currentUser?.pareigos === "Administratorius";
 
   const {
     employees,
@@ -37,6 +40,7 @@ export default function EmployeesPage() {
 
   const [editMode, setEditMode] = useState(false);
 
+  // Tik KŪRIMO formoje reikia "pakartokite slaptažodį" lauko (apsauga nuo klaidingai įrašyto slaptažodžio) - employeeFields jo neturi, nes jis nėra realus Employee laukas, siunčiamas į DB.
   const creationFields: FieldConfig<EmployeeCreate>[] = [
     ...employeeFields,
     {
@@ -46,8 +50,10 @@ export default function EmployeesPage() {
       required: true,
     },
   ];
+  // Slaptažodžio laukas pašalintas iš REDAGAVIMO formos - EntityModal (žr. EntityModal.tsx) formą inicijuoja TUŠČIAI šiam laukui, o "required: true" (employeeFields) blokuotų VISĄ pateikimą, kol slaptažodis iš naujo įvedamas kiekvieną kartą redaguojant BET KOKĮ kitą lauką.
   const updateFields = employeeFields.filter((f) => f.name !== "slaptazodis");
 
+  // Lentelės stulpelių aprašas DataTable'ui, IŠVESTAS iš updateFields (tie patys laukai, kuriuos galima redaguoti, rodomi ir sąraše) - "atlyginimas" vienintelis turi SAVO formatavimą (2 skaitmenys po kablelio), kitiems pakanka plokščio DB lauko vardo.
   const columns: Column<EmployeeOut>[] = updateFields.map((f) => ({
     label: f.label,
     accessor:
@@ -83,6 +89,8 @@ export default function EmployeesPage() {
             alert(formatApiError(err, "Negalima ištrinti šio darbuotojo."));
           }
         }}
+        // "view"/"edit" PRIVALO būti nurodyti ČIA (ne tik "delete") - ActionButtons "show" NESUJUNGIAMAS su numatytuoju {view:true,edit:true,delete:true}, jis PILNAI PAKEIČIAMAS, tad praleistas raktas reikštų PASLĖPTĄ mygtuką, ne numatytą "true". Trynimas backend'e reikalauja Perm.ADMIN (žr. employee.py delete_employee), ne vien Perm.EDIT kaip redagavimas - be šios patikros Vadybininkas (EDIT, ne ADMIN) matytų trynimo mygtuką, kurį paspaudus serveris VISTIEK atmestų su 403.
+        show={{ view: true, edit: true, delete: isAdmin }}
       />
     ),
   });
@@ -99,30 +107,30 @@ export default function EmployeesPage() {
             modalTitle="Naujas darbuotojas"
             fields={creationFields}
             onCreate={async (data) => {
+              // META (ne alert+return) - be šito nesutapimas parodytų perspėjimą, bet EntityModal.commit() (žr. EntityModal.tsx) VIS TIEK laikytų šį "onCreate" SĖKMINGU (jis normaliai grįžtų, nemesdamas klaidos) ir UŽDARYTŲ modalą, sukurdamas darbuotoją su pirmu slaptažodžiu - pakartojimo laukas realiai nebūtų patikrintas.
+              if (data.slaptazodis !== data.repeat_slaptazodis) {
+                throw new Error("Slaptažodžiai nesutampa.");
+              }
+
+              // "data" tipas (CreateEntityButton.tsx) yra Partial<EmployeeCreate> - TypeScript tad kiekvieną lauką laiko GALIMAI nesamu, nors RUNTIME metu EntityModal.commit() jau užtikrino, kad VISI "required: true" laukai (employeeFields useEmployeesData.ts faile) užpildyti; "?? ..." čia TIK tipo patikrai, praktiškai niekad nepasirenka atsarginės reikšmės.
+              const prepared = {
+                vardas: data.vardas ?? "",
+                pavarde: data.pavarde ?? "",
+                el_pastas: data.el_pastas ?? "",
+                telefono_nr: data.telefono_nr ?? "",
+                pareigos: data.pareigos ?? "",
+                atlyginimas: data.atlyginimas ?? 0,
+                isidarbinimo_data: data.isidarbinimo_data ?? "",
+                slaptazodis: data.slaptazodis ?? "",
+              };
+
               try {
-                if (data.slaptazodis !== data.repeat_slaptazodis) {
-                  alert("Slaptažodžiai nesutampa.");
-                }
-
-                const prepared = {
-                  vardas: data.vardas ?? "",
-                  pavarde: data.pavarde ?? "",
-                  el_pastas: data.el_pastas ?? "",
-                  telefono_nr: data.telefono_nr ?? "",
-                  pareigos: data.pareigos ?? "",
-                  atlyginimas: Number(data.atlyginimas ?? 0),
-                  isidarbinimo_data:
-                    data.isidarbinimo_data ??
-                    new Date().toISOString().slice(0, 10),
-                  slaptazodis: data.slaptazodis ?? "",
-                };
-
                 await createEmployee({ employeeCreate: prepared }).unwrap();
                 await refetch();
                 alert("Darbuotojas sukurtas sėkmingai!");
               } catch (e) {
-                alert("Nepavyko sukurti darbuotojo.");
-                console.error("Create error:", e);
+                // META (ne alert) - EntityModal.commit() sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+                throw new Error(formatApiError(e, "Nepavyko sukurti darbuotojo."));
               }
             }}
           />
@@ -174,10 +182,9 @@ export default function EmployeesPage() {
                 employeeUpdate: updated,
               }).unwrap();
               await refetch();
-              setModalOpen(false);
             } catch (e) {
-              alert("Nepavyko atnaujinti darbuotojo.");
-              console.error("Update error:", e);
+              // META (ne alert) - EntityModal.commit() (žr. EntityModal.tsx) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+              throw new Error(formatApiError(e, "Nepavyko atnaujinti darbuotojo."));
             }
           }}
         />

@@ -1,4 +1,4 @@
-import { useGetAllInvoicesQuery } from "@/store/carRentalApi";
+import { useGetAllInvoicesQuery } from "@/store/autorentApi";
 import { useState, useMemo } from "react";
 
 export function useInvoicesData() {

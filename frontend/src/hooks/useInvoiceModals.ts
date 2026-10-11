@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { InvoiceOut } from "@/store/carRentalApi";
+import { InvoiceOut } from "@/store/autorentApi";
 
 export function useInvoiceModals() {
   const [selected, setSelected] = useState<InvoiceOut | null>(null);

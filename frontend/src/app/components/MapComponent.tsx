@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { LatLngExpression } from "leaflet";
 import { useEffect, useState, useRef } from "react";
 import L from "leaflet";
-import { useGeoCodeMutation } from "@/store/carRentalApi";
+import { useGeoCodeMutation } from "@/store/autorentApi";
 
 // Koordinačių talpykla — neleidžia to paties adreso geokuoduoti kelis kartus
 const coordCache = new Map<string, LatLngExpression>();

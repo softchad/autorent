@@ -9,8 +9,8 @@ import { ActionButtons } from "@/app/components/ActionButtons";
 import StatusBadge from "@/app/components/StatusBadge";
 import EntityModal from "@/app/components/modals/EntityModal";
 import CreateInvoiceButton from "@/app/components/CreateInvoiceButton";
-import type { InvoiceOut, OrderOut } from "@/store/carRentalApi";
-import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllOrdersQuery } from "@/store/carRentalApi";
+import type { InvoiceOut, OrderOut } from "@/store/autorentApi";
+import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllOrdersQuery } from "@/store/autorentApi";
 import { FiRefreshCw, FiClipboard } from "react-icons/fi";
 import { formatApiError } from "@/utils/formatApiError";
 

@@ -7,7 +7,7 @@ Font.register({
     { src: "/fonts/Roboto-Bold.ttf", fontWeight: "bold" },
   ],
 });
-import type { InvoiceOut } from "@/store/carRentalApi";
+import type { InvoiceOut } from "@/store/autorentApi";
 
 const NAVY = "#05001D";
 const TEAL = "#0F597B";

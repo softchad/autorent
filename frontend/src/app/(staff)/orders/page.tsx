@@ -7,10 +7,10 @@ import EntityModal from "@/app/components/modals/EntityModal";
 import StatusBadge from "@/app/components/StatusBadge";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import { useOrdersData } from "@/hooks/useOrdersData";
-import type { OrderOut } from "@/store/carRentalApi";
+import type { OrderOut } from "@/store/autorentApi";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
-import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllInvoicesQuery } from "@/store/carRentalApi";
+import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllInvoicesQuery } from "@/store/autorentApi";
 import { FiFile, FiFileText } from "react-icons/fi";
 
 export default function OrdersPage() {

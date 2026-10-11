@@ -1,3 +1,6 @@
+import { translateValidationMsg } from "./translateValidationMsg";
+
+// Lauko pavadinimo -> lietuviško lablelio žodynas backend'o 422 validacijos klaidoms (žr. formatApiError žemiau) - TURI apimti VISŲ formų, kurios šią funkciją kviečia (klientai/darbuotojai/automobiliai/užsakymai/rezervacijos/sąskaitos/slaptažodžio keitimas), laukus; trūkstamas laukas vis tiek rodomas (žr. "?? field" žemiau), tik be lietuviško vardo.
 const fieldLabels: Record<string, string> = {
   kliento_id: "Klientas",
   automobilio_id: "Automobilis",
@@ -32,20 +35,26 @@ const fieldLabels: Record<string, string> = {
   technikines_galiojimas: "Tech. apžiūros galiojimas",
   dabartine_vieta_id: "Vieta",
   pastabos: "Pastabos",
+  vardas: "Vardas",
+  pavarde: "Pavardė",
+  el_pastas: "El. paštas",
+  telefono_nr: "Telefono nr.",
+  gimimo_data: "Gimimo data",
+  registracijos_data: "Registracijos data",
+  pareigos: "Pareigos",
+  atlyginimas: "Atlyginimas",
+  isidarbinimo_data: "Įsidarbinimo data",
+  slaptazodis: "Slaptažodis",
+  senas_slaptazodis: "Senas slaptažodis",
+  naujas_slaptazodis: "Naujas slaptažodis",
+  order_id: "Užsakymas",
+  total: "Suma",
+  invoice_date: "Sąskaitos data",
 };
-
-function translateMsg(msg: string): string {
-  if (msg.includes("Field required")) return "privalomas laukas";
-  if (msg.includes("valid date") || msg.includes("date separator")) return "neteisinga arba tuščia data";
-  if (msg.includes("valid integer") || msg.includes("valid number")) return "turi būti skaičius";
-  if (msg.includes("greater than") || msg.includes("less than")) return msg;
-  if (msg.includes("Negalima") || msg.includes("turi būti") || msg.includes("negali būti"))
-    return msg;
-  return msg;
-}
 
 type ValidationError = { loc?: (string | number)[]; msg: string };
 
+// Grąžina VISAS 422 validacijos klaidas (ne vien pirmą), kad vartotojas pataisytų iškart visus neteisingus laukus, ne atrastų antrą klaidą tik po pirmo pakartotinio bandymo.
 export function formatApiError(err: unknown, fallback = "Patikrinkite įvestus duomenis."): string {
   const detail = (err as { data?: { detail?: unknown } })?.data?.detail;
   if (Array.isArray(detail)) {
@@ -53,7 +62,7 @@ export function formatApiError(err: unknown, fallback = "Patikrinkite įvestus d
       .map((d: ValidationError) => {
         const field = d.loc?.[d.loc.length - 1];
         const label = fieldLabels[String(field)] ?? field ?? "?";
-        return `${label}: ${translateMsg(d.msg)}`;
+        return `${label}: ${translateValidationMsg(d.msg)}`;
       })
       .join("\n");
   }

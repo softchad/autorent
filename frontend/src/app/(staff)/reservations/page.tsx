@@ -9,7 +9,7 @@ import { useReservationData } from "@/hooks/useReservationData";
 import StatusBadge from "@/app/components/StatusBadge";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
-import type { ReservationUpdate } from "@/store/carRentalApi";
+import type { ReservationUpdate } from "@/store/autorentApi";
 import { FiCheck, FiMapPin } from "react-icons/fi";
 import Image from "next/image";
 import { getCarPhoto } from "@/utils/carPhoto";

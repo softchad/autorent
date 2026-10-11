@@ -1,5 +1,6 @@
 "use client";
 
+// Pilno puslapio "kraunama" ekranas - naudojamas VISUR, kur "isLoading && <LoadingScreen />" (clients/employees/fleet/invoices/orders/reservations/dashboard). Keturių žiedų, skirtingais delay'ais besisukantis efektas NĖRA tiesiog pakeičiamas Tailwind "animate-spin" (tas sukasi kaip VIENAS sluoksnis, ne keturi persidengiantys su skirtingu laiku) - tad CSS čia parašytas ranka, kaip VIENINTELĖ išimtis šiame projekte, kur visur kitur naudojamas Tailwind.
 export default function LoadingScreen() {
   return (
     <div className="flex items-center justify-center w-full h-[60vh]">

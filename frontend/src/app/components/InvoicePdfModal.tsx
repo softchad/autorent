@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import InvoicePdfDocument from "./InvoicePdfDocument";
 import type { OrderInfo } from "./InvoicePdfDocument";
-import type { InvoiceOut } from "@/store/carRentalApi";
+import type { InvoiceOut } from "@/store/autorentApi";
 
 interface Props {
   invoice: InvoiceOut;

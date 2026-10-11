@@ -7,7 +7,7 @@ import {
   type ReservationUpdate,
   type ReservationOut,
   useGetAllCarsQuery,
-} from "@/store/carRentalApi";
+} from "@/store/autorentApi";
 
 import { useClientsData } from "./useClientsData";
 import { useCarsData } from "./useCarsData";

@@ -3,7 +3,7 @@
 import { pdf } from "@react-pdf/renderer";
 import InvoicePdfDocument from "./InvoicePdfDocument";
 import type { OrderInfo } from "./InvoicePdfDocument";
-import type { InvoiceOut } from "@/store/carRentalApi";
+import type { InvoiceOut } from "@/store/autorentApi";
 import { FiDownload } from "react-icons/fi";
 
 interface Props {

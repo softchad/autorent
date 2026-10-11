@@ -1,7 +1,7 @@
 "use client";
 
 import { setToken } from "@/store/authSlice";
-import { useLoginMutation } from "@/store/carRentalApi";
+import { useLoginMutation } from "@/store/autorentApi";
 import { useAppDispatch } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

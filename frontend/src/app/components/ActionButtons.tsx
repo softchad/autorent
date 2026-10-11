@@ -11,6 +11,7 @@ type ActionButtonsProps = {
   extraIcon?: ReactNode;
 };
 
+// Bendras veiksmų mygtukų rinkinys lentelių eilutėms (view/edit/extra/delete) - naudojamas clients/employees/fleet/invoices/orders/reservations/dashboard puslapiuose. "show" PAKEIČIA numatytąją reikšmę VISA, NE sujungiamas su ja - jei kviečiantis puslapis nurodo "show" su TIK vienu raktu (pvz. show={{ delete: isAdmin }}), VISI kiti mygtukai (view/edit) PASISLĖPS, nes jų nebeliks objekte, ne liks numatyti "true"; tad kiekvienas "show" PRIVALO išvardinti VISUS mygtukus, kuriuos nori rodyti, net jei jų reikšmė tiesiog "true".
 export function ActionButtons({
   onView,
   onEdit,

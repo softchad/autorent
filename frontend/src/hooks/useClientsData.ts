@@ -7,7 +7,7 @@ import {
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
-} from "@/store/carRentalApi";
+} from "@/store/autorentApi";
 import { FieldConfig } from "@/app/components/modals/EntityModal";
 
 export function useClientsData() {

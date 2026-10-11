@@ -24,7 +24,7 @@ import {
   useDeleteCarMutation,
   useCreateCarMutation,
 } from "@/store/enhanceEndpoints";
-import type { CarCreate } from "@/store/carRentalApi";
+import type { CarCreate } from "@/store/autorentApi";
 import CreateEntityButton from "@/app/components/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 

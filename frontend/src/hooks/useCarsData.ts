@@ -1,5 +1,5 @@
 import { useGetAllCarsQuery } from "@/store/enhanceEndpoints";
-import { useGetLocationsQuery } from "@/store/carRentalApi";
+import { useGetLocationsQuery } from "@/store/autorentApi";
 import { useMemo, useState } from "react";
 import { FieldConfig } from "@/app/components/modals/EntityModal";
 
