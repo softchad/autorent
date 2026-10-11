@@ -10,11 +10,13 @@ export function middleware(req: NextRequest) {
     isPublicPath(pathname) ||
     pathname === "/login" ||
     pathname.startsWith("/oauth") ||
+    // "_next" platesnis nei config.matcher žemiau - jis atmeta TIK "_next/static"/"_next/image", bet NE visus kitus Next.js vidinius kelius (pvz. "_next/webpack-hmr" dev metu); "favicon.ico" ČIA nebūtinas - matcher jį jau atmeta, tad šis kelias funkcijos niekada nepasiekia.
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico" ||
-    /\.[a-z0-9]+$/i.test(pathname)    // statiniai /public failai: nuotraukos, šriftai ir t.t.
+    // Statiniai /public failai (nuotraukos, šriftai ir t.t.) - visi turi failo plėtinį, tikri puslapiai ne.
+    /\.[a-z0-9]+$/i.test(pathname)
   ) return NextResponse.next();
 
+  // Tik TIKRINA, ar slapukas EGZISTUOJA, NE ar jis dar galiojantis/teisingas - čia tai nepatikrinama sąmoningai (Edge Runtime neturi backend'o JWT bibliotekos), tad pasenusį/sugadintą tokeną praleidžia IKI puslapio; tikrą apsaugą duoda backend'o get_current_user kiekvienai realiai API užklausai, šis middleware TIK UX lygio nukreipimas.
   const token = req.cookies.get("token")?.value;
   if (!token) {
     const url = req.nextUrl.clone();

@@ -4,35 +4,29 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { usePathname, useRouter } from "next/navigation";
 import { PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
 import { isPublicPath } from "@/utils/publicRoutes";
+import { readCookie } from "@/utils/cookie";
 
-function readCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
+// Darbuotojų prisijungimo sargas - apgaubia VISĄ app/layout.tsx turinį (ir viešą, ir darbuotojų pusę), nukreipia NEprisijungusį darbuotoją į /login, kai jis bando pasiekti ne-viešą kelią, ir atvirkščiai, nukreipia JAU prisijungusį darbuotoją iš /login į /dashboard.
 export default function AuthGuard({ children }: PropsWithChildren) {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const token = useAppSelector(s => s.auth.token);
 
-  // Leidžiami keliai be auth (WHITE-LIST)
+  // Keliai, kuriuose šis sargas NIEKADA nenukreipia į /login, net be tokeno - "/api" ČIA NĖRA, nes šis frontend'as savo /api kelių neturi (visos tikros API užklausos keliauja į ATSKIRĄ backend serverį, žr. NEXT_PUBLIC_API_URL), tad toks kelias šiame app'e niekada nerodomas.
   const isPublic = useMemo(() => {
     if (!pathname) return false;
     return (
       isPublicPath(pathname) ||
       pathname === "/login" ||
-      pathname.startsWith("/oauth") ||     // svarbu!
+      // "/oauth" PRIVALO būti viešas - juo grįžta DAR NEprisijungęs darbuotojas iš Google; jei šis sargas jį čia nukreiptų į /login, OAuthClient.tsx niekada nespėtų išsitraukti tokeno iš URL ir prisijungimas per Google būtų visiškai sulaužytas.
+      pathname.startsWith("/oauth") ||
       pathname.startsWith("/_next") ||
-      pathname.startsWith("/api") ||
       pathname === "/favicon.ico"
     );
   }, [pathname]);
 
-  // Vienkartinė hidracija iš cookie/LS. Kol nepasibaigus – nukreipimų efektas
-  // dar netikrina tokeno, kitaip po hard-reload (pvz. page.goto()/F5) jis
-  // spėtų nukreipti į /login prieš spėjant nuskaityti cookie (žr. race'ą žemiau).
+  // Vienkartinė hidracija iš slapuko/localStorage PO hard-reload (pvz. F5) - kol ji nesibaigė, žemiau esantis nukreipimų efektas dar NETIKRINA tokeno (žr. "isHydrating" jo sąlygoje), kitaip jis spėtų nukreipti į /login PRIEŠ šiam efektui spėjus perskaityti slapuką/localStorage ir atstatyti tokeną.
   const hydrated = useRef(false);
   const [isHydrating, setIsHydrating] = useState(true);
   useEffect(() => {
@@ -67,8 +61,7 @@ export default function AuthGuard({ children }: PropsWithChildren) {
     }
   }, [token, pathname, isPublic, router, isHydrating]);
 
-  // Kol dar hidruojamės arba neturim tokeno ir kelias ne public – nerenderinam.
-  // Public keliams hidracijos nelaukiam, kad nemirksėtų viešas turinys.
+  // Kol dar hidruojamės arba neturim tokeno ir kelias NE public – nerenderinam nieko (apsauga nuo trumpo "blyksnio" su apsaugotu turiniu prieš nukreipimą); public keliams hidracijos nelaukiam, kad nemirksėtų viešas turinys net darbuotojų atveju.
   if (!isPublic && (isHydrating || !token)) return null;
 
   return <>{children}</>;

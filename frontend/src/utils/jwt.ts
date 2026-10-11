@@ -4,7 +4,7 @@ type JwtPayload = {
   exp?: number;
 };
 
-// Iškoduoja JWT "payload" dalį be parašo tikrinimo — naudoti tik UI rodymui
+// Iškoduoja JWT "payload" dalį be parašo tikrinimo - naudoti TIK UI rodymui (pvz. sesijos laikui), NIEKADA sprendimams apie prieigą - tą TIKRINA serveris.
 export function decodeJwt(token: string): JwtPayload | null {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
