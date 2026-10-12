@@ -17,60 +17,53 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   no_token: "Nepavyko prisijungti. Bandykite dar kartą.",
 };
 
+// Darbuotojų prisijungimo puslapis - el. paštas/slaptažodis ARBA Google/GitHub OAuth (nuorodos į BACKEND žemiau). Sėkmingas OAuth NIEKADA nenukreipia čia su tokenu (žr. useEffect komentarą žemiau) - tik su klaida.
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [oauthError, setOauthError] = useState<string | null>(null);
 
+  // Backend po SĖKMINGO OAuth prisijungimo nukreipia į /oauth (žr. OAuthClient.tsx, kuris VIENAS atlieka tokeno išskyrimą iš URL) - į ŠĮ puslapį grąžinama TIK su "?error=...", kai OAuth nepavyko (pvz. paskyra nesusieta su darbuotoju).
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const err = sp.get("error");
     if (err) setOauthError(OAUTH_ERROR_MESSAGES[err] ?? OAUTH_ERROR_MESSAGES.no_token);
-
-    let t = sp.get("token");
-    if (!t) {
-      const h = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
-      t = new URLSearchParams(h).get("access_token");
-    }
-    if (!t) return;
-    dispatch(setToken(t));
-    document.cookie = `token=${t}; path=/; SameSite=Lax`;
-    router.replace("/dashboard");
-  }, [dispatch, router]);
+  }, []);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [login, { isLoading, isError }] = useLoginMutation();
 
+  // Tikra klaida (neteisingas el. paštas/slaptažodis) rodoma per "isError" iš useLoginMutation aukščiau - "catch {}" čia tik sulaiko unwrap() išmestą klaidą, kad ji NEpasiektų konsolės kaip "unhandled", UI apie nepavykimą jau praneša kitu keliu.
   const handleLogin = async () => {
     try {
       const res = await login({
         loginRequest: { el_pastas: email, slaptazodis: password },
       }).unwrap();
       dispatch(setToken(res.access_token));
-      document.cookie = `token=${res.access_token}; path=/;`;
       router.push("/dashboard");
     } catch {}
   };
 
+  // Leidžia patvirtinti prisijungimą klaviatūros "Enter" klavišu, ne tik paspaudus mygtuką pele.
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleLogin();
   };
 
   return (
     <div className="min-h-screen bg-[#0E0B1F] flex items-center justify-center px-4">
-      {/* Background blobs */}
+      {/* Fono debesiukai */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[#0F597B]/20 blur-3xl" />
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#0F597B]/10 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-sm">
-        {/* Card */}
+        {/* Kortelė */}
         <div className="bg-[#0E1525]/90 backdrop-blur border border-[#1C2B3A] rounded-2xl shadow-2xl px-8 py-10">
 
-          {/* Logo */}
+          {/* Logotipas */}
           <div className="flex justify-center mb-8">
             <Image src={logo} alt="AutoRent" width={160} height={48} className="object-contain" />
           </div>
@@ -78,7 +71,7 @@ export default function LoginPage() {
           <h2 className="text-[#F7F7F7] text-xl font-semibold text-center mb-1">Sveiki sugrįžę</h2>
           <p className="text-[#707070] text-sm text-center mb-8">Prisijunkite prie AutoRent sistemos</p>
 
-          {/* Fields */}
+          {/* Laukai */}
           <div className="space-y-4">
             <div>
               <label className="block text-xs text-[#707070] mb-1.5 font-medium">El. paštas</label>
@@ -114,7 +107,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Error */}
+          {/* Klaida */}
           {isError && (
             <p className="text-red-400 text-xs mt-3 text-center">
               Neteisingas el. paštas arba slaptažodis
@@ -124,7 +117,7 @@ export default function LoginPage() {
             <p className="text-red-400 text-xs mt-3 text-center">{oauthError}</p>
           )}
 
-          {/* Submit */}
+          {/* Pateikimo mygtukas */}
           <button
             onClick={handleLogin}
             disabled={isLoading || !email || !password}
@@ -141,14 +134,14 @@ export default function LoginPage() {
             ) : "Prisijungti"}
           </button>
 
-          {/* OAuth divider */}
+          {/* OAuth skirtukas */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-[#1C2B3A]" />
             <span className="text-[#3D4F63] text-xs">arba</span>
             <div className="flex-1 h-px bg-[#1C2B3A]" />
           </div>
 
-          {/* OAuth buttons */}
+          {/* OAuth mygtukai */}
           <div className="flex flex-col gap-3">
             <button
               onClick={() => { window.location.href = `${BACKEND}/google/login`; }}
@@ -166,7 +159,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Footer */}
+          {/* Poraštė */}
           <p className="text-[#3D4F63] text-xs text-center mt-6">
             AutoRent © {new Date().getFullYear()}
           </p>
