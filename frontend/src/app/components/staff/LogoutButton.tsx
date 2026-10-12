@@ -1,19 +1,16 @@
 "use client";
 
-import { logout as logoutAction, setToken } from "@/store/authSlice";
+import { logout as logoutAction } from "@/store/authSlice";
 import { baseApi } from "@/store/baseApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FiLogOut } from "react-icons/fi";
-
-function deleteCookie(name: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; Max-Age=0; path=/;`;
-}
+import { deleteCookie } from "@/utils/cookie";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+// Darbuotojo atsijungimo mygtukas - RODOMAS TIK kai yra token'as (žr. "if (!token) return null" žemiau); client pusės duomenys ištrinami NEPRIKLAUSOMAI nuo backend kvietimo sėkmės, kad vartotojas visada liktų "atsijungęs" iš savo naršyklės perspektyvos, net jei tinklo užklausa nepavyktų.
 export default function LogoutButton() {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -26,12 +23,10 @@ export default function LogoutButton() {
     setLoading(true);
     try {
       await fetch(`${API}/api/v1/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+      // "logoutAction()" (žr. authSlice.ts "logout" reducer'į) JAU pats nustato token=null, IR ištrina jį iš localStorage, IR ištrina "token" slapuką - čia reikia papildomai tik "session" (Starlette SessionMiddleware, naudotas trumpam per OAuth srautą), kurio authSlice.ts nežino, nes jis nesusijęs su staff tokenu.
       dispatch(logoutAction());
-      dispatch(setToken(null as unknown as string));
       dispatch(baseApi.util.resetApiState());
-      deleteCookie("token");
       deleteCookie("session");
-      if (typeof localStorage !== "undefined") localStorage.removeItem("token");
       router.replace("/login");
     } finally {
       setLoading(false);

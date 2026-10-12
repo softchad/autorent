@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import BaseModal from "@/app/components/BaseModal";
 import { useCreateInvoiceMutation } from "@/store/autorentApi";
 import type { OrderOut, InvoiceOut } from "@/store/autorentApi";
+import { formatApiError } from "@/utils/formatApiError";
 
 interface Props {
   orders: OrderOut[];
@@ -16,6 +17,7 @@ interface Props {
 const inputClass =
   "border border-[#1C2B3A] bg-[#1A2238] text-[#F7F7F7] px-3 py-2 rounded-lg w-full text-sm focus:outline-none focus:border-[#0F597B] focus:ring-1 focus:ring-[#0F597B]/50 transition";
 
+// Mygtukas + modalas sąskaitos išrašymui - sąrašas rodo TIK užsakymus, kurie DAR NETURI sąskaitos (žr. availableOrders žemiau), kad staff negalėtų bandyti išrašyti dviejų sąskaitų tam pačiam užsakymui iš šio puslapio.
 export default function CreateInvoiceButton({
   orders,
   invoices,
@@ -29,11 +31,13 @@ export default function CreateInvoiceButton({
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [createInvoice, { isLoading }] = useCreateInvoiceMutation();
 
+  // Užsakymai, kurie DAR NETURI susietos sąskaitos - jau nusąskaitytus praleidžia iš sąrašo.
   const availableOrders = useMemo(
     () => orders.filter((o) => !invoices.some((inv) => inv.order_id === o.uzsakymo_id)),
     [orders, invoices]
   );
 
+  // Atidarant modalą laukai VISADA atstatomi į pradinę būseną - be šito ankstesnio bandymo likučiai (pasirinktas užsakymas/suma) liktų rodomi, net jei tas užsakymas tarp dviejų atidarymų jau nusąskaitytas.
   const handleOpen = () => {
     setOrderId("");
     setTotal(0);
@@ -41,6 +45,7 @@ export default function CreateInvoiceButton({
     setOpen(true);
   };
 
+  // Pasirinkus užsakymą, suma IŠ KARTO užpildoma jo bendra_kaina - staff gali ją PATS pakoreguoti žemiau (pvz. nuolaida), tai tik patogus pradinis pasiūlymas, ne fiksuota reikšmė.
   const handleSelectOrder = (id: number) => {
     setOrderId(id);
     const order = availableOrders.find((o) => o.uzsakymo_id === id);
@@ -64,7 +69,8 @@ export default function CreateInvoiceButton({
       setOpen(false);
       alert("Sąskaita sėkmingai išrašyta!");
     } catch (err) {
-      alert("Klaida išrašant sąskaitą.");
+      // formatApiError, NE fiksuotas tekstas - backend'as gali grąžinti KONKREČIĄ, veiksmingą priežastį (pvz. "Šis užsakymas jau turi sąskaitą", kai dvi sesijos išrašo vienu metu), kurią staff turi pamatyti, ne bendrą "klaida" pranešimą.
+      alert(formatApiError(err, "Klaida išrašant sąskaitą."));
       console.error(err);
     }
   };

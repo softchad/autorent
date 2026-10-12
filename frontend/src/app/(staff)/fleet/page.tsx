@@ -5,7 +5,7 @@ import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import dynamic from "next/dynamic";
 
-const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
+const MapComponent = dynamic(() => import("@/app/components/staff/MapComponent"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-[500px] mt-6 rounded-lg bg-[#0f172a] text-slate-400">
@@ -16,7 +16,7 @@ const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
     </div>
   ),
 });
-import EntityModal from "@/app/components/modals/EntityModal";
+import EntityModal from "@/app/components/staff/EntityModal";
 import { useCarsData } from "@/hooks/useCarsData";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import {
@@ -25,7 +25,7 @@ import {
   useCreateCarMutation,
 } from "@/store/enhanceEndpoints";
 import type { CarCreate } from "@/store/autorentApi";
-import CreateEntityButton from "@/app/components/CreateEntityButton";
+import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 
 type Automobilis = NonNullable<

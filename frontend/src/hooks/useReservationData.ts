@@ -12,7 +12,7 @@ import {
 import { useClientsData } from "./useClientsData";
 import { useCarsData } from "./useCarsData";
 import { useState, useMemo } from "react";
-import { FieldConfig } from "@/app/components/modals/EntityModal";
+import { FieldConfig } from "@/app/components/staff/EntityModal";
 
 export const useReservationData = () => {
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation();

@@ -9,7 +9,7 @@ import { useGeoCodeMutation } from "@/store/autorentApi";
 // Koordinačių talpykla — neleidžia to paties adreso geokuoduoti kelis kartus
 const coordCache = new Map<string, LatLngExpression>();
 
-// Leaflet nesugebą rasti ikonų pats, kai naudojamas Next.js — nurodome rankiniu būdu
+// Leaflet nesugeba rasti ikonų pats, kai naudojamas Next.js — nurodome rankiniu būdu
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -37,19 +37,21 @@ type AutoWithCoords = Automobilis & { coords: LatLngExpression | null };
 
 type MapComponentProps = { cars: Automobilis[] };
 
-// Be DB koordinačių - geokoduoja adresą.
+// Eilės tvarka rodomi "kraunama" tekstai, kol vyksta geokodavimas - sąrašas pastovus, tad laikomas MODULIO, ne komponento, lygmeniu (kitaip būtų nereikalingai perkuriamas kiekviename render'e, IR eslint laikytų jį "pasikeičiančia" useEffect priklausomybe).
+const LOADING_MESSAGES = [
+  "Gaunami automobilių adresai...",
+  "Siunčiama užklausa į geocoding servisą...",
+  "Konvertuojami adresai į koordinates...",
+  "Tikrinamas koordinačių tikslumas...",
+  "Paruošiami žymekliai žemėlapiui...",
+  "Apskaičiuojamos žymeklių pozicijos...",
+  "Įkeliami žemėlapio sluoksniai...",
+  "Sinchronizuojami duomenys su žemėlapiu...",
+  "Baigiamas žymeklių kėlimas...",
+];
+
+// Rodo automobilius žemėlapyje - jei DB jau turi koordinates, naudoja jas iš karto; jei ne, geokoduoja adresą (talpykla aukščiau neleidžia to paties adreso geokoduoti pakartotinai) ir rodo progreso pranešimus, kol laukiama atsakymų.
 export default function MapComponent({ cars }: MapComponentProps) {
-  const LOADING_MESSAGES = [
-    "Gaunami automobilių adresai...",
-    "Siunčiama užklausa į geocoding servisą...",
-    "Konvertuojami adresai į koordinates...",
-    "Tikrinamas koordinačių tikslumas...",
-    "Paruošiami žymekliai žemėlapiui...",
-    "Apskaičiuojamos žymeklių pozicijos...",
-    "Įkeliami žemėlapio sluoksniai...",
-    "Sinchronizuojami duomenys su žemėlapiu...",
-    "Baigiamas žymeklių kėlimas...",
-  ];
 
   const [carsWithCoords, setCarsWithCoords] = useState<AutoWithCoords[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -126,7 +128,9 @@ export default function MapComponent({ cars }: MapComponentProps) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [cars]); // geoCode mutation reference kinta kiekviename render'e — jos nereikia čia
+    // geoCode mutation reference kinta kiekviename render'e — jos nereikia čia
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cars]);
 
   return (
     <div className="relative z-0 p-4 mt-6 h-[500px]">

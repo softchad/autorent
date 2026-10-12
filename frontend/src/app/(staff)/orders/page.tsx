@@ -3,12 +3,12 @@
 import { useState } from "react";
 import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
-import EntityModal from "@/app/components/modals/EntityModal";
+import EntityModal from "@/app/components/staff/EntityModal";
 import StatusBadge from "@/app/components/StatusBadge";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import { useOrdersData } from "@/hooks/useOrdersData";
 import type { OrderOut } from "@/store/autorentApi";
-import CreateEntityButton from "@/app/components/CreateEntityButton";
+import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllInvoicesQuery } from "@/store/autorentApi";
 import { FiFile, FiFileText } from "react-icons/fi";

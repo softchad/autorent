@@ -7,8 +7,8 @@ import { useOrdersData } from "@/hooks/useOrdersData";
 import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import StatusBadge from "@/app/components/StatusBadge";
-import EntityModal from "@/app/components/modals/EntityModal";
-import CreateInvoiceButton from "@/app/components/CreateInvoiceButton";
+import EntityModal from "@/app/components/staff/EntityModal";
+import CreateInvoiceButton from "@/app/components/staff/CreateInvoiceButton";
 import type { InvoiceOut, OrderOut } from "@/store/autorentApi";
 import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllOrdersQuery } from "@/store/autorentApi";
 import { FiRefreshCw, FiClipboard } from "react-icons/fi";
@@ -16,11 +16,11 @@ import { formatApiError } from "@/utils/formatApiError";
 
 // PDF biblioteka neveikia SSR — kraunama tik kliente
 const InvoicePdfModal = dynamic(
-  () => import("@/app/components/InvoicePdfModal"),
+  () => import("@/app/components/staff/InvoicePdfModal"),
   { ssr: false }
 );
 const InvoiceDownloadButton = dynamic(
-  () => import("@/app/components/InvoiceDownloadButton"),
+  () => import("@/app/components/staff/InvoiceDownloadButton"),
   { ssr: false }
 );
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
-import Sidebar from "./Sidebar";
+import Sidebar from "@/app/components/staff/Sidebar";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 

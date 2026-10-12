@@ -16,11 +16,13 @@ const GRAY = "#2E2E2E";
 const LIGHT_BG = "#F0F4F8";
 const BORDER = "#DDE3EA";
 
-// Light-fill badges — readable in B&W (dark text on light bg, explicit border)
+// Šviesaus fono ženkleliai - skaitomi IR nespalvotai (juodas tekstas šviesiame fone, aiškus kraštas); raktai TIKSLIAI sutampa su backend'o VALID_BUSENA (schemas/order.py), nes "invoice.status" realiai yra order.uzsakymo_busena, ne atskira sąskaitos būsena.
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
-  apmokėta:   { bg: "#DCF5E6", text: "#166534", border: "#166534" },
-  vėluojanti: { bg: "#FEE2E2", text: "#991B1B", border: "#991B1B" },
-  išrašyta:   { bg: "#DBEAFE", text: "#1E3A5F", border: "#1E3A5F" },
+  laukiama: { bg: "#FEF3C7", text: "#92400E", border: "#92400E" },
+  patvirtinta: { bg: "#DBEAFE", text: "#1E3A5F", border: "#1E3A5F" },
+  vykdoma: { bg: "#E0F2FE", text: "#0C4A6E", border: "#0C4A6E" },
+  užbaigta: { bg: "#DCF5E6", text: "#166534", border: "#166534" },
+  atšaukta: { bg: "#FEE2E2", text: "#991B1B", border: "#991B1B" },
 };
 
 export type OrderInfo = {
@@ -36,7 +38,7 @@ const s = StyleSheet.create({
     paddingBottom: 60,
   },
 
-  // === Header — white bg to save ink; NAVY text stays bold ===
+  // Antraštė - baltas fonas taupo dažus, NAVY tekstas lieka pastorintas
   header: {
     backgroundColor: WHITE,
     paddingHorizontal: 40,
@@ -71,13 +73,13 @@ const s = StyleSheet.create({
     textAlign: "right",
   },
 
-  // === Teal accent bar — single colored stripe, minimal ink ===
+  // Teal juostelė - viena spalvota linija, minimalus dažų naudojimas
   accentBar: {
     height: 4,
     backgroundColor: TEAL,
   },
 
-  // === Info section ===
+  // Informacijos skiltis
   infoSection: {
     flexDirection: "row",
     paddingHorizontal: 40,
@@ -112,7 +114,7 @@ const s = StyleSheet.create({
     color: NAVY,
     marginBottom: 2,
   },
-  // Badge: border-only style — visible even without color ink
+  // Ženklelis - tik kraštas, matomas net nespalvotai atspausdinus
   statusBadge: {
     borderRadius: 4,
     paddingHorizontal: 8,
@@ -127,7 +129,7 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // === Rental info row ===
+  // Nuomos informacijos eilutė
   rentalSection: {
     paddingHorizontal: 40,
     marginBottom: 16,
@@ -160,7 +162,7 @@ const s = StyleSheet.create({
     fontFamily: "Roboto", fontWeight: "bold",
   },
 
-  // === Divider ===
+  // Skiriamoji linija
   divider: {
     height: 1,
     backgroundColor: BORDER,
@@ -168,7 +170,7 @@ const s = StyleSheet.create({
     marginVertical: 4,
   },
 
-  // === Table ===
+  // Lentelė
   tableSection: {
     paddingHorizontal: 40,
     marginTop: 20,
@@ -179,7 +181,7 @@ const s = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 8,
   },
-  // Table header — white bg, NAVY text, TEAL bottom line only
+  // Lentelės antraštė - baltas fonas, NAVY tekstas, TIK teal linija apačioje
   tableHeader: {
     flexDirection: "row",
     backgroundColor: WHITE,
@@ -216,7 +218,7 @@ const s = StyleSheet.create({
     color: NAVY,
   },
 
-  // === Total — white bg with TEAL left accent border ===
+  // Bendra suma - baltas fonas su TEAL kraštu kairėje
   totalSection: {
     paddingHorizontal: 40,
     marginTop: 20,
@@ -251,7 +253,7 @@ const s = StyleSheet.create({
     color: NAVY,
   },
 
-  // === Note ===
+  // Pastaba
   noteSection: {
     paddingHorizontal: 40,
     marginTop: 24,
@@ -270,7 +272,7 @@ const s = StyleSheet.create({
     lineHeight: 1.5,
   },
 
-  // === Footer — white bg with TEAL top border ===
+  // Poraštė - baltas fonas su TEAL linija viršuje
   footer: {
     position: "absolute",
     bottom: 0,
@@ -296,15 +298,18 @@ const s = StyleSheet.create({
   },
 });
 
+// "lt-LT" data formatas PDF'e - diena.mėnuo.metai tvarka, ne JAV formatas.
 function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("lt-LT");
 }
 
+// Dienų skaičius tarp nuomos pradžios/pabaigos - "Math.max(1, ...)" apsaugo nuo 0 dienų, jei abi datos sutaptų.
 function rentalDays(start: string, end: string): number {
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24)));
 }
 
+// Būsenos ženklelis PDF'e - "?? {...}" atsarginis pilkas variantas, jei būsena nepažįstama (žr. statusColors aukščiau).
 function StatusBadge({ status }: { status: string }) {
   const color = statusColors[status] ?? { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF" };
   return (
@@ -316,6 +321,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// @react-pdf/renderer dokumentas - A4 sąskaitos PDF, generuojamas KLIENTO naršyklėje (žr. InvoiceDownloadButton.tsx); "orderInfo" pasirenkamas, nes nuomos informacija žemiau rodoma TIK kai jis yra.
 export default function InvoicePdfDocument({
   invoice,
   orderInfo,
@@ -330,7 +336,7 @@ export default function InvoicePdfDocument({
     >
       <Page size="A4" style={s.page}>
 
-        {/* Header */}
+        {/* Antraštė */}
         <View style={s.header}>
           <View>
             <Text style={s.brandName}>AUTORENT</Text>
@@ -342,10 +348,10 @@ export default function InvoicePdfDocument({
           </View>
         </View>
 
-        {/* Teal accent */}
+        {/* Teal juostelė */}
         <View style={s.accentBar} />
 
-        {/* Info columns */}
+        {/* Informacijos skiltys */}
         <View style={s.infoSection}>
           <View style={s.infoLeft}>
             <Text style={s.infoFieldLabel}>IŠRAŠYMO DATA</Text>
@@ -369,7 +375,7 @@ export default function InvoicePdfDocument({
           </View>
         </View>
 
-        {/* Rental details — only shown when order data is available */}
+        {/* Nuomos informacija - rodoma TIK kai turima užsakymo info */}
         {orderInfo && (
           <View style={s.rentalSection}>
             <Text style={s.rentalSectionTitle}>NUOMOS INFORMACIJA</Text>
@@ -396,7 +402,7 @@ export default function InvoicePdfDocument({
 
         <View style={s.divider} />
 
-        {/* Table */}
+        {/* Lentelė */}
         <View style={s.tableSection}>
           <Text style={s.tableSectionTitle}>PASLAUGOS</Text>
 
@@ -419,7 +425,7 @@ export default function InvoicePdfDocument({
           </View>
         </View>
 
-        {/* Total */}
+        {/* Bendra suma */}
         <View style={s.totalSection}>
           <View style={s.totalBox}>
             <Text style={s.totalLabel}>IŠ VISO</Text>
@@ -427,7 +433,7 @@ export default function InvoicePdfDocument({
           </View>
         </View>
 
-        {/* Note */}
+        {/* Pastaba */}
         <View style={s.noteSection}>
           <View style={s.noteBox}>
             <Text style={s.noteText}>
@@ -437,7 +443,7 @@ export default function InvoicePdfDocument({
           </View>
         </View>
 
-        {/* Footer */}
+        {/* Poraštė */}
         <View style={s.footer} fixed>
           <Text style={s.footerLeft}>AutoRent © {new Date().getFullYear()}</Text>
           <Text style={s.footerRight}>autorent.lt</Text>

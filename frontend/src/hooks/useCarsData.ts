@@ -1,7 +1,7 @@
 import { useGetAllCarsQuery } from "@/store/enhanceEndpoints";
 import { useGetLocationsQuery } from "@/store/autorentApi";
 import { useMemo, useState } from "react";
-import { FieldConfig } from "@/app/components/modals/EntityModal";
+import { FieldConfig } from "@/app/components/staff/EntityModal";
 
 type Automobilis = NonNullable<
   ReturnType<typeof useGetAllCarsQuery>["data"]

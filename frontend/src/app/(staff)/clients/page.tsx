@@ -3,10 +3,10 @@
 import { useState } from "react";
 import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
-import EntityModal from "@/app/components/modals/EntityModal";
+import EntityModal from "@/app/components/staff/EntityModal";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import { useClientsData } from "@/hooks/useClientsData";
-import CreateEntityButton from "@/app/components/CreateEntityButton";
+import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 
 type Klientas = NonNullable<
   ReturnType<typeof useClientsData>["clients"]

@@ -12,18 +12,30 @@ interface Props {
   onClose: () => void;
 }
 
+// PDF peržiūros langas - generuoja sąskaitą KLIENTO naršyklėje ir rodo ją <iframe> viduje (žr. InvoiceDownloadButton.tsx dėl TO PAČIO generavimo, bet be peržiūros).
 export default function InvoicePdfModal({ invoice, orderInfo, onClose }: Props) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  // "cancelled" apsauga - "orderInfo" (žr. invoices/page.tsx getOrderInfo) yra NAUJAS objektas KASKART kviečiantis puslapis perrenderina, tad šis efektas gali paleisti NAUJĄ PDF generavimą, kol SENAS dar nebaigtas; be "cancelled" patikros senas, PAVĖLAVĘS "then" galėtų UŽRAŠYTI naujesnį blobUrl senu PDF'u ir "atsarginė" url NIEKADA nebūtų atlaisvinta (nutekėjimas).
   useEffect(() => {
-    let url: string;
+    let cancelled = false;
+    let url: string | null = null;
+    setError(null);
     pdf(<InvoicePdfDocument invoice={invoice} orderInfo={orderInfo} />)
       .toBlob()
       .then((blob) => {
+        if (cancelled) return;
         url = URL.createObjectURL(blob);
         setBlobUrl(url);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError("Nepavyko sugeneruoti sąskaitos PDF.");
+        console.error(err);
       });
     return () => {
+      cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
   }, [invoice, orderInfo]);
@@ -34,7 +46,7 @@ export default function InvoicePdfModal({ invoice, orderInfo, onClose }: Props) 
         className="bg-[#0E1525] rounded-xl shadow-2xl flex flex-col w-full max-w-3xl"
         style={{ height: "88vh" }}
       >
-        {/* Modal header */}
+        {/* Lango antraštė */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-[#1C2B3A]">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-widest">Sąskaita-faktūra</p>
@@ -63,9 +75,11 @@ export default function InvoicePdfModal({ invoice, orderInfo, onClose }: Props) 
           </div>
         </div>
 
-        {/* PDF preview */}
+        {/* PDF peržiūra */}
         <div className="flex-1 p-4">
-          {blobUrl ? (
+          {error ? (
+            <div className="flex items-center justify-center h-full text-red-400 text-sm">{error}</div>
+          ) : blobUrl ? (
             <iframe
               src={blobUrl}
               className="w-full h-full rounded-lg border border-[#1C2B3A]"
