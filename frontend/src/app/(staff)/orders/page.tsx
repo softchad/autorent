@@ -10,10 +10,20 @@ import { useOrdersData } from "@/hooks/useOrdersData";
 import type { OrderOut } from "@/store/autorentApi";
 import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
-import { useCreateInvoiceMutation, useDeleteInvoiceMutation, useGetAllInvoicesQuery } from "@/store/autorentApi";
+import {
+  useCreateInvoiceMutation,
+  useDeleteInvoiceMutation,
+  useGetAllInvoicesQuery,
+  useGetCurrentUserQuery,
+} from "@/store/autorentApi";
 import { FiFile, FiFileText } from "react-icons/fi";
 
+// Užsakymų administravimas (sąrašas/paieška/statuso filtras/sąskaitos išrašymas/CRUD per modalą).
 export default function OrdersPage() {
+  const { data: currentUser } = useGetCurrentUserQuery();
+  // Sąskaitos "pergeneravimas" žemiau viduje kviečia deleteInvoice, kuris backend'e reikalauja Perm.ADMIN (žr. invoice.py) - be šios patikros bet kuris EDIT teisę turintis darbuotojas matytų mygtuką, kurį paspaudus serveris atmestų su 403.
+  const isAdmin = currentUser?.pareigos === "Administratorius";
+
   const [selected, setSelected] = useState<OrderOut | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -33,7 +43,8 @@ export default function OrdersPage() {
     getCarName,
     saveOrder,
     handleDelete,
-    orderFields,
+    orderEditFields,
+    createOrderFields,
     cars,
     initialEmployeeId,
   } = useOrdersData();
@@ -57,14 +68,19 @@ export default function OrdersPage() {
     },
     {
       label: "Veiksmai",
+      // "o" čia yra TOS KONKREČIOS eilutės užsakymas, uždarytas (closure) šiai vienai stulpelio funkcijai.
       accessor: (o: OrderOut) => {
         const existing = allInvoices.find((inv) => inv.order_id === o.uzsakymo_id);
         return (
         <div className="flex items-center gap-1">
+        {(!existing || isAdmin) && (
         <button
           title={existing ? "Pergeneruoti sąskaitą" : "Išrašyti sąskaitą"}
           onClick={async () => {
+            // Pergeneravimas (kai "existing" jau yra) yra NAIKINANTIS veiksmas - patvirtinimas reikalingas, kaip IR invoices/page.tsx analogiškame veiksme.
+            if (existing && !window.confirm(`Pergeneruoti sąskaitą nr. ${existing.invoice_id}? Esama sąskaita bus ištrinta ir sukurta nauja.`)) return;
             try {
+              // RIZIKA: šie du veiksmai NĖRA atomiški (backend neturi vieno "regenerate" endpoint'o) - jei deleteInvoice pavyksta, bet createInvoice žemiau nepavyktų, sąskaita būtų IŠTRINTA be pakaitalo (ta pati rizika kaip invoices/page.tsx).
               if (existing) {
                 await deleteInvoice({ invoiceId: existing.invoice_id }).unwrap();
               }
@@ -78,8 +94,7 @@ export default function OrdersPage() {
               await refetchInvoices();
               alert(`Sąskaita užsakymui #${o.uzsakymo_id} sėkmingai ${existing ? "pergeneruota" : "išrašyta"}!`);
             } catch (err) {
-              alert("Klaida išrašant sąskaitą.");
-              console.error(err);
+              alert(formatApiError(err, "Klaida išrašant sąskaitą."));
             }
           }}
           className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-amber-900/30 hover:text-amber-400"
@@ -87,6 +102,7 @@ export default function OrdersPage() {
         >
           {existing ? <FiFileText /> : <FiFile />}
         </button>
+        )}
         <ActionButtons
           onView={() => {
             setSelected(o);
@@ -121,32 +137,25 @@ export default function OrdersPage() {
     },
   ];
 
+  // 409 reiškia konkretų, žinomą konfliktą (automobilis užimtas) - IR saveOrder (redagavimas), IR CreateEntityButton'o onCreate žemiau gali jį gauti, tad ta pati patikra NEgali būti parašyta vieną kartą kaip bendra funkcija be dviejų atskirų "catch" blokų, bet ŽINUTĖ parenkama ta pati.
+  const conflictAwareErrorMessage = (err: unknown, fallback: string): string => {
+    const e = err as { status?: number; response?: { status?: number } };
+    const status = e.status ?? e.response?.status;
+    return status === 409 ? "Automobilis šiuo laikotarpiu jau užimtas." : formatApiError(err, fallback);
+  };
+
+  // Backend (OrderUpdate schemas/order.py) TIKRAI pritaiko TIK šiuos 3 laukus - žr. išsamų komentarą useOrdersData.ts faile prie orderEditFields. Kiti "updated" laukai (klientas/automobilis/kaina ir t.t.) ČIA sąmoningai NEsiunčiami, nes jie backend'e visada būtų ignoruojami.
   const onSave = async (updated: OrderOut) => {
     try {
       await saveOrder(selected!.uzsakymo_id, {
-        kliento_id: updated.kliento_id,
-        automobilio_id: updated.automobilio_id,
-        darbuotojo_id: updated.darbuotojo_id,
-        nuomos_data: updated.nuomos_data,
-        grazinimo_data: updated.grazinimo_data,
-        grazinimo_vietos_id: updated.grazinimo_vietos_id,
         uzsakymo_busena: updated.uzsakymo_busena,
+        grazinimo_data: updated.grazinimo_data,
         turi_papildomas_paslaugas: updated.turi_papildomas_paslaugas,
-        bendra_kaina: updated.bendra_kaina,
       });
-
-      setModalOpen(false);
-      setSelected(null);
       alert("Užsakymas sėkmingai išsaugotas!");
     } catch (err) {
-      const e = err as { status?: number; response?: { status?: number } };
-      const status = e.status ?? e.response?.status;
-      if (status === 409) {
-        alert("Automobilis šiuo laikotarpiu jau užimtas.");
-      } else {
-        alert(formatApiError(err, "Nepavyko išsaugoti užsakymo. Patikrinkite įvestus duomenis."));
-        console.error("Klaida išsaugant užsakymą:", JSON.stringify(err));
-      }
+      // META (ne alert) - EntityModal.commit() (žr. EntityModal.tsx) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+      throw new Error(conflictAwareErrorMessage(err, "Nepavyko išsaugoti užsakymo. Patikrinkite įvestus duomenis."));
     }
   };
 
@@ -163,20 +172,14 @@ export default function OrdersPage() {
           initial={{
             darbuotojo_id: initialEmployeeId ?? undefined,
           }}
-          fields={orderFields}
+          fields={createOrderFields}
           onCreate={async (data) => {
             try {
               await saveOrder(null, data);
               alert("Užsakymas sėkmingai sukurtas!");
             } catch (err) {
-              const e = err as { status?: number; response?: { status?: number } };
-              const status = e.status ?? e.response?.status;
-              if (status === 409) {
-                alert("Automobilis šiuo laikotarpiu jau užimtas.");
-              } else {
-                alert(formatApiError(err, "Nepavyko sukurti užsakymo. Patikrinkite įvestus duomenis."));
-                console.error("Klaida kuriant užsakymą:", JSON.stringify(err));
-              }
+              // META (ne alert) - EntityModal.commit() (CreateEntityButton.tsx apgaubia tą pačią logiką) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+              throw new Error(conflictAwareErrorMessage(err, "Nepavyko sukurti užsakymo. Patikrinkite įvestus duomenis."));
             }
           }}
         />
@@ -194,8 +197,10 @@ export default function OrdersPage() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
+          {/* Reikšmės TIKSLIAI sutampa su backend'o VALID_BUSENA (schemas/order.py) - jei kuri trūktų, tos būsenos užsakymų filtras niekada nerastų, nes jų reikšmė nesutaptų su niekuo galimame sąraše. */}
           <option value="visi">Visi</option>
           <option value="laukiama">Laukiama</option>
+          <option value="patvirtinta">Patvirtinta</option>
           <option value="vykdoma">Vykdoma</option>
           <option value="užbaigta">Užbaigta</option>
           <option value="atšaukta">Atšaukta</option>
@@ -211,9 +216,9 @@ export default function OrdersPage() {
       {selected && (
         <EntityModal
           key={`${selected.uzsakymo_id}-${editMode}`}
-          title={`#${selected.uzsakymo_id}`}
+          title={`#${selected.uzsakymo_id} - ${getClientName(selected.kliento_id)} (${getCarName(selected.automobilio_id)})`}
           entity={selected}
-          fields={orderFields}
+          fields={orderEditFields}
           isOpen={modalOpen}
           onClose={() => {
             setModalOpen(false);
