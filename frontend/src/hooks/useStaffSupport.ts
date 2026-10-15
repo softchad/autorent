@@ -53,13 +53,12 @@ export type StaffConversationDetail = StaffConversation & {
 
 export type QueueFilter = "all" | "unassigned" | "mine" | "needs_reply" | "waiting" | "resolved";
 
-// Darbuotojų pusės aptarnavimo hook'ai - paprastas fetch, ne RTK codegen (naujas
-// modulis, sąmoningai laikomas mažas - žr. AUTORENT_KLIENTU_APTARNAVIMO_SISTEMOS_SPECIFIKACIJA.md).
-// Tokenas imamas iš tos pačios Redux authSlice, kaip ir likusi darbuotojų sąsaja.
+// Darbuotojų pusės aptarnavimo hook'ai - paprastas fetch, ne RTK codegen; tokenas imamas iš tos pačios Redux authSlice, kaip ir likusi darbuotojų sąsaja.
 export function useStaffConversationList(filter: QueueFilter) {
   const token = useAppSelector((s) => s.auth.token);
   const [conversations, setConversations] = useState<StaffConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) return;
@@ -68,10 +67,15 @@ export function useStaffConversationList(filter: QueueFilter) {
         headers: { Authorization: `Bearer ${token}` },
         signal,
       });
-      if (res.ok) setConversations(await res.json());
-      if (!signal?.aborted) setIsLoading(false);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setConversations(await res.json());
+      setLoadError(null);
     } catch (e) {
-      if ((e as { name?: string })?.name !== "AbortError") throw e;
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setLoadError("Nepavyko įkelti pokalbių sąrašo.");
+      }
+    } finally {
+      if (!signal?.aborted) setIsLoading(false);
     }
   }, [token, filter]);
 
@@ -79,7 +83,7 @@ export function useStaffConversationList(filter: QueueFilter) {
     const controller = new AbortController();
     setIsLoading(true);
     refresh(controller.signal);
-    // Sąrašo/eilės polling - kas 20s, kol matoma (žr. specifikacijos 10 skyrių).
+    // Eilė atnaujinama pati (20s intervalu), kad darbuotojas pamatytų naują/pakeistą pokalbį nepersikraunant puslapio.
     const interval = setInterval(() => refresh(controller.signal), 20000);
     return () => {
       controller.abort();
@@ -87,13 +91,16 @@ export function useStaffConversationList(filter: QueueFilter) {
     };
   }, [refresh]);
 
-  return { conversations, isLoading, refresh };
+  return { conversations, isLoading, loadError, refresh };
 }
 
+// Vieno atidaryto pokalbio duomenys ir darbuotojo veiksmai (claim/reassign/reply/addNote/resolve) - visi veiksmai eina per bendrą runAction žemiau.
 export function useStaffConversation(pokalbioId: number | null) {
   const token = useAppSelector((s) => s.auth.token);
   const [conversation, setConversation] = useState<StaffConversationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Atskiras nuo "actionError" - šis yra FONINIO poll'o klaida, tas - VARTOTOJO paspausto veiksmo (claim/reassign/reply/...) klaida; sumaišius juos, nepavykęs poll'as 5s intervalu užgožtų/trintų tik ką parodytą veiksmo klaidą.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
@@ -103,9 +110,13 @@ export function useStaffConversation(pokalbioId: number | null) {
         headers: { Authorization: `Bearer ${token}` },
         signal,
       });
-      if (res.ok) setConversation(await res.json());
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      setConversation(await res.json());
+      setLoadError(null);
     } catch (e) {
-      if ((e as { name?: string })?.name !== "AbortError") throw e;
+      if ((e as { name?: string })?.name !== "AbortError") {
+        setLoadError("Nepavyko įkelti pokalbio.");
+      }
     }
   }, [token, pokalbioId]);
 
@@ -119,7 +130,7 @@ export function useStaffConversation(pokalbioId: number | null) {
     refresh(controller.signal).finally(() => {
       if (!controller.signal.aborted) setIsLoading(false);
     });
-    // Atidaryto pokalbio polling - kas 5s (žr. specifikacijos 10 skyrių).
+    // Atidarytas pokalbis atnaujinamas dažniau (5s) nei eilė aukščiau, nes čia darbuotojas realiu laiku laukia kliento atsakymo.
     const interval = setInterval(() => refresh(controller.signal), 5000);
     return () => {
       controller.abort();
@@ -127,6 +138,7 @@ export function useStaffConversation(pokalbioId: number | null) {
     };
   }, [pokalbioId, refresh]);
 
+  // Bendras POST veiksmo kvietimas visiems pokalbio veiksmams žemiau - klaidą IR įrašo į actionError (kad būtų parodyta UI), IR vis tiek meta toliau (throw), kad kviečiantis (pvz. support/page.tsx) žinotų, kad veiksmas nepavyko, ir nedarytų tolimesnių žingsnių (pvz. formos išvalymo).
   const runAction = useCallback(
     async (path: string, body?: object) => {
       if (!token || !pokalbioId) return;
@@ -159,8 +171,7 @@ export function useStaffConversation(pokalbioId: number | null) {
   const addNote = useCallback((tekstas: string) => runAction("/notes", { tekstas }), [runAction]);
   const resolve = useCallback((santrauka: string) => runAction("/resolve", { santrauka }), [runAction]);
 
-  // /seen grąžina tik santrauką (be žinučių/pastabų), tad NEpertvarko viso
-  // conversation state - kitaip dingtų jau įkeltas pokalbio turinys.
+  // /seen grąžina tik santrauką (be žinučių/pastabų), tad NEpertvarko viso conversation state - kitaip dingtų jau įkeltas pokalbio turinys.
   const markSeen = useCallback(
     async (zinutesId: number) => {
       if (!token || !pokalbioId) return;
@@ -177,5 +188,5 @@ export function useStaffConversation(pokalbioId: number | null) {
     [token, pokalbioId]
   );
 
-  return { conversation, isLoading, actionError, claim, reassign, reply, addNote, resolve, markSeen, refresh };
+  return { conversation, isLoading, loadError, actionError, claim, reassign, reply, addNote, resolve, markSeen, refresh };
 }
