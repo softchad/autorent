@@ -10,15 +10,22 @@ import StatusBadge from "@/app/components/StatusBadge";
 import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import type { ReservationUpdate } from "@/store/autorentApi";
+import { useGetCurrentUserQuery } from "@/store/autorentApi";
 import { FiCheck, FiMapPin } from "react-icons/fi";
 import Image from "next/image";
 import { getCarPhoto } from "@/utils/carPhoto";
 
+// Tipas IŠVEDAMAS iš paties hook'o grąžinamos reikšmės (ne importuojamas iš atskiro schemos failo) - jei useReservationData.ts pakeistų "reservations" lauko formą, šis tipas AUTOMATIŠKAI atsinaujintų.
 type Rezervacija = NonNullable<
   ReturnType<typeof useReservationData>["reservations"]
 >[number];
 
+// Rezervacijų administravimas (sąrašas/paieška/statuso filtras/greitas patvirtinimas/CRUD per modalą).
 export default function ReservationsPage() {
+  const { data: currentUser } = useGetCurrentUserQuery();
+  // Trynimas backend'e reikalauja Perm.ADMIN (žr. reservation.py delete_reservation - "negrįžtamas veiksmas"), ne vien Perm.EDIT kaip redagavimas - be šios patikros bet kuris EDIT teisę turintis darbuotojas matytų trynimo mygtuką, kurį paspaudus serveris atmestų su 403.
+  const isAdmin = currentUser?.pareigos === "Administratorius";
+
   const [selected, setSelected] = useState<Rezervacija | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -55,9 +62,10 @@ export default function ReservationsPage() {
     },
     {
       label: "Veiksmai",
+      // "r" čia yra TOS KONKREČIOS eilutės rezervacija, uždaryta (closure) šiai vienai stulpelio funkcijai.
       accessor: (r: Rezervacija) => (
         <ActionButtons
-          show={{ view: true, edit: true, delete: true, extra: r.busena === "laukia" }}
+          show={{ view: true, edit: true, delete: isAdmin, extra: r.busena === "laukia" }}
           extraLabel="Patvirtinti"
           extraIcon={<FiCheck className="text-base" />}
           onExtra={async () => {
@@ -91,16 +99,20 @@ export default function ReservationsPage() {
     },
   ];
 
+  // 409 reiškia konkretų, žinomą konfliktą (automobilis užimtas) - IR čia, IR onCreate žemiau gali jį gauti, tad žinutė parenkama ta pati, nekartojant patikros kodo du kartus.
+  const conflictAwareErrorMessage = (err: unknown, fallback: string): string => {
+    const e = err as { status?: number; response?: { status?: number } };
+    const status = e.status ?? e.response?.status;
+    return status === 409 ? "Automobilis šiuo laikotarpiu jau rezervuotas." : formatApiError(err, fallback);
+  };
+
+  // META (ne alert) - EntityModal.commit() (žr. EntityModal.tsx) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
   const onSave = async (updated: ReservationUpdate) => {
-    const cleaned = {
-      ...updated,
-      rezervacijos_pradzia: updated.rezervacijos_pradzia ?? undefined,
-      rezervacijos_pabaiga: updated.rezervacijos_pabaiga ?? undefined,
-      busena: updated.busena ?? undefined,
-      kliento_id: updated.kliento_id ?? undefined,
-      automobilio_id: updated.automobilio_id ?? undefined,
-    };
-    await saveReservation(selected!.rezervacijos_id, cleaned);
+    try {
+      await saveReservation(selected!.rezervacijos_id, updated);
+    } catch (err) {
+      throw new Error(conflictAwareErrorMessage(err, "Nepavyko išsaugoti rezervacijos. Patikrinkite įvestus duomenis."));
+    }
   };
 
   if (isLoading) return <LoadingScreen />;
@@ -118,14 +130,8 @@ export default function ReservationsPage() {
               await saveReservation(null, data);
               alert("Rezervacija sėkmingai išsaugota!");
             } catch (err) {
-              const e = err as { status?: number; response?: { status?: number } };
-              const status = e.status ?? e.response?.status;
-              if (status === 409) {
-                alert("Automobilis šiuo laikotarpiu jau rezervuotas.");
-              } else {
-                alert(formatApiError(err, "Nepavyko sukurti rezervacijos. Patikrinkite įvestus duomenis."));
-                console.error("Klaida:", err);
-              }
+              // META (ne alert) - EntityModal.commit() (CreateEntityButton.tsx apgaubia tą pačią logiką) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+              throw new Error(conflictAwareErrorMessage(err, "Nepavyko sukurti rezervacijos. Patikrinkite įvestus duomenis."));
             }
           }}
         />

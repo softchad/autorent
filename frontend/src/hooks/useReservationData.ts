@@ -7,13 +7,13 @@ import {
   type ReservationUpdate,
   type ReservationOut,
   useGetAllCarsQuery,
+  useGetAllClientsQuery,
 } from "@/store/autorentApi";
 
-import { useClientsData } from "./useClientsData";
-import { useCarsData } from "./useCarsData";
 import { useState, useMemo } from "react";
 import { FieldConfig } from "@/app/components/staff/EntityModal";
 
+// Rezervacijų sąrašo duomenys ir CRUD forma - naudoja reservations/page.tsx.
 export const useReservationData = () => {
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation();
   const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation();
@@ -25,8 +25,9 @@ export const useReservationData = () => {
     refetch,
   } = useGetAllReservationsQuery();
 
-  const { clients } = useClientsData();
-  const { automobiliai } = useCarsData();
+  // Tiesiai per useGetAllClientsQuery/useGetAllCarsQuery (NE per useClientsData/useCarsData) - šiai formai reikia TIK pačių sąrašų, o tie hook'ai papildomai statytų nenaudojamus CRUD laukus/mutacijas/state.
+  const { data: clients = [] } = useGetAllClientsQuery();
+  const { data: cars = [] } = useGetAllCarsQuery();
 
   const clientMap = useMemo(
     () => new Map(clients.map((c) => [c.kliento_id, `${c.vardas} ${c.pavarde}`])),
@@ -34,13 +35,14 @@ export const useReservationData = () => {
   );
 
   const carMap = useMemo(
-    () => new Map(automobiliai.map((a) => [a.automobilio_id, `${a.marke} ${a.modelis}`])),
-    [automobiliai]
+    () => new Map(cars.map((a) => [a.automobilio_id, `${a.marke} ${a.modelis}`])),
+    [cars]
   );
 
   const getClientName = (id: number) => clientMap.get(id) ?? `#${id}`;
   const getCarName = (id: number) => carMap.get(id) ?? `#${id}`;
 
+  // Kuria NAUJĄ (id === null) arba atnaujina ESAMĄ rezervaciją.
   const saveReservation = async (
     id: number | null,
     data: ReservationCreate | ReservationUpdate
@@ -53,6 +55,7 @@ export const useReservationData = () => {
     await refetch();
   };
 
+  // Trina rezervaciją ir IŠKART atnaujina sąrašą.
   const handleDelete = async (rezervacijos_id: number) => {
     await deleteReservation({ rezervacijosId: rezervacijos_id }).unwrap();
     await refetch();
@@ -63,6 +66,7 @@ export const useReservationData = () => {
     "visi" | "patvirtinta" | "laukia" | "atšaukta"
   >("visi");
 
+  // Paieška IR statuso filtras skaičiuojami kliento pusėje - rezervacijų sąrašas per mažas, kad reikėtų atskiro backend endpoint'o su query parametrais.
   const filtered = reservations
     .filter((r) => {
       const target =
@@ -72,12 +76,8 @@ export const useReservationData = () => {
       const matchStatus = statusFilter === "visi" || statusFilter === busena;
       return matchSearch && matchStatus;
     })
-    // Naujausios (didžiausias ID = vėliausiai pateikta, nėra atskiro sukurimo
-    // laiko stulpelio DB) viršuje - kitaip naujai pateikta rezervacija "pasimeta"
-    // tarp senų įrašų, kol nepaspaudi stulpelio rūšiavimo pačiam.
+    // Naujausios viršuje - DB neturi atskiro sukūrimo laiko stulpelio, tad didžiausias "rezervacijos_id" naudojamas kaip pateikimo laiko pakaitalas; kitaip naujai pateikta rezervacija "pasimestų" tarp senų įrašų, kol pats nepaspaudi stulpelio rūšiavimo.
     .sort((a, b) => b.rezervacijos_id - a.rezervacijos_id);
-
-  const { data: cars = [] } = useGetAllCarsQuery();
 
   const reservationFields: FieldConfig<ReservationOut>[] = [
     {
@@ -112,6 +112,7 @@ export const useReservationData = () => {
       type: "date",
       required: true,
     },
+    // Reikšmės TIKSLIAI sutampa su backend'o VALID_BUSENA (schemas/reservation.py) - visos 3 PRIVALO būti čia, kitaip ta būsena niekada negalėtų būti pasirinkta per šią formą.
     {
       name: "busena",
       label: "Būsena",

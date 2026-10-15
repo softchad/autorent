@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  FiTruck,
-  FiTool,
-  FiCreditCard,
-  FiAlertCircle,
-  FiCornerDownLeft,
-  FiInbox,
-} from "react-icons/fi";
+import { FiTruck, FiTool, FiCreditCard, FiAlertCircle, FiCornerDownLeft, FiInbox } from "react-icons/fi";
 import Link from "next/link";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { ActionButtons } from "@/app/components/ActionButtons";
@@ -19,12 +12,15 @@ import LoadingScreen from "@/app/components/LoadingScreen";
 import EntityModal, { FieldConfig } from "@/app/components/staff/EntityModal";
 import { useUpdateReservationMutation } from "@/store/autorentApi";
 import StatusBadge from "@/app/components/StatusBadge";
-import React, { useState } from "react";
+import { formatApiError } from "@/utils/formatApiError";
+import { useState } from "react";
 
+// Tipas IŠVEDAMAS iš paties hook'o grąžinamos reikšmės (ne importuojamas iš atskiro schemos failo) - jei useDashboardStats.ts pakeistų "latestReservations" formą, šis tipas AUTOMATIŠKAI atsinaujintų.
 type Reservation = ReturnType<
   typeof useDashboardStats
 >["latestReservations"][number];
 
+// Darbuotojų pradinis puslapis - bendra statistika, grafikai, naujausios pagalbos užklausos IR paskutinės rezervacijos su greitu redagavimu (be pilno CRUD - tam yra atskiras /reservations puslapis).
 export default function DashboardPage() {
   const {
     latestReservations,
@@ -35,7 +31,7 @@ export default function DashboardPage() {
     servise,
     neapmoketosSaskaitos,
     neatsakytosUzklausos,
-    siandienGrązinimai,
+    siandienGrazinimai,
     getAutomobilis,
     getKlientas,
     isLoading,
@@ -46,6 +42,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [updateReservation] = useUpdateReservationMutation();
 
+  // "options" sąrašas suderintas su backend'o VALID_BUSENA (schemas/reservation.py) - tiksliai šios 3 reikšmės, nė viena daugiau/mažiau, leidžiamos serverio pusėje.
   const reservationFields: FieldConfig<Reservation>[] = [
     { name: "rezervacijos_pradzia", label: "Pradžia", type: "text" },
     { name: "rezervacijos_pabaiga", label: "Pabaiga", type: "text" },
@@ -61,6 +58,7 @@ export default function DashboardPage() {
     },
   ];
 
+  // Lentelės stulpelių aprašas DataTable'ui - "accessor" gali būti PLOKŠČIAS lauko vardas arba FUNKCIJA (kai reikia ID paversti žmogui skaitomu pavadinimu/vardu, kaip žemiau, arba atvaizduoti JSX, kaip "Būsena"/"Veiksmai").
   const columns = [
     {
       label: "Automobilis",
@@ -78,6 +76,7 @@ export default function DashboardPage() {
     },
     {
       label: "Veiksmai",
+      // "show={{ edit: true }}" - TIK redagavimas, be peržiūros/trynimo mygtukų (skirtingai nei pilname /reservations puslapyje) - šis skydelis yra greitas apžvalgos vaizdas, ne pilnas valdymas.
       accessor: (r: Reservation) => (
         <ActionButtons
           onEdit={() => {
@@ -90,19 +89,22 @@ export default function DashboardPage() {
     },
   ];
 
+  // "selected!" saugu - šis handler'is perduodamas EntityModal'ui TIK kai "selected" sąlyginis blokas žemiau jį renderina ({selected && (...)}), tad čia jis visada apibrėžtas.
   const handleSave = async (updated: Reservation) => {
-    await updateReservation({
-      rezervacijosId: selected!.rezervacijos_id,
-      reservationUpdate: {
-        rezervacijos_pradzia: updated.rezervacijos_pradzia,
-        rezervacijos_pabaiga: updated.rezervacijos_pabaiga,
-        busena: updated.busena,
-      },
-    }).unwrap();
-
-    setModalOpen(false);
-    setSelected(null);
-    refetchReservations();
+    try {
+      await updateReservation({
+        rezervacijosId: selected!.rezervacijos_id,
+        reservationUpdate: {
+          rezervacijos_pradzia: updated.rezervacijos_pradzia,
+          rezervacijos_pabaiga: updated.rezervacijos_pabaiga,
+          busena: updated.busena,
+        },
+      }).unwrap();
+      refetchReservations();
+    } catch (e) {
+      // META (ne tylus nepavykimas) - EntityModal.commit() (žr. EntityModal.tsx) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+      throw new Error(formatApiError(e, "Nepavyko išsaugoti rezervacijos."));
+    }
   };
 
   if (isLoading) return <LoadingScreen />;
@@ -139,7 +141,7 @@ export default function DashboardPage() {
         <StatCard
           color="bg-[#12344D]"
           title="Grąžinimai šiandien"
-          value={siandienGrązinimai}
+          value={siandienGrazinimai}
           icon={<FiCornerDownLeft />}
         />
       </div>

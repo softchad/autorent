@@ -5,6 +5,7 @@ import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
 import dynamic from "next/dynamic";
 
+// "dynamic(..., { ssr: false })" - žemėlapio biblioteka (Leaflet) tiesiogiai naudoja "window"/DOM, kurio NĖRA serverio pusės renderinimo metu; be "ssr: false" puslapis sulūžtų bandant jį atvaizduoti serveryje. "loading" rodomas, kol komponento JS pakrautas naršyklėje.
 const MapComponent = dynamic(() => import("@/app/components/staff/MapComponent"), {
   ssr: false,
   loading: () => (
@@ -27,12 +28,19 @@ import {
 import type { CarCreate } from "@/store/autorentApi";
 import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
+import { useGetCurrentUserQuery } from "@/store/autorentApi";
 
+// Tipas IŠVEDAMAS iš paties hook'o grąžinamos reikšmės (ne importuojamas iš atskiro schemos failo) - jei useCarsData.ts pakeistų "automobiliai" lauko formą, šis tipas AUTOMATIŠKAI atsinaujintų.
 type Automobilis = NonNullable<
   ReturnType<typeof useCarsData>["automobiliai"]
 >[number];
 
+// Automobilių parko administravimas (sąrašas/paieška/statuso filtras/žemėlapis/CRUD per modalą) - skirtingai nuo VIEŠO katalogo (/automobiliai), šis puslapis rodo VISUS automobilius (ir "servise"/"remonte"), su vidiniais laukais (VIN, numeris), kurių viešas katalogas niekada nerodo.
 export default function CarsPage() {
+  const { data: currentUser } = useGetCurrentUserQuery();
+  // Trynimas backend'e reikalauja Perm.ADMIN (žr. car.py delete_car), ne vien Perm.EDIT kaip redagavimas - be šios patikros bet kuris EDIT teisę turintis darbuotojas (Mechanikas, Klientų aptarnavimas) matytų trynimo mygtuką, kurį paspaudus serveris VISTIEK atmestų su 403.
+  const isAdmin = currentUser?.pareigos === "Administratorius";
+
   const {
     isLoading,
     filtered,
@@ -53,6 +61,7 @@ export default function CarsPage() {
   const [deleteCar] = useDeleteCarMutation();
   const [createCar] = useCreateCarMutation();
 
+  // Lentelės stulpelių aprašas DataTable'ui - "accessor" gali būti PLOKŠČIAS DB lauko vardas arba FUNKCIJA (kai reikia sujungti/formatuoti keli laukus, kaip markė+modelis arba kaina su "€" žemiau).
   const columns = [
     {
       label: "Modelis",
@@ -63,10 +72,12 @@ export default function CarsPage() {
     { label: "Sėdimos vietos", accessor: "sedimos_vietos" },
     {
       label: "Kaina",
+      // Rodoma BE ".toFixed(2)" - tas pats raštas naudojamas IR viešame AutomobiliaiClient.tsx/CarDetailClient.tsx (sąžiningumo/nuoseklumo dėlei, tas pats skaičius visur atrodo vienodai).
       accessor: (a: Automobilis) => `${a.kaina_parai} €`,
     },
     {
       label: "Veiksmai",
+      // Peržiūros/redagavimo/trynimo mygtukai KIEKVIENAI eilutei - "a" čia yra TOS KONKREČIOS eilutės automobilis, uždarytas (closure) šiai vienai stulpelio funkcijai.
       accessor: (a: Automobilis) => (
         <ActionButtons
           onView={() => {
@@ -98,6 +109,8 @@ export default function CarsPage() {
               );
             }
           }}
+          // "view"/"edit" PRIVALO būti nurodyti ČIA (ne tik "delete") - ActionButtons "show" NESUJUNGIAMAS su numatytuoju {view:true,edit:true,delete:true}, jis PILNAI PAKEIČIAMAS, tad praleistas raktas reikštų PASLĖPTĄ mygtuką, ne numatytą "true".
+          show={{ view: true, edit: true, delete: isAdmin }}
         />
       ),
     },
@@ -115,10 +128,12 @@ export default function CarsPage() {
           fields={carFields}
           onCreate={async (data) => {
             try {
-              await createCar({ carCreate: data as unknown as CarCreate }).unwrap();
+              // "data" tipas (CreateEntityButton.tsx) yra Partial<Automobilis> - TypeScript tad kiekvieną CarCreate lauką laiko GALIMAI nesamu, nors RUNTIME metu EntityModal.commit() jau užtikrino, kad VISI "required: true" laukai (carFields, žr. useCarsData.ts) užpildyti.
+              await createCar({ carCreate: data as CarCreate }).unwrap();
               await refetchCars();
             } catch (e) {
-              alert(formatApiError(e, "Nepavyko sukurti automobilio. Patikrinkite įvestus duomenis."));
+              // META (ne alert) - EntityModal.commit() (CreateEntityButton.tsx apgaubia tą pačią EntityModal.tsx logiką) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+              throw new Error(formatApiError(e, "Nepavyko sukurti automobilio. Patikrinkite įvestus duomenis."));
             }
           }}
         />
@@ -164,35 +179,15 @@ export default function CarsPage() {
           onClose={() => setModalOpen(false)}
           onSave={async (updated) => {
             try {
+              // "updated" turi IR automobilio_id/links (nereikalingi CarUpdate'ui) - saugu siųsti kaip yra, patikrinau: CarUpdate (schemas/car.py) NEnaudoja "extra=forbid", tad backend TYLIAI ignoruoja nežinomus laukus (patikrinta tiesiogiai paleidus schemą su jais).
               await updateCar({
                 carId: selectedCar.automobilio_id,
-                carUpdate: {
-                  marke: updated.marke,
-                  modelis: updated.modelis,
-                  metai: updated.metai,
-                  numeris: updated.numeris,
-                  vin_kodas: updated.vin_kodas,
-                  spalva: updated.spalva,
-                  kebulo_tipas: updated.kebulo_tipas,
-                  pavaru_deze: updated.pavaru_deze,
-                  variklio_turis: updated.variklio_turis,
-                  galia_kw: updated.galia_kw,
-                  kuro_tipas: updated.kuro_tipas,
-                  rida: updated.rida,
-                  sedimos_vietos: updated.sedimos_vietos,
-                  klimato_kontrole: updated.klimato_kontrole,
-                  navigacija: updated.navigacija,
-                  kaina_parai: updated.kaina_parai,
-                  automobilio_statusas: updated.automobilio_statusas,
-                  technikines_galiojimas: updated.technikines_galiojimas,
-                  dabartine_vieta_id: updated.dabartine_vieta_id,
-                  pastabos: updated.pastabos,
-                },
+                carUpdate: updated,
               }).unwrap();
               await refetchCars();
-              setModalOpen(false);
             } catch (e) {
-              alert(formatApiError(e, "Nepavyko atnaujinti automobilio. Patikrinkite įvestus duomenis."));
+              // META (ne alert) - EntityModal.commit() (žr. EntityModal.tsx) sugauna šią klaidą, parodo PRIE formos ir PALIEKA modalą atvirą, kad vartotojas neprarastų įvestų duomenų.
+              throw new Error(formatApiError(e, "Nepavyko atnaujinti automobilio. Patikrinkite įvestus duomenis."));
             }
           }}
           startInEdit={editMode}

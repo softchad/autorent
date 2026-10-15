@@ -1,12 +1,15 @@
+// "useGetAllCarsQuery" imamas iš enhanceEndpoints.ts (TIK jis pažymėtas "Cars" tag'u kuriam/atnaujinant/trinant), o "useGetLocationsQuery" - tiesiai iš autorentApi.ts, nes vietos niekada nekeičiamos iš šios sąsajos.
 import { useGetAllCarsQuery } from "@/store/enhanceEndpoints";
 import { useGetLocationsQuery } from "@/store/autorentApi";
 import { useMemo, useState } from "react";
 import { FieldConfig } from "@/app/components/staff/EntityModal";
 
+// Tipas IŠVEDAMAS iš paties hook'o grąžinamos reikšmės, ne importuojamas atskirai - jei sugeneruotas API kontraktas pasikeistų, šis tipas automatiškai atsinaujintų.
 type Automobilis = NonNullable<
   ReturnType<typeof useGetAllCarsQuery>["data"]
 >[number];
 
+// Automobilių parko duomenys ir CRUD formos konfigūracija - naudoja fleet/page.tsx (pilnas administravimas) IR useReservationData.ts (tik automobilių sąrašas pavadinimams).
 export function useCarsData() {
   const { data: locations = [] } = useGetLocationsQuery();
 
@@ -15,6 +18,7 @@ export function useCarsData() {
     label: `${l.pavadinimas} (${l.adresas})`,
   }));
 
+  // Select'ų "options" reikšmės TURI tiksliai atitikti backend VALID_PAVARU_DEZE/VALID_KURO_TIPAS/VALID_STATUSAS (schemas/car.py) - jei backend leidžia naują reikšmę, bet ji nepridėta čia, darbuotojas jos tiesiog negalės pasirinkti formoje.
   const carFields: FieldConfig<Automobilis>[] = [
     { name: "marke", label: "Markė", required: true },
     { name: "modelis", label: "Modelis", required: true },
@@ -120,6 +124,7 @@ export function useCarsData() {
   const [selectedCar, setSelectedCar] = useState<Automobilis | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
 
+  // Statuso ir teksto paieškos filtrai skaičiuojami kliento pusėje (visas sąrašas jau gautas) - automobilių parkas per mažas, kad reikėtų atskiro backend endpoint'o su query parametrais.
   const filtered = useMemo(
     () =>
       automobiliai.filter((a) => {

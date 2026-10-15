@@ -8,16 +8,14 @@ import {
   useGetLatestReservationsQuery,
 } from "@/store/autorentApi";
 
+// Dashboard'o suvestinės skaičiai - daug mažų, nebrangių užklausų atskirai (ne vienas "dashboard stats" endpoint'as), nes kiekvienas sąrašas jau turi savo cache tarp puslapių (automobiliai/užsakymai/klientai/sąskaitos).
 export function useDashboardStats() {
+  // Atšauktos NEĮEINA čia - backend'as (GET /reservations/latest) jas atmeta PRIEŠ limit'ą, kitaip dashboard'as rodytų mažiau nei 5 įrašus, kai keletas naujausių būtų atšauktos.
   const {
-    data: latest = [],
+    data: latestReservations = [],
     isLoading: loadingLatest,
     refetch: refetchReservations,
   } = useGetLatestReservationsQuery({ limit: 5 });
-
-  const latestReservations = latest.filter(
-    (r) => r.busena?.toLowerCase() !== "atšaukta"
-  );
 
   const { data: automobiliai = [], isLoading: loadingA } = useGetAllCarsQuery();
   const { data: uzsakymai = [], isLoading: loadingU } = useGetAllOrdersQuery();
@@ -48,21 +46,22 @@ export function useDashboardStats() {
     (a) => a.automobilio_statusas === "isnuomotas"
   ).length;
 
+  // "status" čia TIKRAI yra užsakymo būsena (žr. backend invoice.py - sąskaita neturi atskiro apmokėjimo lauko), tad šis skaičius realiai reiškia "sąskaitos, kurių užsakymas dar nebaigtas", ne tikrą apmokėjimo būseną.
   const neapmoketosSaskaitos = saskaitos.filter(
     (s) => s.status !== "užbaigta"
   ).length;
   const neatsakytosUzklausos = pokalbiai.length;
-  // Seniausia pirma (tas pats raštas kaip support/page.tsx "needs_reply" eilėje) -
-  // kuo ilgiau klientas laukia atsakymo, tuo svarbiau, kad dashboard'e matytųsi pirmas.
+  // Seniausia pirma (tas pats raštas kaip support/page.tsx "needs_reply" eilėje) - kuo ilgiau klientas laukia atsakymo, tuo svarbiau, kad dashboard'e matytųsi pirmas.
   const latestSupportRequests = [...pokalbiai]
     .sort((a, b) => new Date(a.atnaujinimo_data).getTime() - new Date(b.atnaujinimo_data).getTime())
     .slice(0, 5);
 
   const today = new Date().toISOString().slice(0, 10);
-  const siandienGrązinimai = uzsakymai.filter(
+  const siandienGrazinimai = uzsakymai.filter(
     (u) => u.grazinimo_data === today
   ).length;
 
+  // Grafiko duomenys - "name" tiesiog rodomas Recharts legendoje/ašyse, ne kažkoks backend identifikatorius.
   const barData = useMemo(
     () => [
       {
@@ -87,11 +86,13 @@ export function useDashboardStats() {
     { name: "Išnuomoti", value: isnuomoti },
   ];
 
+  // Vardą paieško per automobiliaiMap aukščiau, ne atskira užklausa kiekvienai "pastarosios rezervacijos" eilutei.
   const getAutomobilis = (id: number) => {
     const a = automobiliaiMap.get(id);
     return a ? `${a.marke} ${a.modelis}` : `#${id}`;
   };
 
+  // Tas pats principas kaip getAutomobilis aukščiau, tik klientaiMap.
   const getKlientas = (id: number) => {
     const k = klientaiMap.get(id);
     return k ? `${k.vardas} ${k.pavarde}` : `Klientas #${id}`;
@@ -106,7 +107,7 @@ export function useDashboardStats() {
     servise,
     neapmoketosSaskaitos,
     neatsakytosUzklausos,
-    siandienGrązinimai,
+    siandienGrazinimai,
     getAutomobilis,
     getKlientas,
     isLoading,
