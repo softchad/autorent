@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { extractErrorMessage } from "@/utils/extractErrorMessage";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -21,14 +22,14 @@ export type LoyaltyStatus = {
   atlygiai: LoyaltyReward[];
 };
 
-// Kliento lojalumo progreso ir atlygių gavimas/panaudojimas - žr. backend
-// app/api/v1/endpoints/customer_loyalty.py.
+// Kliento lojalumo progreso būsena ir atlygių panaudojimas - kraunama vieną kartą prisijungus, vėliau iš naujo tik po sėkmingo "redeem" (nereikia nuolatinio poll'o kaip pokalbiams, progresas keičiasi tik po užsakymo).
 export function useCustomerLoyalty(token: string | null) {
   const [status, setStatus] = useState<LoyaltyStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
 
+  // Kraunama IR pirmą kartą prisijungus (žr. useEffect žemiau), IR pakartotinai iš "redeem" sėkmės atveju, kad progresas/atlygių sąrašas atsinaujintų be puslapio perkrovimo.
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
       setStatus(null);
@@ -58,22 +59,25 @@ export function useCustomerLoyalty(token: string | null) {
     return () => controller.abort();
   }, [refresh]);
 
+  // Grąžina sugeneruotą nuolaidos kodą (string) sėkmės atveju, arba null nepavykus - kviečiantis komponentas (AccountClient.tsx) kodą parodo klientui IŠ KARTO, nelaukiant, kol jis susirastų jį atskirame kodų sąraše.
   const redeem = useCallback(
-    async (atlygioId: number) => {
-      if (!token) return;
+    async (atlygioId: number): Promise<string | null> => {
+      if (!token) return null;
       setRedeemError(null);
       try {
         const res = await fetch(`${API}/api/v1/customer/loyalty/rewards/${atlygioId}/redeem`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
+        const body = await res.json().catch(() => null);
         if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.detail ?? "Nepavyko panaudoti atlygio");
+          throw new Error(extractErrorMessage(body, "Nepavyko panaudoti atlygio"));
         }
         await refresh();
+        return body?.kodas ?? null;
       } catch (err) {
         setRedeemError(err instanceof Error ? err.message : "Nepavyko panaudoti atlygio");
+        return null;
       }
     },
     [token, refresh]

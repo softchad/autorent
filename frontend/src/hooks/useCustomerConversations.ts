@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { extractErrorMessage } from "@/utils/extractErrorMessage";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -36,8 +37,7 @@ export type Conversation = {
 
 export type ConversationDetail = Conversation & { zinutes: SupportMessage[] };
 
-// Kliento pokalbių hook'ai - naujas pokalbio/žinučių modelis, žr.
-// backend app/api/v1/endpoints/customer_support.py.
+// Pokalbių sąrašas - atnaujinamas pats (20s intervalu), kad klientas pamatytų darbuotojo atsakymą nepersikraunant puslapio.
 export function useConversationList(token: string | null) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +79,7 @@ export function useConversationList(token: string | null) {
   return { conversations, isLoading, loadError, refresh };
 }
 
+// Atidaryto pokalbio žinutės - atnaujinamos dažniau (5s) nei sąrašas aukščiau, nes čia klientas realiu laiku laukia darbuotojo atsakymo.
 export function useConversation(token: string | null, pokalbioId: number | null) {
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +95,8 @@ export function useConversation(token: string | null, pokalbioId: number | null)
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
       setConversation(await res.json());
+      // Be šito VIENA nepavykusi apklausa amžinai paliktų klaidos žinutę ekrane, net kai KITAS (po 5s) bandymas jau pavyksta.
+      setError(null);
     } catch (e) {
       if ((e as { name?: string })?.name !== "AbortError") {
         setError("Nepavyko įkelti pokalbio.");
@@ -118,6 +121,7 @@ export function useConversation(token: string | null, pokalbioId: number | null)
     };
   }, [pokalbioId, refresh]);
 
+  // Siunčia žinutę ir IŠKART pakeičia "conversation" atsakymu (jame jau yra naujausia žinutė) - nelaukiama kito poll'o, kad klientas pamatytų savo žinutę be delsos.
   const send = useCallback(
     async (tekstas: string) => {
       if (!token || !pokalbioId) return false;
@@ -131,7 +135,7 @@ export function useConversation(token: string | null, pokalbioId: number | null)
         });
         if (!res.ok) {
           const body = await res.json().catch(() => null);
-          throw new Error(body?.detail ?? "Nepavyko išsiųsti žinutės");
+          throw new Error(extractErrorMessage(body, "Nepavyko išsiųsti žinutės"));
         }
         setConversation(await res.json());
         return true;
@@ -165,6 +169,7 @@ export function useConversation(token: string | null, pokalbioId: number | null)
   return { conversation, isLoading, sending, error, send, markSeen, refresh };
 }
 
+// Naujo pokalbio sukūrimas - atskira funkcija, NE hook'as, nes kviečiama VIENKARTINIO veiksmo metu (naujo pokalbio formoje), ne komponento viso gyvavimo metu.
 export async function createConversation(
   token: string,
   payload: { tema: string; kategorija: string; pranesimas: string; rezervacijos_id?: number }
@@ -176,7 +181,7 @@ export async function createConversation(
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.detail ?? "Nepavyko sukurti pokalbio");
+    throw new Error(extractErrorMessage(body, "Nepavyko sukurti pokalbio"));
   }
   return res.json();
 }

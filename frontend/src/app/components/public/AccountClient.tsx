@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiUser, FiMail, FiPhone, FiCalendar, FiLogOut, FiGift, FiInbox, FiHelpCircle, FiEdit2, FiX, FiCheck } from "react-icons/fi";
+import { FiUser, FiMail, FiPhone, FiCalendar, FiLogOut, FiGift, FiInbox, FiHelpCircle, FiEdit2, FiX, FiCheck, FiTag } from "react-icons/fi";
 import PublicPageShell from "./PublicPageShell";
 import StatusBadge from "@/app/components/StatusBadge";
 import LoyaltyRoad from "./LoyaltyRoad";
@@ -12,14 +12,17 @@ import SupportInbox from "./SupportInbox";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 import { useCustomerReservations } from "@/hooks/useCustomerReservations";
 import { useCustomerLoyalty } from "@/hooks/useCustomerLoyalty";
+import { useGetCustomerDiscountCodesQuery } from "@/store/autorentApi";
 import { formatLt } from "@/utils/formatLt";
 import { getCarPhoto } from "@/utils/carPhoto";
 import ClientAvatar from "./ClientAvatar";
 
+// Perduodama į SupportInbox.tsx, kai klientas spaudžia "Reikia pagalbos" PRIE konkrečios rezervacijos (žr. askForHelp žemiau) - iš anksto užpildo naujo pokalbio temą/kategoriją, kad nereikėtų jų rašyti iš naujo.
 type SupportPrefill = { kategorija: string; tema: string; rezervacijos_id?: number };
 
 type Tab = "profilis" | "pastas";
 
+// Kliento savitarnos puslapis (/paskyra) - profilio peržiūra/redagavimas, lojalumo progresas, nuomų istorija IR pašto dėžutė (palaikymo pokalbiai) viename komponente.
 export default function AccountClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,6 +32,7 @@ export default function AccountClient() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
+  // Formos pradinės reikšmės užpildomos iš "customer" TIK paspaudus "Redaguoti" - ne iš karto puslapio užkrovimo metu, nes "customer" gali pasikeisti (pvz. kitame skirtuke atnaujintas profilis) tarp užkrovimo ir redagavimo pradžios.
   const startEditingProfile = () => {
     if (!customer) return;
     setProfileForm({
@@ -42,6 +46,7 @@ export default function AccountClient() {
     setEditingProfile(true);
   };
 
+  // Jei pasikeitė el. paštas, CustomerAuthProvider.tsx (updateProfile) PATI pasirūpina nauju tokenu (senas JWT "sub" = senas el. paštas, nebeatpažintų kliento) - čia nereikia papildomos logikos.
   const saveProfile = async () => {
     setProfileSaving(true);
     setProfileError(null);
@@ -57,9 +62,26 @@ export default function AccountClient() {
   const { reservations, isLoading: reservationsLoading, error: reservationsError } = useCustomerReservations(token);
   const { status: loyalty, error: loyaltyError, redeemError, redeem } = useCustomerLoyalty(token);
   const unredeemedRewards = loyalty?.atlygiai.filter((r) => r.busena === "neisnaudotas") ?? [];
+  // "skip" kai neprisijungus - užklausos be tokeno būtų 401, nereikalingas tinklo kreipinys.
+  const { data: discountCodes, refetch: refetchDiscountCodes } = useGetCustomerDiscountCodesQuery(undefined, { skip: !token });
+  // Ką tik sugeneruotas kodas rodomas IŠ KARTO, PRIEŠ klientui tektų jo ieškoti žemiau, "Mano nuolaidos kodai" sąraše.
+  const [justRedeemedCode, setJustRedeemedCode] = useState<string | null>(null);
+  const handleRedeem = async (atlygioId: number) => {
+    const kodas = await redeem(atlygioId);
+    if (kodas) {
+      setJustRedeemedCode(kodas);
+      // "redeem" (useCustomerLoyalty.ts) yra PLOKŠČIAS fetch, ne RTK Query mutation - jis NEŽINO apie "getCustomerDiscountCodes" užklausą ir jos NEPERKRAUNA automatiškai, tad naujas kodas be šio rankinio refetch'o sąraše žemiau nepasirodytų, kol puslapis nebūtų perkrautas iš naujo.
+      refetchDiscountCodes();
+    }
+  };
   const [tab, setTab] = useState<Tab>(searchParams.get("tab") === "pastas" ? "pastas" : "profilis");
+  // "useState" aukščiau nuskaito URL TIK pirmo atvaizdavimo metu - be šio effect'o, paspaudus nuorodą "/paskyra?tab=pastas" ARBA tiesiog "/paskyra" (žr. PublicHeader.tsx meniu) KOL VARTOTOJAS JAU YRA ŠIAME puslapyje, Next.js neperkraus komponento (tas pats maršrutas), tad skirtukas niekada nepersijungtų.
+  useEffect(() => {
+    setTab(searchParams.get("tab") === "pastas" ? "pastas" : "profilis");
+  }, [searchParams]);
   const [supportPrefill, setSupportPrefill] = useState<SupportPrefill | null>(null);
 
+  // Paspaudus "Reikia pagalbos" prie konkrečios nuomos - iš anksto užpildo pokalbio temą su automobilio pavadinimu IR persijungia į "Pašto dėžutė" skirtuką, kad klientas iškart pamatytų, kur rašyti žinutę.
   const askForHelp = (reservation: { rezervacijos_id: number; marke: string; modelis: string }) => {
     setSupportPrefill({
       kategorija: "rezervacija",
@@ -177,12 +199,21 @@ export default function AccountClient() {
                   </h2>
                   <p className="text-xs text-[#707070] mb-5">
                     Kas {loyalty?.etapo_dydis ?? 5} užbaigtos nuomos - {loyalty?.atlygio_verte_eur ?? 20} € nuolaidos
-                    kuponas kitai nuomai. Tai pavyzdinė taisyklė, kol nesukurta pilna mokėjimų apskaita.
+                    kodas kitai nuomai. Panaudotą kodą darbuotojas įveda kuriant tavo užsakymą.
                   </p>
 
                   {loyaltyError && <p className="text-sm text-red-400">{loyaltyError}</p>}
 
                   {loyalty && <LoyaltyRoad progress={loyalty.progresas_dabartiniame_etape} size={loyalty.etapo_dydis} />}
+
+                  {/* Rodoma TIK iš karto po paspaudimo "Panaudoti" - jei vartotojas puslapį perkrauna, kodą vėl randa "Mano nuolaidos kodai" sąraše žemiau, tad jo "nepametimas" nėra kritinis. */}
+                  {justRedeemedCode && (
+                    <div className="mt-5 rounded-xl border border-emerald-700/40 bg-emerald-900/20 p-4">
+                      <p className="text-sm text-emerald-300 mb-1">Tavo nuolaidos kodas:</p>
+                      <p className="text-lg font-bold tracking-wide text-[#F7F7F7]">{justRedeemedCode}</p>
+                      <p className="mt-1 text-xs text-[#8899AA]">Šį kodą pateik darbuotojui, kai kursi naują užsakymą.</p>
+                    </div>
+                  )}
 
                   {unredeemedRewards.length > 0 && (
                     <div className="mt-5 space-y-2">
@@ -198,7 +229,7 @@ export default function AccountClient() {
                             </span>
                           </div>
                           <button
-                            onClick={() => redeem(r.atlygio_id)}
+                            onClick={() => handleRedeem(r.atlygio_id)}
                             className="shrink-0 rounded-lg bg-[#0F597B] hover:bg-[#0C4A66] text-white text-xs font-semibold px-3 py-1.5 transition"
                           >
                             Panaudoti
@@ -208,6 +239,30 @@ export default function AccountClient() {
                     </div>
                   )}
                   {redeemError && <p className="mt-2 text-xs text-red-400">{redeemError}</p>}
+
+                  {discountCodes && discountCodes.length > 0 && (
+                    <div className="mt-6 border-t border-[#1C2B3A] pt-4">
+                      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[#707070]">
+                        <FiTag className="shrink-0" /> Mano nuolaidos kodai
+                      </h3>
+                      <div className="space-y-1.5">
+                        {discountCodes.map((c) => (
+                          <div
+                            key={c.kodo_id}
+                            className="flex items-center justify-between gap-3 rounded-lg bg-[#1A2238] px-3 py-2 text-xs"
+                          >
+                            <span className={`font-mono font-semibold ${c.panaudojimo_data ? "text-[#707070] line-through" : "text-[#F7F7F7]"}`}>
+                              {c.kodas}
+                            </span>
+                            <span className="text-[#8899AA]">{c.verte_eur} €</span>
+                            <span className={c.panaudojimo_data ? "text-[#707070]" : "text-emerald-400"}>
+                              {c.panaudojimo_data ? "Panaudotas" : "Galioja"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-6 mb-6">
@@ -286,6 +341,7 @@ export default function AccountClient() {
   );
 }
 
+// Vienas redaguojamo profilio lauko input'as - viršuje esantis AccountClient'o ŠIO komponento NE naudoja per EntityModal/FieldConfig raštą (žr. modals/EntityModal.tsx), nes profilio forma turi savo, kur kas paprastesnį UI, jam nereikia bendro CRUD komponento.
 function ProfileField({
   label,
   value,
@@ -310,6 +366,7 @@ function ProfileField({
   );
 }
 
+// Vienas NESKAITOMAS (peržiūros) profilio lauko eilutė - naudojama, kol "editingProfile" false, žr. AccountClient'o grąžinamą JSX aukščiau.
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">

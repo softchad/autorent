@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { extractErrorMessage } from "@/utils/extractErrorMessage";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -17,13 +18,13 @@ export type CustomerReservation = {
   viso_kaina: number;
 };
 
-// Prisijungusio kliento rezervacijų sąrašas "Mano nuomos" sekcijai - žr.
-// backend app/api/v1/endpoints/customer.py GET /customer/reservations.
+// Prisijungusio kliento rezervacijų sąrašas "Mano nuomos" sekcijai paskyros puslapyje.
 export function useCustomerReservations(token: string | null) {
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Kraunama vieną kartą prisijungus (žr. useEffect žemiau); "refresh" IR grąžinamas, kad kviečiantis komponentas galėtų jį rankiniu būdu iškviesti iš naujo, kai reikia.
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
       setReservations([]);
@@ -56,9 +57,7 @@ export function useCustomerReservations(token: string | null) {
   return { reservations, isLoading, error, refresh };
 }
 
-// Naujos rezervacijos kūrimas - naudojama automobilio detalių puslapyje.
-// Meta serverio klaidos pranešimą (409 užimtas, 404 nerastas ir pan.), kad
-// kviečiantis komponentas galėtų jį tiesiog parodyti vartotojui.
+// Naujos rezervacijos kūrimas automobilio detalių puslapyje - atskira funkcija (ne hook'as), nes kviečiama VIENKARTINIO veiksmo metu, ne komponento viso gyvavimo metu; meta serverio klaidos pranešimą (409 užimtas, 404 nerastas ir pan.), kad kviečiantis komponentas galėtų jį tiesiog parodyti vartotojui.
 export async function createCustomerReservation(
   token: string,
   automobilio_id: number,
@@ -72,7 +71,7 @@ export async function createCustomerReservation(
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.detail ?? "Nepavyko sukurti rezervacijos");
+    throw new Error(extractErrorMessage(body, "Nepavyko sukurti rezervacijos"));
   }
   return res.json();
 }
