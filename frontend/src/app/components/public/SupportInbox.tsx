@@ -26,10 +26,12 @@ const BUSENA_INFO: Record<string, { label: string; className: string }> = {
   isspresta: { label: "Išspręsta", className: "bg-emerald-900/40 text-emerald-300 border-emerald-700/40" },
 };
 
+// "lt-LT" trumpas data+laikas formatas žinutėms - diena.mėnuo.metai tvarka, ne JAV formatas.
 function fmt(iso: string): string {
   return new Date(iso).toLocaleString("lt-LT", { dateStyle: "short", timeStyle: "short" });
 }
 
+// Spalvota žymė pokalbio būsenai - "?? {...}" atsarginis variantas rodo PAČIĄ reikšmę kaip etiketę, jei ji nepažįstama.
 function StatusPill({ busena }: { busena: string }) {
   const info = BUSENA_INFO[busena] ?? { label: busena, className: "bg-slate-700/40 text-slate-300 border-slate-600/40" };
   return (
@@ -39,9 +41,7 @@ function StatusPill({ busena }: { busena: string }) {
   );
 }
 
-// Vienas realus kliento pokalbių langas - naudojamas ir homepage kompaktiškoje
-// vietoje, ir paskyros "Pašto dėžutė" tab'e. Sąrašas -> pokalbis -> (jei reikia)
-// naujo pokalbio forma, visada tas pats komponentas ir ta pati duomenų šaltinis.
+// Vienas realus kliento pokalbių langas - naudojamas ir homepage/ContactSection.tsx kompaktiškoje vietoje, ir paskyros "Pašto dėžutė" tab'e; sąrašas -> pokalbis -> (jei reikia) naujo pokalbio forma, visada tas pats komponentas ir ta pati duomenų šaltinis.
 export default function SupportInbox({
   token,
   compact = false,
@@ -58,13 +58,13 @@ export default function SupportInbox({
 
   const { conversation, sending, error, send, markSeen } = useConversation(token, openId);
 
-  // Kai atidarome pokalbį ar gauname naują žinutę jame, pažymime paskutinę matytą.
+  // Kai atidarome pokalbį ar gauname naują žinutę jame, pažymime paskutinę matytą - priklauso IR nuo pokalbio_id, ne tik žinučių skaičiaus, kitaip persijungus iš vieno pokalbio į KITĄ su TOKIU PAT žinučių skaičiumi šis effect'as nepersileistų, ir naujo pokalbio paskutinė žinutė niekada nebūtų pažymėta kaip matyta.
   useEffect(() => {
     if (!conversation) return;
     const last = conversation.zinutes[conversation.zinutes.length - 1];
     if (last) markSeen(last.zinutes_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation?.zinutes.length]);
+  }, [conversation?.pokalbio_id, conversation?.zinutes.length]);
 
   useEffect(() => {
     if (initialPrefill) {
@@ -75,6 +75,7 @@ export default function SupportInbox({
 
   const [draft, setDraft] = useState("");
 
+  // Optimistiškai IŠKART išvalo laukelį, kad atsakymas atrodytų greitas - klaidos atveju tekstas sugrąžinamas atgal, kad vartotojas neprarastų to, ką rašė.
   const handleSend = async () => {
     if (!draft.trim()) return;
     const text = draft;
@@ -163,6 +164,7 @@ export default function SupportInbox({
               }
             }}
             placeholder="Rašyk žinutę..."
+            maxLength={5000}
             rows={2}
             className="flex-1 resize-none rounded-lg border border-[#1C2B3A] bg-[#1A2238] px-3 py-2 text-sm text-[#F7F7F7] placeholder-[#3D4F63] focus:outline-none focus:border-[#0F597B]"
           />
@@ -230,6 +232,7 @@ export default function SupportInbox({
   );
 }
 
+// Naujo pokalbio forma - sritis/tema/žinutė IR pasirenkamai susieta rezervacija; "prefill" užpildo laukus iš anksto, kai klientas paspaudžia "Reikia pagalbos" prie konkrečios rezervacijos (žr. AccountClient.tsx).
 function NewConversationForm({
   token,
   reservations,
@@ -250,6 +253,7 @@ function NewConversationForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sukuria pokalbį IR jo pirmą žinutę vienu kvietimu (žr. backend create_conversation) - sėkmės atveju tėvas (SupportInbox) iškart atidaro naujai sukurtą pokalbį.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -329,6 +333,7 @@ function NewConversationForm({
         onChange={(e) => setPranesimas(e.target.value)}
         placeholder="Kuo galime padėti?"
         required
+        maxLength={5000}
         rows={4}
         className="w-full resize-none rounded-lg border border-[#1C2B3A] bg-[#1A2238] px-3 py-2 text-sm text-[#F7F7F7] placeholder-[#3D4F63] focus:outline-none focus:border-[#0F597B]"
       />
