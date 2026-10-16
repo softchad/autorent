@@ -375,6 +375,8 @@ export default function AutomobiliaiClient() {
     setSedimosVietos(null);
     setVietosId(null);
     setSearch((s) => ({ ...s, ...defaultDateRange() }));
+    // BŪTINA - be šito URL (?kebulas=/?kuras=/?location=/...) liktų SENAS, ir perkrovus puslapį efektai aukščiau (searchParams -> search/kebuloTipas/kuroTipas) VĖL pritaikytų TUOS PAČIUS filtrus, kuriuos vartotojas ką tik "išvalė".
+    router.replace("/automobiliai");
   };
 
   // Datos skaičiuojamos kaip "aktyvus filtras" tik kai jos SKIRIASI nuo numatytojo
@@ -407,7 +409,12 @@ export default function AutomobiliaiClient() {
             <span className="flex items-center gap-1.5 rounded-lg border border-[#0F597B] bg-[#0F597B]/20 px-3 py-2 text-sm text-[#4BAFD4]">
               <FiMapPin className="text-xs" />
               {LOCATIONS.find((l) => l.vietos_id === vietosId)?.name ?? "Pasirinkta vieta"}
-              <button onClick={() => setVietosId(null)} aria-label="Pašalinti vietos filtrą" className="text-[#4BAFD4]/70 hover:text-[#4BAFD4]">
+              {/* Išvalo IR "search.location" (ne vien vietosId) - sinchronizavimo effect'as žemiau reaguoja TIK į "search.location" PASIKEITIMĄ; jei jis liktų senas, pakartotinis TOS PAČIOS vietos pasirinkimas antraštėje po šito paspaudimo nebūtų aptiktas kaip pokytis, ir žemėlapio filtras neatsistatytų. */}
+              <button
+                onClick={() => { setVietosId(null); setSearch((s) => ({ ...s, location: "" })); }}
+                aria-label="Pašalinti vietos filtrą"
+                className="text-[#4BAFD4]/70 hover:text-[#4BAFD4]"
+              >
                 <FiX className="text-xs" />
               </button>
             </span>

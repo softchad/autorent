@@ -11,7 +11,7 @@ export type PublicCar = {
   metai: number;
   spalva: string;
   kebulo_tipas: string;
-  "pavaru_deze": string;
+  pavaru_deze: string;
   variklio_turis: number;
   galia_kw: number;
   kuro_tipas: string;
@@ -36,17 +36,14 @@ export type DateRange = {
   dateTo?: string;
 };
 
+// Grąžina tuščią eilutę, jei datos nepilnos - galima klausti laisvumo TIK kai yra ABI datos, pusė intervalo backend'ui nieko nereikštų.
 function buildDateParams(range?: DateRange): string {
   if (!range?.dateFrom || !range?.dateTo) return "";
   const params = new URLSearchParams({ date_from: range.dateFrom, date_to: range.dateTo });
   return `?${params.toString()}`;
 }
 
-// Vienkartinis realaus laisvų automobilių sąrašo gavimas iš viešo /public/cars
-// endpointo. Kadangi parkas kol kas nedidelis, filtravimas/rikiavimas atliekamas
-// kliento pusėje po vieno užklausimo, o ne per kiekvieną filtro paspaudimą.
-// Jeigu perduotas datų intervalas, sąrašas vėl užklausiamas iš serverio - laisvumas
-// tam laikotarpiui tikrinamas realiai (žr. backend app/services/availability_service.py).
+// Visų laisvų automobilių sąrašas iš /public/cars - parkas kol kas nedidelis, tad filtravimas/rikiavimas vyksta kliento pusėje po VIENO užklausimo, o ne per kiekvieną filtro paspaudimą; datų intervalui pasikeitus sąrašas užklausiamas IŠ NAUJO, nes laisvumas tam laikotarpiui tikrinamas realiai serveryje.
 export function usePublicCars(range?: DateRange) {
   const [cars, setCars] = useState<PublicCar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,9 +73,7 @@ export function usePublicCars(range?: DateRange) {
   return { cars, isLoading, error };
 }
 
-// Vieno automobilio detalių gavimas /public/cars/{id} endpointui - naudojama
-// automobilio detalių puslapyje. Jeigu perduotas datų intervalas, atsakyme atkeliauja
-// laisvas_pasirinktu_laikotarpiu, parodantis realų laisvumą TAI datai, ne vien bendrą statusą.
+// Vieno automobilio detalės /public/cars/{id} - jei perduotas datų intervalas, atsakyme atkeliauja "laisvas_pasirinktu_laikotarpiu", rodantis realų laisvumą TAI datai, ne vien bendrą automobilio statusą.
 export function usePublicCar(id: number, range?: DateRange) {
   const [car, setCar] = useState<PublicCar | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,8 +93,7 @@ export function usePublicCar(id: number, range?: DateRange) {
           return null;
         }
         if (!res.ok) {
-          // NE "automobilio nėra" - tai gali būti ir 400 (netinkamas datų
-          // intervalas), kurį anksčiau ši funkcija klaidingai paversdavo į notFound.
+          // Likusios ne-404 klaidos (pvz. 400 - netinkamas datų intervalas) NĖRA "automobilio nėra" - jas rodome kaip "error", ne "notFound", kad vartotojas nepamatytų klaidinančio "puslapis nerastas".
           const body = await res.json().catch(() => null);
           throw new Error(body?.detail ?? `Klaida (${res.status})`);
         }
@@ -119,13 +113,13 @@ export function usePublicCar(id: number, range?: DateRange) {
   return { car, isLoading, notFound, error };
 }
 
-// Konkretaus automobilio užimtos dienos (ateinančius ~4 mėn.) - naudojama
-// kalendoriuje vizualiai pažymėti, kad nereikėtų aklai spėlioti datų.
+// Konkretaus automobilio užimtos dienos (ateinančius ~5 mėn., žr. backend public.py) - naudojama kalendoriuje vizualiai pažymėti, kad nereikėtų aklai spėlioti datų.
 export function useCarBusyDates(id: number) {
   const [busyDates, setBusyDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const controller = new AbortController();
+    // Nerodomas "error" - jei užklausa nepavyksta, tiesiog grąžinamas tuščias Set (kalendorius nerodys NIEKO užimto); žemo rizikingumo atvejis, nes tikra laisvumo patikra vis tiek vyksta serveryje rezervacijos kūrimo metu.
     fetch(`${API}/api/v1/public/cars/${id}/busy-dates`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : { busy_dates: [] }))
       .then((data: { busy_dates: string[] }) => setBusyDates(new Set(data.busy_dates)))
