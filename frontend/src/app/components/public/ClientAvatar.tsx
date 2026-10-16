@@ -1,6 +1,4 @@
-// Kliento avataras - PATIES vardo raidė ant spalvoto fono, NE įmonės logotipas
-// ir NE įkelta nuotrauka (saugumo/moderavimo apimties vengimas). Spalva parenkama
-// deterministiškai iš kliento_id, kad ta pati paskyra visada atrodytų vienodai.
+// Kliento avataras - PATIES vardo raidė ant spalvoto fono, NE įmonės logotipas ir NE įkelta nuotrauka (saugumo/moderavimo apimties vengimas), su spalva parenkama deterministiškai iš kliento_id, kad ta pati paskyra visada atrodytų vienodai.
 const PALETTE = [
   "#0F597B", "#B4780A", "#1F8A5F", "#2D7DD2", "#C23B3B",
   "#1E9E8C", "#A8762F", "#3F9B6B", "#4A6FA5", "#C2753B",
@@ -15,7 +13,9 @@ export default function ClientAvatar({
   seed: number;
   size?: number;
 }) {
+  // JS "%" neigiamam skaičiui grąžina neigiamą rezultatą (ne klasikinę moduliaciją), tad pridedame PALETTE.length ir dalijame iš naujo, kad indeksas visada būtų 0..PALETTE.length-1.
   const color = PALETTE[((seed % PALETTE.length) + PALETTE.length) % PALETTE.length];
+  // "?." - jei "name" tuščias tekstas, name[0] būtų undefined, tad .toUpperCase() nekviečiamas, o "??" tokiu atveju rodo klaustuką raidės vietoje.
   const initial = name[0]?.toUpperCase() ?? "?";
 
   return (

@@ -40,6 +40,7 @@ type PublicHeaderProps = {
   onSearchSubmit: () => void;
 };
 
+// Viešų puslapių viršutinė juosta - logotipas, paieška (tik kompaktiška versija, didžioji gyvena pačiame HomeClient.tsx hero), kliento meniu/prisijungimas, IR pilno ekrano overlay navigacija telefonui.
 export default function PublicHeader({
   searchValue,
   onSearchChange,
@@ -53,6 +54,7 @@ export default function PublicHeader({
   const [navOpen, setNavOpen] = useState(false);
   const { customer, logout } = useCustomerAuth();
 
+  // Atsijungus nukelia į pradinį puslapį - be šito klientas liktų puslapyje, kuris jam PO atsijungimo gali būti neprieinamas (pvz. /paskyra).
   const handleLogout = () => {
     logout();
     router.push("/");
@@ -65,9 +67,7 @@ export default function PublicHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Pradiniame puslapyje didelė paieškos forma yra per vidurį (hero) - kompaktiška
-  // versija header'e pasirodo tik perscrollinus ją. Visuose kituose puslapiuose didelės
-  // formos nėra, tad kompaktiška visada matoma iš karto.
+  // Pradiniame puslapyje didelė paieškos forma yra per vidurį (hero) - kompaktiška versija header'e pasirodo tik perscrollinus ją; visuose kituose puslapiuose didelės formos nėra, tad kompaktiška visada matoma iš karto.
   const showCompactSearch = !isHome || scrolled;
 
   // Uždaro overlay meniu Escape klavišu ir užrakina puslapio scroll'inimą, kol jis atviras.
@@ -88,10 +88,7 @@ export default function PublicHeader({
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-[#1C2B3A] bg-[#0B121F]/85 backdrop-blur">
-        {/* h-16 FIKSUOTAS, NE py-3.5 (auto pagal turinį) - su py.. aukštis sektųsi
-            pagal AUKŠČIAUSIĄ vaiką, o paieškos pilė (kai atsiranda) buvo aukštesnė
-            už logotipo/meniu pusę, tad visa juosta "išsiplėsdavo". Fiksuotas h-16
-            garantuoja TĄ PATĮ aukštį nepriklausomai nuo to, ar paieška rodoma. */}
+        {/* h-16 FIKSUOTAS, NE py-3.5 (auto pagal turinį) - su py.. aukštis sektųsi pagal AUKŠČIAUSIĄ vaiką, o paieškos pilė (kai atsiranda) buvo aukštesnė už logotipo/meniu pusę, tad visa juosta "išsiplėsdavo"; fiksuotas h-16 garantuoja TĄ PATĮ aukštį nepriklausomai nuo to, ar paieška rodoma. */}
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -108,11 +105,7 @@ export default function PublicHeader({
             </Link>
           </div>
 
-          {/* min-w-0 BŪTINA - be jo šis flex-1 elementas "stumia" header'į platesnį nei
-              langas, kai atsiranda paieškos forma (flex elementai pagal nutylėjimą turi
-              min-width:auto, kuris leidžia jiems išsiplėsti per turinio dydį). max-w-xl
-              apriboja pačios formos plotį, kad ji visada tilptų į tą pačią juostą,
-              nepriklausomai nuo to, ar rodoma. */}
+          {/* min-w-0 BŪTINA - be jo šis flex-1 elementas "stumia" header'į platesnį nei langas, kai atsiranda paieškos forma (flex elementai pagal nutylėjimą turi min-width:auto, kuris leidžia jiems išsiplėsti per turinio dydį); max-w-2xl žemiau apriboja pačios formos plotį, kad ji visada tilptų į tą pačią juostą. */}
           <div
             className={`hidden min-w-0 flex-1 items-center justify-center overflow-hidden transition-all duration-300 ease-out md:flex ${
               showCompactSearch ? "max-h-14 opacity-100" : "max-h-0 opacity-0"
@@ -184,17 +177,13 @@ export default function PublicHeader({
         </div>
       </header>
 
-      {/* Visą puslapį patamsinantis overlay meniu - ne nuolat matoma šoninė juosta.
-          Tik tikri, atskiri puslapiai (žr. NAV_ITEMS aukščiau), jokio scroll-spy.
-          Visada sumontuotas DOM'e (ne {navOpen && ...}), kad transform/opacity pereitų
-          sklandžiai - sąlyginis mount/unmount reikštų, kad nėra ką animuoti uždarant. */}
+      {/* Visą puslapį patamsinantis overlay meniu - ne nuolat matoma šoninė juosta; visada sumontuotas DOM'e (ne {navOpen && ...}), kad transform/opacity pereitų sklandžiai - sąlyginis mount/unmount reikštų, kad nėra ką animuoti uždarant. */}
       <div
         className={`fixed inset-0 z-[2000] flex transition-opacity duration-300 ease-out ${
           navOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        {/* z-[2000] visam overlay - Leaflet žemėlapio (naudojamo /automobiliai) vidiniai
-            sluoksniai (markeriai/popup/kontrolės) patys siekia iki z-index:1000. */}
+        {/* z-[2000] visam overlay - Leaflet žemėlapio (naudojamo /automobiliai) vidiniai sluoksniai (markeriai/popup/kontrolės) patys siekia iki z-index:1000. */}
         <div
           className="absolute inset-0 bg-[#000000]/70 backdrop-blur-sm"
           onClick={() => setNavOpen(false)}

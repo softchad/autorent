@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 import ContactSection from "@/app/components/public/ContactSection";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Kontaktai: AutoRent",
   description: "Susisiek su AutoRent komanda - klientų aptarnavimas per paskyrą, atsiliepimai ir padalinių kontaktai.",
 };
 
+// Antraštė čia, pati forma/pokalbių skydelis - ContactSection.tsx; ŠIS komponentas naudoja TĄ PATĮ SupportInbox, kurį rodo ir /paskyra (žr. AccountClient.tsx), tad "atsakymą matysi paskyroje" aukščiau yra TIKRAS teiginys, ne pažadas.
 export default function KontaktaiPage() {
   return (
     <PublicPageShell>

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { FiMail, FiUsers } from "react-icons/fi";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Karjera: AutoRent",
   description: "AutoRent komanda auga kartu su padalinių tinklu. Sužinok, kaip susisiekti dėl galimybių.",
 };
 
+// Grynai statinis turinys, be jokio laisvų pozicijų sąrašo ar formos - tik nuoroda susisiekti el. paštu, kol tokio sąrašo dar nėra.
 export default function CareersPage() {
   return (
     <PublicPageShell>

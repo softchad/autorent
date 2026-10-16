@@ -9,8 +9,7 @@ import SignInModal from "./SignInModal";
 import SupportInbox from "./SupportInbox";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
-// Spalvos paimtos iš darbuotojų dashboard StatCard komponento, kad viešas puslapis
-// naudotų tą pačią spalvų kalbą kaip vidinė sistema.
+// Pirmos dvi spalvos identiškos darbuotojų dashboard StatCard komponento spalvoms, trečia papildyta tame pačiame tamsiai mėlyname/žalsvame stiliuje, kad viešas puslapis atrodytų vizualiai suderintas su vidine sistema.
 const AVATAR_COLORS = ["#163858", "#3D3F5A", "#1F4D3D"];
 
 type Review = {
@@ -20,16 +19,14 @@ type Review = {
   anonymous?: boolean;
 };
 
-// Sąmoningai tik keli, aiškiai pažymėti PAVYZDINIAI atsiliepimai (ne begalinis
-// karuselis su 17 "penkių žvaigždučių" įrašų) - kad puslapis neapgaudinėtų dėl to,
-// kiek realaus socialinio įrodymo šiuo metu yra. Realūs atsiliepimai ateis su
-// kliento paskyra po užbaigtos nuomos.
+// Sąmoningai tik keli, aiškiai pažymėti PAVYZDINIAI atsiliepimai (ne begalinis karuselis su daug "penkių žvaigždučių" įrašų) - kad puslapis neapgaudinėtų dėl to, kiek realaus socialinio įrodymo šiuo metu yra; realūs atsiliepimai ateis su kliento paskyra po užbaigtos nuomos.
 const reviews: Review[] = [
   { name: "Aistė K.", city: "Vilnius", quote: "Rezervavau per penkias minutes, viskas buvo aišku nuo pat pradžių." },
   { name: "Rokas J.", city: "Kaunas", quote: "Patiko, kad kaina nesikeitė atsiėmimo metu. Jokių netikėtų priedų." },
   { anonymous: true, name: "Anonimas", city: "Panevėžys", quote: "Paprastas ir greitas procesas, be jokių paslėptų sąlygų sutartyje." },
 ];
 
+// Avataro inicialai iš vardo - paima kiekvieno žodžio pirmą raidę (pvz. "Aistė K." -> "AK") ir apkarpo iki 2 simbolių.
 function initials(name: string) {
   return name
     .split(" ")
@@ -39,6 +36,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+// Vieno pavyzdinio atsiliepimo kortelė - 5 žvaigždutės visada rodomos (tai pavyzdiniai, ne realūs įvertinti įrašai), avataras rodo inicialus arba, jei "anonymous", bendrinę vartotojo ikoną vietoj jų.
 function ReviewCard({ review, index }: { review: Review; index: number }) {
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
   return (
@@ -65,6 +63,7 @@ function ReviewCard({ review, index }: { review: Review; index: number }) {
   );
 }
 
+// /kontaktai puslapio turinys - pavyzdiniai atsiliepimai IR pagalbos skydelis, kuris prisijungusiam klientui rodo SupportInbox pokalbį, o neprisijungusiam - mygtuką atidaryti SignInModal.
 export default function ContactSection() {
   const { customer, token } = useCustomerAuth();
   const [signInOpen, setSignInOpen] = useState(false);

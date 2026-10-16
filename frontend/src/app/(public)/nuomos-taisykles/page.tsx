@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Nuomos taisyklės: AutoRent",
   description: "Bendra AutoRent automobilių nuomos sąlygų apžvalga: amžius, dokumentai, kuro politika, atšaukimas.",
 };
 
+// Statinis, informacinis sąlygų sąrašas - amžiaus/dokumentų patikra (1-2 skyriai) vyksta RANKINIU BŪDU darbuotojo atsiėmimo metu (žr. 2 skyrių), sistema to skaitmeniškai NEvalidavo registracijos metu.
 const sections = [
   {
     title: "1. Kas gali nuomotis automobilį",
@@ -37,6 +39,7 @@ const sections = [
   },
 ];
 
+// Grynai statinis turinys - renderina "sections" sąrašą aukščiau, be jokių API kvietimų.
 export default function RentalTermsPage() {
   return (
     <PublicPageShell>

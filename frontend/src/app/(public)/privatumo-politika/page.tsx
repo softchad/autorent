@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Privatumo politika: AutoRent",
   description: "Kokius duomenis AutoRent renka, kam juos naudoja ir kaip su mumis susisiekti dėl duomenų klausimų.",
 };
 
+// Teisinio turinio tekstas - "slapukai"/"analitika" (5 skyrius) patikrinti prieš TIKRĄ kodą (nėra jokio analitikos scenarijaus, patikrinta grep'u; klientų sesija - localStorage, darbuotojų - slapukas), kad ši apžvalga neklaidintų.
 const sections = [
   {
     title: "1. Kokius duomenis renkame",
@@ -24,8 +26,8 @@ const sections = [
     body: "Duomenų neparduodame. Duomenimis dalinamasi tik su paslaugų teikėjais, būtinais rezervacijai įvykdyti (pavyzdžiui, mokėjimų ar žemėlapių paslaugų teikėjais), ir tik tiek, kiek būtina.",
   },
   {
-    title: "5. Slapukai",
-    body: "Svetainė naudoja būtinuosius slapukus prisijungimo sesijai palaikyti. Analitikos ar rinkodaros slapukų šiuo metu nenaudojame.",
+    title: "5. Slapukai ir naršyklės saugykla",
+    body: "Prisijungimo sesijai palaikyti naudojame būtinąją naršyklės saugyklą: darbuotojams - slapuką, klientams - localStorage. Analitikos ar rinkodaros slapukų šiuo metu nenaudojame.",
   },
   {
     title: "6. Kontaktai duomenų klausimais",
@@ -33,6 +35,7 @@ const sections = [
   },
 ];
 
+// Grynai statinis turinys - renderina "sections" sąrašą aukščiau, be jokių API kvietimų.
 export default function PrivacyPolicyPage() {
   return (
     <PublicPageShell>

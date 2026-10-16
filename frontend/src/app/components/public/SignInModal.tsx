@@ -12,6 +12,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Mode = "login" | "register";
 
+// Prisijungimo/registracijos modalas, kviečiamas iš VISŲ viešų puslapių (žr. PublicHeader.tsx, CarDetailClient.tsx, ContactSection.tsx) - "mode" persijungia tarp login/register be atskiro puslapio, Google OAuth ir darbuotojų prisijungimo nuoroda tame pačiame lange.
 export default function SignInModal({
   isOpen,
   onClose,
@@ -31,9 +32,7 @@ export default function SignInModal({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Komponentas NEUNMOUNTINAMAS uždarius (tėvas visada jį renderina, žr.
-  // PublicHeader.tsx) - be šito efekto senos reikšmės likdavo laukuose kitą
-  // kartą atidarius modalą, nes useState išlieka tarp "isOpen=false" kadrų.
+  // Komponentas NEUNMOUNTINAMAS uždarius (tėvas visada jį renderina, žr. PublicHeader.tsx) - be šito efekto senos reikšmės likdavo laukuose kitą kartą atidarius modalą, nes useState išlieka tarp "isOpen=false" kadrų.
   useEffect(() => {
     if (isOpen) {
       setMode("login");
@@ -49,17 +48,13 @@ export default function SignInModal({
     }
   }, [isOpen]);
 
-  // Animuotas atsidarymas/užsidarymas - komponentas trumpai pasilieka
-  // sumontuotas po isOpen=false, kad spėtų nuskrieti žemyn prieš pradingdamas.
+  // Animuotas atsidarymas/užsidarymas - komponentas trumpai pasilieka sumontuotas po isOpen=false, kad spėtų nuskrieti žemyn prieš pradingdamas.
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
-      // DVI įdėtos rAF, ne viena - su viena naršyklė dažnai sutraukia "mounted=true"
-      // ir "visible=true" į TĄ PATĮ kadrą (nebūna nupieštos pradinės, nematomos
-      // būsenos), tad CSS transition tiesiog nepasimato - atrodo kaip staigus "pop".
-      // Antra rAF garantuoja, kad pradinė būsena realiai nupiešta prieš persijungiant.
+      // DVI įdėtos rAF, ne viena - naršyklė dažnai sutraukia "mounted=true" ir "visible=true" į TĄ PATĮ kadrą (nebūna nupieštos pradinės, nematomos būsenos), tad CSS transition tiesiog nepasimato - atrodo kaip staigus "pop"; antra rAF garantuoja, kad pradinė būsena realiai nupiešta prieš persijungiant.
       let raf2 = 0;
       const raf1 = requestAnimationFrame(() => {
         raf2 = requestAnimationFrame(() => setVisible(true));
@@ -75,6 +70,7 @@ export default function SignInModal({
     }
   }, [isOpen]);
 
+  // Escape klavišas uždaro modalą - klausosi TIK kai modalas atviras, kad šis listener'is nereagavinėtų į klavišą likusiame puslapyje, kai modalas uždarytas.
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -84,12 +80,12 @@ export default function SignInModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // "Misclick" apsauga: uždaryti TIK jei paspaudimas PRADĖTAS ant fono, ne jei
-  // tekstą pažymėjai modalo viduje ir pelės mygtuką paleidai už jo ribų.
+  // "Misclick" apsauga: uždaryti TIK jei paspaudimas PRADĖTAS ant fono, ne jei tekstą pažymėjai modalo viduje ir pelės mygtuką paleidai už jo ribų.
   const mouseDownOnBackdrop = useRef(false);
 
   if (!mounted) return null;
 
+  // Vienas handler'is dviem veiksmams - "mode" nusako, ar siunčiama login, ar register užklausa; sėkmės atveju modalas užsidaro (onClose), klaidos atveju tekstas lieka laukeliuose ir rodomas "error".
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -116,9 +112,7 @@ export default function SignInModal({
   };
 
   return (
-    // z-[2000] - Leaflet žemėlapio (/automobiliai) vidiniai sluoksniai siekia iki z-index:1000
-    // (žr. tą pačią pastabą PublicHeader.tsx) - z-50 čia leisdavo žemėlapiui "pavogti"
-    // paspaudimus per modalą ir jis neatsidarydavo/neblur'indavo fono tame puslapyje.
+    // z-[2000] - Leaflet žemėlapio (/automobiliai) vidiniai sluoksniai siekia iki z-index:1000 (žr. tą pačią pastabą PublicHeader.tsx) - z-50 čia leisdavo žemėlapiui "pavogti" paspaudimus per modalą ir jis neatsidarydavo/neblur'indavo fono tame puslapyje.
     <div
       className={`fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
@@ -241,7 +235,8 @@ export default function SignInModal({
                   value={slaptazodis}
                   onChange={(e) => setSlaptazodis(e.target.value)}
                   placeholder="Slaptažodis"
-                  minLength={6}
+                  // TIK registruojantis - backend'as (customer_auth.py CustomerRegisterRequest) reikalauja 8+ simbolių NAUJAM slaptažodžiui, bet PRISIJUNGIANT turi priimti bet kokį ESAMĄ slaptažodį, kad šis laukas tyčia neblokuotų prisijungimo naršyklės validacija.
+                  minLength={mode === "register" ? 8 : undefined}
                   className="w-full bg-[#1A2238] border border-[#1C2B3A] text-[#F7F7F7] placeholder-[#3D4F63] rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:border-[#0F597B]"
                 />
                 <button

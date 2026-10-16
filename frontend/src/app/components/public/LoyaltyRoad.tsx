@@ -2,9 +2,7 @@
 
 import { FiFlag, FiCheck } from "react-icons/fi";
 
-// Vizualus "kelias iki atlygio" - etapai sujungti linijomis, be tarpų iki kraštų.
-// Tekstinė santrauka visada rodoma greta (ne vien vizualiai). Didelė, translucent
-// vėliavos ikona fone - tik dekoratyvus "finišo" akcentas, ne tikra nuotrauka.
+// Vizualus "kelias iki atlygio" - etapai sujungti linijomis, be tarpų iki kraštų; tekstinė santrauka visada rodoma greta (ne vien vizualiai); didelė, translucent vėliavos ikona fone - tik dekoratyvus "finišo" akcentas, ne tikra nuotrauka.
 export default function LoyaltyRoad({ progress, size }: { progress: number; size: number }) {
   const clamped = Math.min(Math.max(progress, 0), size);
   const complete = clamped >= size;

@@ -1,8 +1,6 @@
 "use client";
 
-// Dekoratyvus gatvių tinklas po turiniu, GTA minimap stiliaus.
-// Tinklelis per CSS background-repeat (fiksuoto dydžio), keliai/taškai atskirame
-// fiksuoto aukščio SVG - kitaip vienas SVG su viewBox ištemptų tinklelį per visą puslapio aukštį.
+// Tinklelio raštas kartojamas per CSS background-repeat (fiksuoto dydžio plytelė) - keliai/taškai žemiau atskirame, FIKSUOTO aukščio SVG, kitaip vienas SVG su viewBox ištemptų tinklelį per visą puslapio aukštį.
 const GRID_TILE_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
     <path d="M0 25 H160 M0 70 H160 M0 95 H160 M0 135 H160" stroke="#4BAFD4" stroke-width="1" fill="none" />
@@ -11,6 +9,7 @@ const GRID_TILE_SVG = `
 `;
 const GRID_TILE_URL = `url("data:image/svg+xml,${encodeURIComponent(GRID_TILE_SVG)}")`;
 
+// Dekoratyvus gatvių tinklas po viešo puslapio turiniu, GTA minimap stiliaus - naudojamas keliuose puslapiuose (HomeClient.tsx, CarDetailClient.tsx, AutomobiliaiClient.tsx, PublicPageShell.tsx), VISUR be dynamic(ssr:false), tad šis komponentas IR serverio, IR kliento pusėje turi sugeneruoti TIKSLIAI tą pačią SVG žymę.
 export default function MapTexture() {
   const blocks = [
     { x: 0, y: 30 },
@@ -21,6 +20,7 @@ export default function MapTexture() {
     { x: 0, y: 660 },
   ];
 
+  // Koordinatės PASKAIČIUOTOS (ne Math.random()) - su atsitiktiniu skaičiumi serveris ir naršyklė sugeneruotų SKIRTINGAS reikšmes, ir React mestų hydration mismatch klaidą/įspėjimą; dauginimas+modulo duoda tą pačią, netvarkingai išsidėsčiusią (ne gride) seką VISADA.
   const blips = Array.from({ length: 24 }).map((_, i) => ({
     cx: (i * 173) % 1200,
     cy: (i * 281) % 1400,

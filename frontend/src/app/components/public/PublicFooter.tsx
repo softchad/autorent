@@ -26,8 +26,10 @@ const COMPANY_PHONE = "+37060000000";
 const COMPANY_PHONE_DISPLAY = "+370 600 00000";
 const COMPANY_EMAIL = "info@autorent.lt";
 
+// Tikrų socialinių tinklų paskyrų kol kas nėra - ikonos rodomos TIK kaip vizualus elementas, "#" (ne "/") kad paspaudimas NEnukeltų vartotojo į pradinį puslapį iš bet kurio kito puslapio, kuriame jis šiuo metu yra.
 const socialIcons = [FaFacebook, FaXTwitter, FaInstagram, FaYoutube];
 
+// Viešo puslapio paantraštė - nuorodų skiltys, kontaktai IR socialinių tinklų ikonos (žr. socialIcons aukščiau, kodėl jos VEDA Į "#", ne į tikrus profilius).
 export default function PublicFooter() {
   return (
     <footer className="border-t border-[#1C2B3A] bg-[#060A14]">
@@ -111,13 +113,13 @@ export default function PublicFooter() {
 
           <div className="flex items-center gap-3">
             {socialIcons.map((Icon, i) => (
-              <Link
+              <a
                 key={i}
-                href="/"
+                href="#"
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-[#1C2B3A] text-[#3D4F63] hover:border-[#0F597B]/50 hover:text-[#4BAFD4] transition"
               >
                 <Icon className="text-sm" />
-              </Link>
+              </a>
             ))}
           </div>
         </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
+// Perima tokeną iš URL hash fragmento (backend VISADA nukreipia čia su "#access_token=...") ir perduoda jį CustomerAuthProvider'iui - hash (ne "?token=" query param) naudojamas SĄMONINGAI, kad naršyklė tokeno NEsiųstų serveriui/prieigos žurnalams.
 export default function CustomerOAuthClient() {
   const router = useRouter();
   const { applyTokenFromOAuth } = useCustomerAuth();
@@ -17,7 +18,10 @@ export default function CustomerOAuthClient() {
       setError(true);
       return;
     }
-    applyTokenFromOAuth(token).then(() => router.replace("/paskyra"));
+    // ".catch" BŪTINAS - applyTokenFromOAuth meta klaidą, jei tokenas negalioja (žr. CustomerAuthProvider.tsx); be šito vartotojas būtų TYLIAI nukreiptas į /paskyra NEprisijungęs, be jokio paaiškinimo.
+    applyTokenFromOAuth(token)
+      .then(() => router.replace("/paskyra"))
+      .catch(() => setError(true));
   }, [applyTokenFromOAuth, router]);
 
   return (

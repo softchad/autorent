@@ -3,6 +3,7 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { FiChevronDown } from "react-icons/fi";
 
+// Vienas DUK įrašas kaip išskleidžiamas Disclosure - rodomas TIK klausimas, atsakymas atsiveria paspaudus (žr. HomeClient.tsx, kur sudaromas DUK sąrašas).
 export default function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
     <Disclosure

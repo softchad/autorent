@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FiCheckCircle, FiExternalLink, FiMapPin } from "react-icons/fi";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Kelionių patarimai: AutoRent",
   description: "Praktiniai patarimai nuomojantis automobilį, miestų gidas ir naudingi straipsniai apie vairavimą Lietuvoje.",
@@ -13,30 +14,31 @@ export const metadata: Metadata = {
 const articles = [
   {
     photo: "/images/fleet/ev-charging.jpg",
-    title: "Elektromobilių dalis Europoje toliau auga",
+    title: "Elektromobilių dalis ES rinkoje pirmą kartą pasiekė virš 20%",
     excerpt:
-      "2026 m. pradžioje elektromobiliai sudarė apie 19% naujų automobilių registracijų Europoje, o viešų įkrovimo taškų skaičius viršijo 1,2 mln.",
-    source: "International Council on Clean Transportation",
-    url: "https://theicct.org/publication/ev-transition-check-2026/",
+      "2026 m. pirmąjį pusmetį elektromobiliai sudarė 20,7% visų naujų automobilių registracijų Europos Sąjungoje (virš 1,22 mln. automobilių) - daugiau nei 15,6% prieš metus.",
+    source: "ACEA (Europos automobilių gamintojų asociacija)",
+    url: "https://www.acea.auto/pc-registrations/new-car-registrations-5-7-in-h1-2026-battery-electric-20-7-market-share/",
   },
   {
     photo: "/images/fleet/sedan-highway.jpg",
-    title: "Populiariausi automobiliai Lietuvoje",
+    title: "Naujų automobilių rinka Lietuvoje toliau auga",
     excerpt:
-      "Naujų automobilių rinkoje dominuoja hibridai, o Toyota RAV4 išlieka perkamiausiu modeliu. Naudotų automobilių rinkoje pirmauja Volkswagen Golf.",
-    source: "WheelStreet.lt",
-    url: "https://www.wheelstreet.lt/en/straipsniai/91-populiariausi-automobiliai-lietuva-2025",
+      "2026 m. sausio-liepos mėn. Lietuvoje įregistruota 31 217 naujų lengvųjų automobilių - 16,6% daugiau nei prieš metus. Rinkoje pirmauja Volkswagen, toliau - Škoda ir Toyota.",
+    source: "LRT.lt",
+    url: "https://www.lrt.lt/naujienos/eismas/7/3010280/nauju-lengvuju-automobiliu-rinka-liepa-augo-daugiau-nei-ketvirciu",
   },
   {
     photo: "/images/fleet/silver-sports-car.jpg",
-    title: "Žiemos vairavimo taisyklės Lietuvoje",
+    title: "Žieminių padangų sezonas Lietuvoje: ką reikia žinoti",
     excerpt:
-      "Žieminės padangos privalomos nuo lapkričio 10 d. iki balandžio 1 d., o žiemą greitis greitkeliuose ribojamas iki 110 km/h.",
-    source: "RAC Drive",
-    url: "https://www.rac.co.uk/drive/travel/country/lithuania/",
+      "Pagal Kelių eismo taisykles, nuo lapkričio 10 d. iki kovo 31 d. draudžiama važiuoti su vasarinėmis padangomis - už pažeidimą gresia 50-100 eurų bauda.",
+    source: "TV3.lt",
+    url: "https://www.tv3.lt/gaires/ziemines-padangos",
   },
 ];
 
+// Statiniai praktiniai patarimai - vienas iš jų ("lojalumo programa artina prie nuolaidos") nuoroda į TIKRĄ, veikiančią kliento paskyros funkciją (žr. AccountClient.tsx), ne pažadą ateičiai.
 const tips = [
   "Rezervuok bent 3-5 dienas iš anksto. Dažniausiai paklausiausi automobiliai išnuomojami pirmieji, ypač savaitgaliais ir švenčių metu.",
   "Prieš pasirašydamas sutartį patikrink kuro lygį ir esamus paviršiaus pažeidimus. Nufotografuok automobilį iš visų pusių.",
@@ -48,6 +50,7 @@ const tips = [
   "Planuodamas kelionę į kitą miestą, iš anksto pasidomėk, kuriuose padaliniuose galima grąžinti automobilį.",
 ];
 
+// TIK miestai, kuriuose realiai yra padalinys (database/seed.sql Pristatymo_Vietos) - jei šis sąrašas plečiamas, naujas miestas PIRMA turi turėti realų padalinį, kitaip tekstas žadėtų padalinį, kurio nėra.
 const cityGuides = [
   {
     city: "Vilnius",
@@ -63,6 +66,7 @@ const cityGuides = [
   },
 ];
 
+// Grynai statinis turinys (be API kvietimų) - tris sekcijas (patarimai/miestų gidas/straipsniai) renderina iš trijų konstantų aukščiau.
 export default function KelioniuPatarimaiPage() {
   return (
     <PublicPageShell>

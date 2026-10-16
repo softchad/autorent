@@ -28,11 +28,8 @@ import PieChartBox from "@/app/components/PieChartBox";
 import stripes from "@/assets/texture-stripes.png";
 import dotsBg from "@/assets/texture-dots.png";
 
-// Nuotraukų šaltiniai nepatvirtinti - žr. public/images/fleet/CREDITS.md prieš publikavimą.
-// href - NUSTATYTA TIK kai kortelė realiai atitinka filtruojamą lauką (kebulo_tipas
-// arba kuro_tipas) DB. Grynai estetinės kategorijos (sportinė/prabangos klasė,
-// dinamiškas dizainas...) neturi tokio lauko sistemoje, tad veda į bendrą sąrašą,
-// ne į suklastotą filtrą.
+// Nuotraukų šaltiniai (stock/AI generuotos) licencija nepatvirtinta - naudojamos tik demonstracijai šiame etape, prieš viešą paleidimą reikės pakeisti patvirtintomis.
+// href nustatytas TIK kai kortelė realiai atitinka filtruojamą DB lauką (kebulo_tipas arba kuro_tipas) - grynai estetinės kategorijos (sportinė/prabangos klasė, dinamiškas dizainas...) tokio lauko sistemoje neturi, tad veda į bendrą sąrašą, ne į suklastotą filtrą.
 const fleetPhotos = [
   {
     src: "/images/fleet/hero-dark-car.jpg",
@@ -132,7 +129,7 @@ const whyUs = [
   },
 ];
 
-// Realios šiandienos AutoRent parko kainos (2026-09), grupuota pagal kuro tipą.
+// Rankomis suvesta AutoRent parko kainų nuotrauka, suderinta su realiomis DB kainomis 2026-09 - NE live užklausa, tad keičiantis parkui reikės atnaujinti rankomis.
 const deals = [
   {
     label: "Benzininiai",
@@ -164,7 +161,7 @@ const deals = [
   },
 ];
 
-// Vidutinė kaina/parai pagal kuro tipą, realūs dabartinio automobilių parko skaičiai.
+// Vidutinė kaina/parai pagal kuro tipą - rankomis suskaičiuota iš realaus parko (NE live užklausa), reikės atnaujinti, jei parkas pasikeis.
 const priceByFuel = [
   { name: "Hibridas", value: 40 },
   { name: "Dyzelinas", value: 63.3 },
@@ -172,7 +169,7 @@ const priceByFuel = [
   { name: "Elektra", value: 100 },
 ];
 
-// Automobilių pasiskirstymas pagal kėbulo tipą, realūs dabartinio parko skaičiai.
+// Automobilių pasiskirstymas pagal kėbulo tipą - rankomis suskaičiuota iš realaus parko (NE live užklausa), reikės atnaujinti, jei parkas pasikeis.
 const carsByBody = [
   { name: "Sedanas", value: 42 },
   { name: "Hečbekas", value: 14 },
@@ -224,17 +221,16 @@ const locations = [
   { name: "Telšiai", address: "Žemaitijos g. 7, Telšiai" },
 ];
 
+// Viešas pagrindinis puslapis (/) - dauguma sekcijų žemiau statinės/demonstracinės (atsiliepimai, DUK, statistika), išskyrus paieškos formą viršuje, kuri REALIAI nukreipia į /automobiliai su pasirinktais filtrais.
 export default function HomeClient() {
   const router = useRouter();
   const [search, setSearch] = useState<SearchValue>({ location: "", ...defaultDateRange() });
 
+  // Paieškos formos pateikimas - nukreipia į /automobiliai su "search" užkoduotu URL kaip filtrų query parametrais.
   const handleSearch = () => router.push(buildAutomobiliaiHref(search));
 
   return (
-    // Be overflow-x-hidden ČIA - tai laužia PublicHeader "sticky" pozicionavimą (žinomas
-    // CSS elgesys: overflow-x nustatymas protėvyje sukuria naują scroll konteinerį, kuriame
-    // sticky elementas "prilimpa" tik PRIE JO, o ne prie realaus naršyklės lango). Horizontalus
-    // persiliejimas jau apsaugotas lokaliai - MapTexture ir Hero sekcija turi savo overflow-hidden.
+    // Be overflow-x-hidden ČIA - tai laužia PublicHeader "sticky" pozicionavimą (CSS elgesys: overflow-x nustatymas protėvyje sukuria naują scroll konteinerį, kuriame sticky elementas "prilimpa" tik PRIE JO, o ne prie realaus naršyklės lango); horizontalus persiliejimas jau apsaugotas lokaliai - MapTexture ir Hero sekcija turi savo overflow-hidden.
     <div className="relative min-h-screen bg-[#0B121F]">
       <MapTexture />
 

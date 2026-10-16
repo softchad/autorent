@@ -3,11 +3,13 @@ import Image from "next/image";
 import { FiMapPin, FiTruck, FiHeart } from "react-icons/fi";
 import PublicPageShell from "@/app/components/public/PublicPageShell";
 
+// Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {
   title: "Apie mus: AutoRent",
   description: "AutoRent misija, komanda ir kodėl automobilių nuomą darome paprastesnę visoje Lietuvoje.",
 };
 
+// Grynai statinis turinys (be API kvietimų) - skaičiai tekste ("10 miestų", "elektromobilių") turi atitikti database/seed.sql Pristatymo_Vietos įrašus ir schemas/car.py VALID_KURO_TIPAS; jiems pasikeitus, šis tekstas taip pat turi būti atnaujintas ranka.
 export default function AboutPage() {
   return (
     <PublicPageShell>
@@ -28,18 +30,17 @@ export default function AboutPage() {
       <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
         <div className="space-y-6 text-[#8899AA] leading-relaxed">
           <p>
-            AutoRent pradėjome kaip nedidelę automobilių nuomos platformą, kuri kasdien plečiasi. Šiuo metu
-            aptarnaujame dešimt miestų visoje Lietuvoje, nuo Vilniaus iki Telšių, o mūsų automobilių parkas auga
-            kiekvieną mėnesį.
+            AutoRent pradėjome kaip nedidelę automobilių nuomos platformą - šiandien aptarnaujame dešimt miestų nuo
+            Vilniaus iki Telšių, o automobilių parkas auga kiekvieną mėnesį.
           </p>
           <p>
-            Mūsų tikslas paprastas: leisti žmonėms rasti tinkamą automobilį, pamatyti aiškią kainą ir patvirtinti
-            rezervaciją per kelias minutes, tiesiai iš naršyklės. Nesvarbu, ar reikia automobilio vienai dienai
-            mieste, ar savaitės kelionei per visą šalį.
+            Tikslas paprastas: rasti tinkamą automobilį, pamatyti aiškią kainą ir patvirtinti rezervaciją per kelias
+            minutes, tiesiai iš naršyklės. Nesvarbu, ar reikia automobilio vienai dienai mieste, ar savaitės
+            kelionei per visą šalį.
           </p>
           <p>
-            Dirbame nuolat plėsdami padalinių tinklą ir automobilių pasirinkimą, o kliento savitarnos ir lojalumo
-            programos funkcijos šiuo metu yra kuriamos.
+            Tinklą ir automobilių pasirinkimą plečiame nuolat, o grįžtantiems klientams - lojalumo programa su
+            nuolaidomis ir visa nuomų istorija vienoje paskyroje.
           </p>
         </div>
 
