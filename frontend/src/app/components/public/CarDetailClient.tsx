@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -26,7 +26,7 @@ import { getCarPhoto } from "@/utils/carPhoto";
 import { buildAutomobiliaiHref } from "@/utils/publicSearch";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 import { createCustomerReservation, CustomerReservation } from "@/hooks/useCustomerReservations";
-import { localISO, defaultDateRange } from "@/utils/formatLt";
+import { defaultDateRange, nextDay } from "@/utils/formatLt";
 
 const STATUS_NOTE: Record<string, string> = {
   laisvas: "Šis automobilis šiuo metu laisvas.",
@@ -34,12 +34,6 @@ const STATUS_NOTE: Record<string, string> = {
   servise: "Šis automobilis šiuo metu techninėje priežiūroje.",
   remonte: "Šis automobilis šiuo metu remontuojamas.",
 };
-
-function nextDay(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  d.setDate(d.getDate() + 1);
-  return localISO(d);
-}
 
 export default function CarDetailClient({ id }: { id: number }) {
   const router = useRouter();
@@ -53,6 +47,10 @@ export default function CarDetailClient({ id }: { id: number }) {
   const [booking, setBooking] = useState<"idle" | "submitting" | "error">("idle");
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookedReservation, setBookedReservation] = useState<CustomerReservation | null>(null);
+  // Jei "Rezervuoti" paspausta neprisijungus - šis flag'as leidžia AUTOMATIŠKAI
+  // užbaigti rezervaciją iškart po sėkmingo prisijungimo (žr. useEffect žemiau),
+  // kad vartotojui nereikėtų antrą kartą spausti to pačio mygtuko.
+  const [pendingReservation, setPendingReservation] = useState(false);
 
   const days = hasDateRange
     ? Math.round(
@@ -62,6 +60,7 @@ export default function CarDetailClient({ id }: { id: number }) {
 
   const handleReserve = async () => {
     if (!customer || !token || !car) {
+      setPendingReservation(true);
       setSignInOpen(true);
       return;
     }
@@ -77,8 +76,18 @@ export default function CarDetailClient({ id }: { id: number }) {
     }
   };
 
+  // Užbaigia atidėtą rezervaciją, kai "customer"/"token" atsiranda PO sėkmingo
+  // prisijungimo SignInModal'e (žr. "pendingReservation" aukščiau).
+  useEffect(() => {
+    if (pendingReservation && customer && token) {
+      setPendingReservation(false);
+      handleReserve();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingReservation, customer, token]);
+
   return (
-    // Be overflow-x-hidden - laužia PublicHeader "sticky" (žr. HomeClient.tsx komentarą).
+    // Be overflow-x-hidden ČIA - tai laužia PublicHeader "sticky" pozicionavimą (CSS elgesys: overflow-x nustatymas protėvyje sukuria naują scroll konteinerį, kuriame sticky elementas "prilimpa" tik PRIE JO, o ne prie realaus naršyklės lango); horizontalus persiliejimas jau apsaugotas lokaliai - MapTexture žemiau turi savo overflow-hidden.
     <div className="relative min-h-screen bg-[#0B121F]">
       <MapTexture />
       <div className="relative z-10">

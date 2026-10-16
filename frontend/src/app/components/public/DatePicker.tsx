@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { FiCalendar, FiChevronLeft, FiChevronRight, FiX } from "react-icons/fi";
+import { localISO } from "@/utils/formatLt";
 
 const MONTHS = [
   "Sausis",
@@ -22,13 +23,7 @@ const MONTHS = [
 const MONTHS_SHORT = ["Sau", "Vas", "Kov", "Bal", "Geg", "Bir", "Lie", "Rgp", "Rgs", "Spa", "Lap", "Grd"];
 const WEEKDAYS = ["Pr", "An", "Tr", "Kt", "Pn", "Št", "Sk"];
 
-function toISO(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
+// "YYYY-MM-DD" -> Date, rankiniu būdu išskaidant tekstą (ne new Date(value) tiesiai), kad data VISADA liktų lokali, atitinkanti localISO() iš utils/formatLt.ts.
 function fromISO(value: string): Date | null {
   if (!value) return null;
   const [y, m, d] = value.split("-").map(Number);
@@ -36,6 +31,7 @@ function fromISO(value: string): Date | null {
   return new Date(y, m - 1, d);
 }
 
+// Sudaro mėnesio kalendoriaus tinklelį savaitėmis (po 7 langelius), su "null" langeliais prieš 1-ą dieną ir po paskutinės, kad savaitės eilutės visada liktų pilnos.
 function buildMonthGrid(year: number, month: number): (Date | null)[][] {
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay() + 6) % 7; // Monday = 0
@@ -51,11 +47,13 @@ function buildMonthGrid(year: number, month: number): (Date | null)[][] {
   return weeks;
 }
 
+// Lygina dvi datas TIK pagal metus/mėnesį/dieną - skirtinga valanda/minutė (jei kada atsirastų) nebūtų svarbi, žymint pasirinktą/šiandienos dieną kalendoriuje.
 function isSameDay(a: Date | null, b: Date | null) {
   if (!a || !b) return false;
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+// Data laukas su Popover kalendoriumi - "compact" variantas skirtas antraštės paieškos juostai (SearchForm.tsx), platusis variantas automobilio puslapio rezervacijos blokui (CarDetailClient.tsx).
 export default function DatePicker({
   label,
   value,
@@ -70,11 +68,9 @@ export default function DatePicker({
   onChange: (value: string) => void;
   minDate?: string;
   compact?: boolean;
-  // false kai tuščia data neturi prasmės šiame kontekste (pvz. rezervacijos
-  // datų pasirinkimas automobilio puslapyje - ten VISADA turi būti data).
+  // false kai tuščia data neturi prasmės šiame kontekste (pvz. rezervacijos datų pasirinkimas automobilio puslapyje - ten VISADA turi būti data).
   allowClear?: boolean;
-  // "YYYY-MM-DD" raktai, kurių kalendoriuje negalima rinktis (jau užimtos
-  // dienos konkrečiam automobiliui) - žr. hooks/usePublicCars useCarBusyDates.
+  // "YYYY-MM-DD" raktai, kurių kalendoriuje negalima rinktis (jau užimtos dienos konkrečiam automobiliui, žr. hooks/usePublicCars.ts useCarBusyDates).
   disabledDates?: Set<string>;
 }) {
   const selected = fromISO(value);
@@ -83,6 +79,12 @@ export default function DatePicker({
   const min = fromISO(minDate || "") || today;
 
   const [cursor, setCursor] = useState(() => selected || today);
+
+  // Kalendoriaus rodomas mėnuo "pašoka" prie pasirinktos datos, kai "value" pasikeičia IŠ IŠORĖS (pvz. tėvas automatiškai paslenka "iki" datą po "nuo" pakeitimo, žr. CarDetailClient.tsx) - be šito kalendorius kitą kartą atidarytas rodytų SENĄ mėnesį, kuriame pasirinkimo net nesimatytų.
+  useEffect(() => {
+    if (selected) setCursor(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const weeks = buildMonthGrid(cursor.getFullYear(), cursor.getMonth());
 
@@ -130,7 +132,7 @@ export default function DatePicker({
               min={min}
               disabledDates={disabledDates}
               onPick={(day) => {
-                onChange(toISO(day));
+                onChange(localISO(day));
                 close();
               }}
             />
@@ -184,7 +186,7 @@ export default function DatePicker({
             min={min}
             disabledDates={disabledDates}
             onPick={(day) => {
-              onChange(toISO(day));
+              onChange(localISO(day));
               close();
             }}
           />
@@ -194,6 +196,7 @@ export default function DatePicker({
   );
 }
 
+// Pats mėnesio tinklelis su mėnesio keitimo mygtukais - bendras "compact" ir pilno dydžio DatePicker variantams, kad kalendoriaus elgsena nesiskirtų tarp jų.
 function CalendarGrid({
   cursor,
   setCursor,
@@ -249,7 +252,7 @@ function CalendarGrid({
         {weeks.flatMap((week, wi) =>
           week.map((day, di) => {
             if (!day) return <div key={`${wi}-${di}`} />;
-            const isBusy = !!disabledDates?.has(toISO(day));
+            const isBusy = !!disabledDates?.has(localISO(day));
             const disabled = day < min || isBusy;
             const isSelected = isSameDay(day, selected);
             const isToday = isSameDay(day, today);

@@ -3,6 +3,7 @@
 import { FiSearch } from "react-icons/fi";
 import DatePicker from "./DatePicker";
 import LocationSearch from "./LocationSearch";
+import { nextDay } from "@/utils/formatLt";
 
 export type SearchValue = {
   location: string;
@@ -17,14 +18,20 @@ type SearchFormProps = {
   variant?: "hero" | "compact";
 };
 
+// Paieškos forma su vietos ir datų laukais - "hero" variantas pradiniame puslapyje (didelis, pilnas), "compact" header'yje (kompaktiškas, žr. PublicHeader.tsx showCompactSearch).
 export default function SearchForm({
   value,
   onChange,
   onSubmit,
   variant = "hero",
 }: SearchFormProps) {
+  // Bendras laukelio atnaujinimas - pakeičia TIK nurodytus "value" raktus, kitus palieka kaip buvo.
   const set = (patch: Partial<SearchValue>) => onChange({ ...value, ...patch });
 
+  // "Nuo" pasirinkus datą PO esamos "iki" datos - "iki" automatiškai pastumiama į kitą dieną po naujos "nuo", kad trumpam neatsirastų negaliojantis intervalas (iki < nuo), kol vartotojas pats nepataisytų "iki" rankiniu būdu.
+  const setDateFrom = (v: string) => set({ dateFrom: v, dateTo: value.dateTo && value.dateTo > v ? value.dateTo : nextDay(v) });
+
+  // "preventDefault" - sustabdo tikrą HTML formos pateikimą (puslapio perkrovimą), kad paieška vyktų per React (router.push), ne per naršyklės navigaciją.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
@@ -38,7 +45,7 @@ export default function SearchForm({
       >
         <LocationSearch value={value.location} onChange={(v) => set({ location: v })} placeholder="Vieta" compact />
         <div className="h-5 w-px bg-[#1C2B3A] shrink-0" />
-        <DatePicker label="Nuo" value={value.dateFrom} onChange={(v) => set({ dateFrom: v })} compact allowClear={false} />
+        <DatePicker label="Nuo" value={value.dateFrom} onChange={setDateFrom} compact allowClear={false} />
         <div className="h-5 w-px bg-[#1C2B3A] shrink-0" />
         <DatePicker
           label="Iki"
@@ -77,7 +84,7 @@ export default function SearchForm({
         </label>
 
         <div className="min-w-0">
-          <DatePicker label="Nuo" value={value.dateFrom} onChange={(v) => set({ dateFrom: v })} allowClear={false} />
+          <DatePicker label="Nuo" value={value.dateFrom} onChange={setDateFrom} allowClear={false} />
         </div>
         <div className="min-w-0">
           <DatePicker

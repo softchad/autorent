@@ -9,6 +9,7 @@ type SortedLocation = LocationWithCoords & { distanceKm?: number };
 // Ypatinga "pasirinktis" sąrašo gale - geokoduoti laisvą tekstą, ne rinktis esamą padalinį.
 const GEOCODE_ACTION = "__geocode__";
 
+// Laisvo teksto adresą paverčia koordinatėmis per Nominatim (OpenStreetMap, nemokamas, be API rakto) - naudojama, kai vartotojas įveda adresą, kurio nėra tarp 10 padalinių, ir norime rasti JAM artimiausią padalinį.
 async function geocodeOnce(query: string): Promise<{ lat: number; lng: number } | null> {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=lt&q=${encodeURIComponent(query)}`;
   const res = await fetch(url);
@@ -18,6 +19,7 @@ async function geocodeOnce(query: string): Promise<{ lat: number; lng: number } 
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
 }
 
+// Padalinio pasirinkimo laukas - Combobox su sąrašu, kuris gali būti surikiuotas pagal atstumą (geolokacija arba įvestas adresas), ir galimybe surasti artimiausią padalinį pagal laisvą tekstą, kai ieškomo adreso tarp 10 padalinių nėra.
 export default function LocationSearch({
   value,
   onChange,
@@ -34,7 +36,13 @@ export default function LocationSearch({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const triedGeolocation = useRef(false);
+  // Visada rodo NAUJAUSIĄ "value" - geolokacijos atsakymas žemiau gali ateiti PO kelių sekundžių, o efektas, kuriame jis naudojamas, paleistas TIK vieną kartą (žr. žemiau), tad be šios ref'os jis matytų SENĄ, pamontavimo metu užfiksuotą "value" ir perrašytų vartotojo TUO TARPU jau pačiam pasirinktą padalinį.
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
+  // Padaliniai, surikiuoti nuo artimiausio iki tolimiausio, kai žinoma vartotojo (ar jo įvesto adreso) pozicija - be jos tiesiog grąžina VISUS padalinius jų numatyta tvarka.
   const withDistances = useMemo((): SortedLocation[] => {
     if (!userPoint) return LOCATIONS;
     return LOCATIONS.map((l) => ({ ...l, distanceKm: distanceKm(userPoint.lat, userPoint.lng, l.lat, l.lng) })).sort(
@@ -42,15 +50,14 @@ export default function LocationSearch({
     );
   }, [userPoint]);
 
-  // Vieną kartą bando nustatyti vartotojo buvimo vietą (naršyklės Geolocation API -
-  // tikslesnis ir nemokamas, be IP-geolokacijos trečios šalies servisų/raktų) ir
-  // automatiškai parenka ARTIMIAUSIĄ padalinį, jei vartotojas vietos dar nepasirinko.
-  // Tylus "best effort" - jei leidimas atmetamas, tiesiog nieko numatytai nerenkama.
+  // Vieną kartą bando nustatyti vartotojo buvimo vietą (naršyklės Geolocation API - tikslesnis ir nemokamas, be IP-geolokacijos trečios šalies servisų/raktų) ir automatiškai parenka ARTIMIAUSIĄ padalinį, jei vartotojas vietos dar nepasirinko; tylus "best effort" - jei leidimas atmetamas, tiesiog nieko numatytai nerenkama.
   useEffect(() => {
     if (triedGeolocation.current || value || !navigator.geolocation) return;
     triedGeolocation.current = true;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // "valueRef.current" (NE "value" iš closure) - patikrina vartotojo pasirinkimą TOKIU, koks jis yra DABAR, kai atsakymas pagaliau atėjo, ne tokiu, koks buvo efekto paleidimo metu.
+        if (valueRef.current) return;
         const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserPoint(point);
         const nearest = [...LOCATIONS].sort(
@@ -66,6 +73,7 @@ export default function LocationSearch({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Padaliniai, kurių pavadinimas/miestas/adresas atitinka vartotojo įvestą tekstą - tuščios paieškos atveju rodo visą (pagal atstumą surikiuotą) sąrašą.
   const filtered = useMemo((): SortedLocation[] => {
     if (!query.trim()) return withDistances;
     const q = query.trim().toLowerCase();
@@ -74,6 +82,7 @@ export default function LocationSearch({
     );
   }, [query, withDistances]);
 
+  // Vykdoma, kai vartotojas pasirenka "Rasti artimiausią padalinį adresui..." - geokoduoja įvestą tekstą ir iš karto PARENKA (ne tik parodo) artimiausią realų padalinį.
   const runAddressSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
@@ -99,6 +108,7 @@ export default function LocationSearch({
     }
   };
 
+  // Combobox'o pasirinkimo handler'is - arba tikras padalinys (miesto pavadinimas), arba speciali "GEOCODE_ACTION" pasirinktis, perjungiama į adreso paiešką.
   const handleSelect = (city: string | null) => {
     if (!city) return;
     if (city === GEOCODE_ACTION) {
@@ -110,8 +120,7 @@ export default function LocationSearch({
     setSearchError(null);
   };
 
-  // TIKRA (ne placeholder) reikšmė lauke, kai padalinys pasirinktas - kitaip
-  // pavadinimas rodytųsi placeholder spalva (prigesinta), ne kaip tikras pasirinkimas.
+  // TIKRA (ne placeholder) reikšmė lauke, kai padalinys pasirinktas - kitaip pavadinimas rodytųsi placeholder spalva (prigesinta), ne kaip tikras pasirinkimas.
   const displayValue = (city: string) => LOCATIONS.find((l) => l.city === city)?.name ?? "";
 
   return (
@@ -175,11 +184,11 @@ export default function LocationSearch({
           )}
 
           {!query.trim() && !userPoint && (
+            // Rankinis "bandyti dar kartą" mygtukas - ne automatinio efekto aukščiau pakartojimas (jis paleidžiamas TIK vieną kartą per visą komponento gyvavimą), o atskiras, tiesiai čia kviečiamas geolokacijos bandymas.
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                triedGeolocation.current = false;
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (pos) => setUserPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
