@@ -22,7 +22,7 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await fetch(`${API}/api/v1/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+      void fetch(`${API}/api/v1/logout`, { method: "POST", credentials: "include", signal: AbortSignal.timeout(3000) }).catch(() => {});
       // "logoutAction()" (žr. authSlice.ts "logout" reducer'į) JAU pats nustato token=null, IR ištrina jį iš localStorage, IR ištrina "token" slapuką - čia reikia papildomai tik "session" (Starlette SessionMiddleware, naudotas trumpam per OAuth srautą), kurio authSlice.ts nežino, nes jis nesusijęs su staff tokenu.
       dispatch(logoutAction());
       dispatch(baseApi.util.resetApiState());
