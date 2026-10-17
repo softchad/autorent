@@ -127,7 +127,7 @@ npm run dev
 
 ## Funkcionalumas
 
-### Darbuotojų administravimo sistema (`/dashboard`, `/cars`, `/clients`, ...)
+### Darbuotojų administravimo sistema (`/dashboard`, `/fleet`, `/clients`, ...)
 
 | Modulis | Aprašymas |
 |---------|-----------|
@@ -160,7 +160,7 @@ npm run dev
 | **Mechanikas** | ✓ | ✓ | — | — |
 | **Klientų aptarnavimas** | ✓ | ✓ | — | — |
 
-Klientų aptarnavimo pokalbiai (ne bendras EDIT) matomi tik Administratorius/Vadybininkas/Klientų aptarnavimas rolėms - žr. `backend/app/api/v1/endpoints/staff_support.py`.
+Klientų aptarnavimo pokalbiai (ne bendras EDIT) matomi tik Administratorius/Vadybininkas/Klientų aptarnavimas rolėms - žr. `backend/app/api/endpoints/staff_support.py`.
 
 ---
 
@@ -184,30 +184,31 @@ autorent/
 │   │   ├── api/
 │   │   │   ├── deps.py                get_current_user / get_current_customer / get_db
 │   │   │   ├── permissions.py         RBAC: Perm enum, ROLE_PERMS, require_perm
-│   │   │   └── v1/endpoints/          darbuotojų endpoint'ai (auth, car, client, employee,
+│   │   │   └── endpoints/             darbuotojų endpoint'ai (auth, car, client, employee,
 │   │   │                              order, reservation, invoice, staff_support, geocode)
 │   │   │                              IR kliento endpoint'ai (customer_auth, customer,
 │   │   │                              customer_loyalty, customer_support, public)
-│   │   ├── models/ · schemas/ · repositories/   SQLAlchemy modeliai, Pydantic schemos,
-│   │   │                                         DB prieigos sluoksnis (1 failas/esybė)
+│   │   ├── models/ · schemas/          SQLAlchemy modeliai, Pydantic schemos - DB užklausos
+│   │   │                               atskiro sluoksnio neturi, rašomos tiesiog endpoint'uose
 │   │   └── services/                  verslo logika: auth_service, availability_service
 │   │                                   (SELECT ... FOR UPDATE rezervacijų persidengimui),
-│   │                                   support_service
+│   │                                   support_service, discount_code_service, geocode_service
 │   ├── tests/                         pytest - api/ (endpoint'ai, SQLite TestClient) ir
 │   │                                   services/ (vienetų testai)
 │   └── utils/config.py                pydantic Settings, .env skaitymas
 ├── frontend/
 │   └── src/
 │       ├── app/                       Next.js App Router
-│       │   ├── (darbuotojų puslapiai) dashboard/, cars/, clients/, employees/, invoices/,
-│       │   │                          orders/, reservations/, support/, login/, profile/
-│       │   ├── (vieši puslapiai)      page.tsx, automobiliai/, paskyra/, apie-mus/,
+│       │   ├── (staff)/               dashboard/, fleet/, clients/, employees/, invoices/,
+│       │   │                          orders/, reservations/, support/, profile/
+│       │   ├── (public)/              page.tsx, automobiliai/, paskyra/, login/, apie-mus/,
 │       │   │                          kontaktai/, karjera/, kelioniu-patarimai/, ...
-│       │   ├── components/            darbuotojų UI (DataTable, EntityModal, ...) ir
+│       │   ├── components/            bendri UI (DataTable, ActionButtons, ...)
+│       │   │   ├── staff/             darbuotojų specifiniai (EntityModal, Sidebar, ...)
 │       │   │   └── public/            viešos svetainės komponentai (AutomobiliaiClient,
 │       │   │                          AccountClient, SupportInbox, ...)
 │       │   ├── sitemap.ts / robots.ts
-│       │   └── guards/ · providers/   AuthGuard (darbuotojas), CustomerAuthProvider
+│       │   └── providers/             AuthGuard (darbuotojas), CustomerAuthProvider
 │       ├── hooks/                     RTK Query hook'ai (darbuotojams) + paprasti fetch
 │       │                              hook'ai (klientui): usePublicCars, useCustomerLoyalty,
 │       │                              useCustomerReservations, useCustomerConversations,
@@ -217,7 +218,8 @@ autorent/
 ├── database/
 │   ├── schema.sql · seed.sql          DDL ir pradiniai duomenys
 │   ├── triggers.sql                   duomenų vientisumo trigeriai
-│   └── queries.sql                    analitinės SQL užklausos
+│   ├── queries.sql                    analitinės SQL užklausos
+│   └── reset_demo_data.py / .bat      atstato DB į švarią pradinę demo būseną
 └── docs/
     └── screenshots/
 ```

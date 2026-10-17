@@ -8,71 +8,80 @@
 │   ├── requirements.txt
 │   ├── app/
 │   │   ├── main.py
+│   │   ├── rate_limit.py
 │   │   ├── api/
 │   │   │   ├── deps.py
 │   │   │   ├── permissions.py
-│   │   │   └── v1/
-│   │   │       └── endpoints/
-│   │   │           ├── auth.py
-│   │   │           ├── car.py
-│   │   │           ├── client.py
-│   │   │           ├── client_support.py
-│   │   │           ├── employee.py
-│   │   │           ├── geocode.py
-│   │   │           ├── invoice.py
-│   │   │           ├── order.py
-│   │   │           └── reservation.py
+│   │   │   └── endpoints/
+│   │   │       ├── auth.py
+│   │   │       ├── car.py
+│   │   │       ├── client.py
+│   │   │       ├── customer.py
+│   │   │       ├── customer_auth.py
+│   │   │       ├── customer_loyalty.py
+│   │   │       ├── customer_support.py
+│   │   │       ├── discount_code.py
+│   │   │       ├── employee.py
+│   │   │       ├── geocode.py
+│   │   │       ├── invoice.py
+│   │   │       ├── order.py
+│   │   │       ├── public.py
+│   │   │       ├── reservation.py
+│   │   │       └── staff_support.py
 │   │   ├── db/
 │   │   │   ├── base.py
 │   │   │   └── session.py
 │   │   ├── models/
 │   │   │   ├── car.py
 │   │   │   ├── client.py
-│   │   │   ├── client_support.py
+│   │   │   ├── discount_code.py
 │   │   │   ├── employee.py
 │   │   │   ├── invoice.py
 │   │   │   ├── location.py
+│   │   │   ├── loyalty_reward.py
 │   │   │   ├── order.py
-│   │   │   └── reservation.py
-│   │   ├── repositories/
-│   │   │   ├── car.py
-│   │   │   ├── client.py
-│   │   │   ├── client_support.py
-│   │   │   ├── employee.py
-│   │   │   ├── geocode.py
-│   │   │   ├── invoice.py
-│   │   │   ├── order.py
-│   │   │   └── reservation.py
+│   │   │   ├── reservation.py
+│   │   │   ├── support_conversation.py
+│   │   │   └── support_message.py
 │   │   ├── schemas/
 │   │   │   ├── auth.py
 │   │   │   ├── car.py
 │   │   │   ├── client.py
-│   │   │   ├── client_support.py
+│   │   │   ├── customer_auth.py
+│   │   │   ├── customer_loyalty.py
+│   │   │   ├── customer_reservation.py
+│   │   │   ├── discount_code.py
 │   │   │   ├── employee.py
 │   │   │   ├── geocode.py
 │   │   │   ├── invoice.py
 │   │   │   ├── location.py
 │   │   │   ├── order.py
-│   │   │   └── reservation.py
+│   │   │   ├── reservation.py
+│   │   │   └── support.py
 │   │   └── services/
-│   │       └── auth_service.py
+│   │       ├── auth_service.py
+│   │       ├── availability_service.py
+│   │       ├── discount_code_service.py
+│   │       ├── geocode_service.py
+│   │       └── support_service.py
 │   ├── tests/
 │   │   ├── conftest.py
-│   │   ├── init_test_db.sql
 │   │   ├── api/
 │   │   │   ├── test_auth.py
 │   │   │   ├── test_car.py
-│   │   │   ├── test_car_extended.py
 │   │   │   ├── test_client.py
-│   │   │   ├── test_client_extended.py
-│   │   │   ├── test_client_support.py
+│   │   │   ├── test_customer_auth.py
+│   │   │   ├── test_customer_loyalty.py
+│   │   │   ├── test_customer_reservations.py
+│   │   │   ├── test_customer_support.py
 │   │   │   ├── test_employee.py
 │   │   │   ├── test_geocode.py
 │   │   │   ├── test_invoice.py
 │   │   │   ├── test_order.py
+│   │   │   ├── test_public.py
 │   │   │   ├── test_reservation.py
-│   │   │   ├── test_reservation_extended.py
 │   │   │   ├── test_roles_permissions.py
+│   │   │   ├── test_staff_support.py
 │   │   │   └── test_validation.py
 │   │   ├── services/
 │   │   │   ├── test_auth_service.py
@@ -88,89 +97,82 @@
 │   ├── tailwind.config.js
 │   ├── tsconfig.json
 │   ├── openapi.config.js
+│   ├── typedoc.json
 │   ├── public/
-│   │   └── fonts/
-│   │       ├── Roboto-Bold.ttf
-│   │       └── Roboto-Regular.ttf
+│   │   ├── fonts/
+│   │   │   ├── Roboto-Bold.ttf
+│   │   │   └── Roboto-Regular.ttf
+│   │   └── images/
+│   │       ├── brands/ (10 markių nuotraukų)
+│   │       └── fleet/ (8 bendros parko nuotraukos)
 │   └── src/
 │       ├── middleware.ts
 │       ├── app/
 │       │   ├── layout.tsx
-│       │   ├── page.tsx
+│       │   ├── loading.tsx
 │       │   ├── globals.css
-│       │   ├── login/
-│       │   │   └── page.tsx
-│       │   ├── oauth/
+│       │   ├── robots.ts
+│       │   ├── sitemap.ts
+│       │   ├── (public)/
 │       │   │   ├── page.tsx
-│       │   │   └── OAuthClient.tsx
-│       │   ├── profile/
-│       │   │   └── page.tsx
-│       │   ├── cars/
-│       │   │   └── page.tsx
-│       │   ├── clients/
-│       │   │   └── page.tsx
-│       │   ├── employees/
-│       │   │   └── page.tsx
-│       │   ├── invoices/
-│       │   │   └── page.tsx
-│       │   ├── orders/
-│       │   │   └── page.tsx
-│       │   ├── reservations/
-│       │   │   └── page.tsx
-│       │   ├── support/
-│       │   │   └── page.tsx
+│       │   │   ├── login/page.tsx
+│       │   │   ├── oauth/ (page.tsx, OAuthClient.tsx)
+│       │   │   ├── automobiliai/ (sąrašas + [id] detalės)
+│       │   │   ├── paskyra/ (page.tsx + oauth/CustomerOAuthClient.tsx)
+│       │   │   ├── apie-mus/page.tsx
+│       │   │   ├── karjera/page.tsx
+│       │   │   ├── kelioniu-patarimai/page.tsx
+│       │   │   ├── kontaktai/page.tsx
+│       │   │   ├── nuomos-taisykles/page.tsx
+│       │   │   └── privatumo-politika/page.tsx
+│       │   ├── (staff)/
+│       │   │   ├── dashboard/page.tsx
+│       │   │   ├── clients/page.tsx
+│       │   │   ├── employees/page.tsx
+│       │   │   ├── fleet/page.tsx
+│       │   │   ├── invoices/page.tsx
+│       │   │   ├── orders/page.tsx
+│       │   │   ├── profile/page.tsx
+│       │   │   ├── reservations/page.tsx
+│       │   │   └── support/page.tsx
 │       │   ├── components/
 │       │   │   ├── ActionButtons.tsx
 │       │   │   ├── BarChartBox.tsx
 │       │   │   ├── BaseModal.tsx
 │       │   │   ├── ClientProvider.tsx
-│       │   │   ├── CreateEntityButton.tsx
 │       │   │   ├── DataTable.tsx
-│       │   │   ├── InvoicePdfDocument.tsx
-│       │   │   ├── InvoicePdfModal.tsx
 │       │   │   ├── Layout.tsx
-│       │   │   ├── LogoutButton.tsx
-│       │   │   ├── MapComponent.tsx
+│       │   │   ├── LoadingScreen.tsx
 │       │   │   ├── PieChartBox.tsx
-│       │   │   ├── Sidebar.tsx
 │       │   │   ├── StatCard.tsx
 │       │   │   ├── StatusBadge.tsx
-│       │   │   ├── loadingScreen.tsx
-│       │   │   └── modals/
-│       │   │       └── EntityModal.tsx
-│       │   ├── guards/
-│       │   │   └── AuthGuard.tsx
+│       │   │   ├── public/ (15 failų - viešos svetainės ir kliento paskyros komponentai)
+│       │   │   └── staff/ (9 failai - Sidebar, EntityModal, sąskaitų PDF, žemėlapis...)
 │       │   └── providers/
-│       │       └── AuthHydrate.tsx
+│       │       ├── AuthGuard.tsx
+│       │       ├── AuthHydrate.tsx
+│       │       └── CustomerAuthProvider.tsx
 │       ├── assets/
-│       │   ├── autorentLOGO.png
-│       │   └── autorenttext.png
-│       ├── hooks/
-│       │   ├── useCarsData.ts
-│       │   ├── useClientsData.ts
-│       │   ├── useDashboardStats.ts
-│       │   ├── useEmployeesData.ts
-│       │   ├── useInvoiceModals.ts
-│       │   ├── useInvoicesData.ts
-│       │   ├── useOrdersData.ts
-│       │   ├── useReservationData.ts
-│       │   └── useSupportData.ts
+│       │   ├── logo-mark.png
+│       │   ├── logo-full.png
+│       │   ├── texture-dots.png
+│       │   └── texture-stripes.png
+│       ├── hooks/ (13 failų - automobiliai/klientai/darbuotojai/užsakymai/rezervacijos/sąskaitos/dashboard + kliento pusės: lojalumas/pokalbiai/rezervacijos/katalogas/aptarnavimas)
 │       ├── store/
 │       │   ├── authSlice.ts
 │       │   ├── baseApi.ts
-│       │   ├── carRentalApi.ts
+│       │   ├── autorentApi.ts
 │       │   ├── enhanceEndpoints.ts
 │       │   ├── hooks.ts
-│       │   ├── index.ts
 │       │   └── store.ts
-│       └── utils/
-│           └── formatApiError.ts
+│       └── utils/ (8 failų - carPhoto, extractErrorMessage, formatApiError, formatLt, jwt, locations, publicRoutes, publicSearch)
 ├── database/
 │   ├── schema.sql
 │   ├── seed.sql
 │   ├── triggers.sql
-│   ├── transactions.sql
-│   └── queries.sql
+│   ├── queries.sql
+│   ├── reset_demo_data.py
+│   └── reset_demo_data.bat
 └── docs/
     └── screenshots/
         ├── login.png

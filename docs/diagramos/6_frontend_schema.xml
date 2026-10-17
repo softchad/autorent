@@ -2,16 +2,16 @@
   <root>
     <mxCell id="0" />
     <mxCell id="1" parent="0" />
-    <mxCell id="2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;Redux Store&lt;/b&gt;&lt;br&gt;store.ts&lt;br&gt;&lt;br&gt;• authSlice&lt;br&gt;• extendedCarRentalApi" vertex="1">
+    <mxCell id="2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;Redux Store&lt;/b&gt;&lt;br&gt;store.ts&lt;br&gt;&lt;br&gt;• authSlice&lt;br&gt;• extendedAutorentApi" vertex="1">
       <mxGeometry height="100" width="200" x="410" y="40" as="geometry" />
     </mxCell>
     <mxCell id="3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;authSlice.ts&lt;/b&gt;&lt;br&gt;&lt;br&gt;• token&lt;br&gt;• setToken()&lt;br&gt;• logout()" vertex="1">
       <mxGeometry height="100" width="190" x="160" y="230" as="geometry" />
     </mxCell>
-    <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;enhanceEndpoints.ts&lt;/b&gt;&lt;br&gt;&lt;br&gt;• extendedCarRentalApi&lt;br&gt;• papildomi endpoint&apos;ai&lt;br&gt;• tags konfigūracija" vertex="1">
+    <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;enhanceEndpoints.ts&lt;/b&gt;&lt;br&gt;&lt;br&gt;• extendedAutorentApi&lt;br&gt;• papildomi endpoint&apos;ai&lt;br&gt;• tags konfigūracija" vertex="1">
       <mxGeometry height="100" width="200" x="670" y="230" as="geometry" />
     </mxCell>
-    <mxCell id="4b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;carRentalApi.ts&lt;/b&gt;&lt;br&gt;&lt;br&gt;• RTK Query hooks&lt;br&gt;• Auto-generuojama&lt;br&gt;• iš OpenAPI schemos" vertex="1">
+    <mxCell id="4b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;autorentApi.ts&lt;/b&gt;&lt;br&gt;&lt;br&gt;• RTK Query hooks&lt;br&gt;• Auto-generuojama&lt;br&gt;• iš OpenAPI schemos" vertex="1">
       <mxGeometry height="100" width="190" x="950" y="230" as="geometry" />
     </mxCell>
     <mxCell id="5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;align=left;spacingLeft=10;" value="&lt;b&gt;AuthGuard.tsx&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Tikrina token&lt;br&gt;• Whitelist: /login, /oauth&lt;br&gt;• Nukreipia į /login" vertex="1">

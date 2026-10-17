@@ -44,7 +44,7 @@ Table Automobiliai {
   vin_kodas varchar [unique]
   spalva varchar
   kebulo_tipas varchar
-  pavarų_deze varchar
+  pavaru_deze varchar
   variklio_turis decimal
   galia_kw integer
   kuro_tipas varchar
