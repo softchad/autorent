@@ -5,10 +5,10 @@ from app.db.base import Base
 
 
 class LoyaltyReward(Base):
-    __tablename__ = "lojalumo_atlygiai"
+    __tablename__ = "Lojalumo_Atlygiai"
 
     atlygio_id = Column(Integer, primary_key=True, index=True)
-    kliento_id = Column(Integer, ForeignKey("klientai.kliento_id"), nullable=False)
+    kliento_id = Column(Integer, ForeignKey("Klientai.kliento_id"), nullable=False)
     # Kelintas 5-nuomų etapas (1, 2, 3...) - UNIQUE kartu su kliento_id žemiau, kad TAS PATS klientas negalėtų uždirbti DVIEJŲ atlygių už TĄ PATĮ etapą, net jei skaičiavimas būtų pakartotas.
     etapo_numeris = Column(Integer, nullable=False)
     # Python pusės default, ne server_default - taip nuosekliai su Client.registracijos_data.

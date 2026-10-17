@@ -28,8 +28,8 @@ def emplo_headers(client, admin_headers):
     assert create_resp.status_code == 200, create_resp.json()
     emp_id = create_resp.json()["darbuotojo_id"]
 
-    # "sub" be "type" lauko - get_current_user tikrina TIK "type == 'customer'" (žr. deps.py), tad tokenas BE "type" (None) praeina kaip darbuotojo, nereikia tikro /login kelio.
-    token = auth_service.create_access_token({"sub": email})
+    # "sub" be "type" lauko - get_current_user tikrina TIK "type == 'customer'" (žr. deps.py), tad tokenas BE "type" (None) praeina kaip darbuotojo, nereikia tikro /login kelio. "sub" yra darbuotojo_id (ne el. paštas, žr. auth_service.create_staff_token) - "ver": 0 sutampa su ką tik sukurto darbuotojo numatytąja token_version reikšme.
+    token = auth_service.create_access_token({"sub": str(emp_id), "ver": 0})
     headers = {"Authorization": f"Bearer {token}"}
     yield headers
 
