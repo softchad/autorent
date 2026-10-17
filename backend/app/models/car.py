@@ -27,7 +27,7 @@ class Car(Base):
     automobilio_statusas = Column(String(50), nullable=False)
     technikines_galiojimas = Column(Date, nullable=False)
     # "nullable=False" - schema.sql reikalauja šio lauko (automobilis VISADA turi turėti priskirtą esamą lokaciją), tad modelis turi atkartoti TĄ PAČIĄ taisyklę, kitaip SQLite testai tyliai leistų tai, kas tikroje MySQL DB lūžtų.
-    dabartine_vieta_id = Column(Integer, ForeignKey("pristatymo_vietos.vietos_id"), nullable=False)
+    dabartine_vieta_id = Column(Integer, ForeignKey("Pristatymo_Vietos.vietos_id"), nullable=False)
     pastabos = Column(String(255))
 
     # "lokacija" - leidžia Python kode rašyti "car.lokacija.pavadinimas" (SQLAlchemy pati padaro JOIN), vietoj to, kad reikėtų atskirai užklausti Location pagal dabartine_vieta_id.
