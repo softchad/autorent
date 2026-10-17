@@ -1,7 +1,4 @@
-// Realūs AutoRent padalinių adresai, sutampantys su Pristatymo_Vietos lentele.
-// Koordinatės gautos vieną kartą per OpenStreetMap Nominatim (viešas, nemokamas
-// geokodavimo servisas) ir įrašytos čia statiškai - žemėlapiui nereikia gyvo
-// geokodavimo užklausos kiekvieną kartą atidarant puslapį.
+// Realūs AutoRent padalinių adresai, sutampantys su Pristatymo_Vietos lentele ("vietos_id" eilės tvarka TURI atitikti seed.sql INSERT tvarką, nes tai AUTO_INCREMENT) - koordinatės gautos vieną kartą per OpenStreetMap Nominatim ir įrašytos statiškai, kad žemėlapiui nereikėtų gyvos geokodavimo užklausos kiekvieną kartą atidarant puslapį.
 export type LocationWithCoords = {
   vietos_id: number;
   name: string;
@@ -11,8 +8,7 @@ export type LocationWithCoords = {
   lng: number;
 };
 
-// Haversine atstumas kilometrais tarp dviejų koordinačių - naudojama LocationSearch,
-// kad surikiuotume tikrus padalinius nuo artimiausio iki tolimiausio.
+// Haversine atstumas kilometrais tarp dviejų koordinačių - naudojama LocationSearch, kad surikiuotume tikrus padalinius nuo artimiausio iki tolimiausio.
 export function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;

@@ -1,9 +1,6 @@
 import type { PublicCar } from "@/hooks/usePublicCars";
 
-// Kiekvienai markei, kurią turime DB, priskirta tikra to modelio nuotrauka
-// (šaltiniai ir licencijos - žr. frontend/public/images/brands/CREDITS.md).
-// Jeigu ateityje atsiras nauja markė, kurios neturime nuotraukos, naudojame
-// bendrą iliustracinę nuotrauką pagal kėbulo/kuro tipą kaip atsarginį variantą.
+// Kiekvienai markei, kurią realiai turime DB, priskirta tikra to modelio nuotrauka; "marke" yra laisvas tekstinis laukas (žr. useCarsData.ts), tad "Skoda" IR "Škoda" abu įrašyti sąmoningai - darbuotojas gali surašyti bet kurį variantą.
 const BRAND_PHOTOS: Record<string, string> = {
   "Toyota": "/images/brands/toyota-corolla.jpg",
   "Volkswagen": "/images/brands/vw-golf.jpg",
@@ -18,10 +15,7 @@ const BRAND_PHOTOS: Record<string, string> = {
   "Škoda": "/images/brands/skoda-superb.jpg",
 };
 
-// Atsarginės nuotraukos iš /images/fleet/ - jų šaltinis NEPATVIRTINTAS (žr.
-// public/images/fleet/CREDITS.md). Dabartiniams seed duomenims (markės žemiau
-// BRAND_PHOTOS sąraše) šis fallback'as realiai nekviečiamas, bet jei atsiras
-// nauja markė be nuotraukos, ji pateks čia - reikia pakeisti patikrintomis prieš viešinant.
+// Bendra iliustracinė nuotrauka pagal kėbulo/kuro tipą - naudojama TIK jei markės BRAND_PHOTOS sąraše nėra (šiuo metu visos realios seed duomenų markės JAU yra, tad šis kelias realiai nekviečiamas, bet pasiruošęs naujai markei be savo nuotraukos).
 function fallbackPhoto(car: Partial<Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">>): string {
   if (car.kuro_tipas === "elektra") return "/images/fleet/ev-charging.jpg";
   if (car.kebulo_tipas === "Visureigis") return "/images/fleet/suv-studio.jpg";
@@ -30,6 +24,7 @@ function fallbackPhoto(car: Partial<Pick<PublicCar, "kuro_tipas" | "kebulo_tipas
   return "/images/fleet/sedan-highway.jpg";
 }
 
+// Vieša įvesties riba - priima TIK tiek lauko, kiek realiai reikia (marke + kuro/kebulo tipas), ne visą PublicCar, kad funkciją būtų lengva naudoti IR su nepilnais objektais (pvz. formos peržiūra prieš išsaugojimą).
 export function getCarPhoto(car: Partial<Pick<PublicCar, "kuro_tipas" | "kebulo_tipas">> & Pick<PublicCar, "marke">): string {
   return BRAND_PHOTOS[car.marke] ?? fallbackPhoto(car);
 }

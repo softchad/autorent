@@ -12,6 +12,7 @@ type BaseModalProps = {
 };
 
 // "isOpen" valdomas IŠORĖS (tėvinio komponento state) - šis komponentas tik sprendžia, RODYTI ar NE (ankstyvas "return null"), savaime savo būsenos niekada nekeičia.
+// SĄMONINGAI NĖRA Escape/paspaudimo už modalo uždarymo (skirtingai nei SignInModal.tsx viešoje dalyje) - šis modalas naudojamas TIK darbuotojų CRUD formoms (EntityModal.tsx/CreateInvoiceButton.tsx, žr. aukščiau), kur atsitiktinis Escape ar paspaudimas šalia tyliai išmestų NEIŠSAUGOTĄ redaguojamą įrašą; uždarymas TIK per "X" mygtuką yra apsauga nuo šio praradimo, ne praleista funkcija.
 export default function BaseModal({ title, children, isOpen, onClose, actions }: BaseModalProps) {
   if (!isOpen) return null;
 

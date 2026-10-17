@@ -5,9 +5,9 @@ type StatCardProps = {
   value: string | number;
   color?: string;
   icon?: ReactNode;
-  index?: number;
 };
 
+// Animuotas skaičiaus "pribėgimas" nuo 0 iki target per "duration" ms - naudojamas TIK kai "value" yra skaičius (žr. StatCard žemiau); "1 - (1-progress)^3" yra "ease-out" kreivė - skaičiavimas pradžioje greitas, sulėtėja artėdamas prie galo, atrodo natūraliau nei vienodas greitis visą laiką.
 function useCountUp(target: number, duration = 900) {
   const [display, setDisplay] = useState(0);
   const raf = useRef<number>(0);
@@ -28,10 +28,11 @@ function useCountUp(target: number, duration = 900) {
   return display;
 }
 
+// Vienas statistikos kortelės langelis (dashboard'o viršuje) - "color" numatytoji reikšmė TAMSI (atitinka visą projekto temą), kad ateityje pamirštas "color" niekada neparodytų šviesaus langelio tamsiame fone.
 export default function StatCard({
   title,
   value,
-  color = "bg-gray-100",
+  color = "bg-[#163858]",
   icon,
 }: StatCardProps) {
   const isNumber = typeof value === "number";

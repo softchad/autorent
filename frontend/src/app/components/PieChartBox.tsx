@@ -14,6 +14,7 @@ type PieChartBoxProps = {
   valueLabel?: string;
 };
 
+// Žiedinė diagrama bendrame tamsiame stiliuje - Recharts pagal nutylėjimą apgaubia kiekvieną skiltį baltu kraštu, tad gretimos skiltys atskiriamos VIZUALIAI net jei jų spalvos artimos, ne tik pačia spalva.
 export default function PieChartBox({
   title,
   data,

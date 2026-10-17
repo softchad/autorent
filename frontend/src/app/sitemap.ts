@@ -15,6 +15,7 @@ const STATIC_PUBLIC_PAGES = [
   "/privatumo-politika",
 ];
 
+// Specialus Next.js failo pavadinimas (sitemap.ts) - sistema PATI, be papildomo nustatymo, jį paverčia į /sitemap.xml, kurį nurodo robots.ts "sitemap" lauke.
 export default function sitemap(): MetadataRoute.Sitemap {
   return STATIC_PUBLIC_PAGES.map((path) => ({
     url: `${SITE_URL}${path}`,
