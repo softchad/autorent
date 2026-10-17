@@ -30,6 +30,8 @@ yarn-error.log*
 
 # env files
 .env*
+# ... BET ne ".env.local.example" ir pan. - tai ŠABLONAS, skirtas būti commitintam (žr. .env.local.example), ne tikra paslaptis; be šios eilutės "/.env*" aukščiau jį taip pat tyliai ignoruotų.
+!.env*.example
 
 # vercel
 .vercel

@@ -10,10 +10,12 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Next.js sugeneruoti failai (.next/) - ne projekto kodas, ESLint jų nepatikrina automatiškai.
+  { ignores: [".next/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     // Generuojamas failas (npm run gen:api) - any laukai ateina iš OpenAPI schemos.
-    files: ["src/store/carRentalApi.ts"],
+    files: ["src/store/autorentApi.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
 ];
