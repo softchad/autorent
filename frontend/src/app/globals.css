@@ -1,15 +1,9 @@
 @import "tailwindcss";
 
+/* Vienas FIKSUOTAS tamsus apipavidalinimas visai svetainei - jo nekeičia naršyklės/OS šviesaus/tamsaus režimo nuostata (#F7F7F7 - tas pats šviesus tekstas, naudojamas visur kituose komponentuose, kad body tekstas sutaptų, jei koks elementas jo pats nenustato). */
 :root {
   --background: #0b121f;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #0b121f;
-    --foreground: #ededed;
-  }
+  --foreground: #f7f7f7;
 }
 
 body {
@@ -18,7 +12,7 @@ body {
   font-family: var(--font-lexend), sans-serif;
 }
 
-/* Global form controls */
+/* Bendri formos valdikliai (input/textarea/select) - vienodas tamsus stilius visur, nerašoma atskirai kiekviename komponente. */
 input[type="text"], input[type="email"], input[type="number"],
 input[type="password"], input[type="date"], textarea, select {
   background-color: #1A2238;
@@ -38,6 +32,7 @@ select option {
   color: #F7F7F7;
 }
 
+/* Plonos, tamsiai mėlynos slinkties juostos visur - "scrollbar-width/-color" Firefox'ui, "::-webkit-scrollbar" žemiau Chrome/Safari/Edge (dvi SKIRTINGOS, nesusijusios naršyklių API, abi reikalingos vienodam rezultatui). */
 * {
   scrollbar-width: thin;
   scrollbar-color: #0F597B #1A2238;
@@ -57,6 +52,7 @@ select option {
   border-radius: 3px;
 }
 
+/* Nuo dešinės į kairę slenkanti animacija - naudojama BrandLogos.tsx nenutrūkstamai slenkančiai partnerių logotipų juostai. */
 @keyframes marquee {
   from {
     transform: translateX(0);
@@ -66,13 +62,7 @@ select option {
   }
 }
 
-/* Standartiniai OpenStreetMap plyteliai paverčiami tamsiais - CARTO nemokamas tamsus
-   žemėlapis dabar reikalauja API rakto. GRYNAS "grayscale+invert" (ankstesnė versija)
-   atrodė murzinas/plokščias, nes grayscale pirmiausia sunaikina visą spalvos info.
-   Čia naudojamas kitas, žinomas trikas: invert + hue-rotate(180deg) - tai apverčia
-   šviesumą (balta->juoda), o hue-rotate "atstato" spalvų tapatybę (vanduo lieka
-   mėlynas, žalumynai žalsvi), tad žemėlapis tikrai tamsus, bet NE plokščiai pilkas.
-   Filtras taikomas tik pačiam plytelių sluoksniui, ne žymekliams. */
+/* OpenStreetMap plytelės paverčiamos tamsiomis per invert(1)+hue-rotate(180deg) (apverčia šviesumą, bet hue-rotate atstato spalvų tapatybę - vanduo lieka mėlynas, žalumynas žalias), ne grynas grayscale (tas sunaikintų spalvos info ir atrodytų plokščiai pilkas); filtras taikomas TIK plytelių sluoksniui, ne žymekliams, kad jie išlaikytų savo tikras spalvas. */
 .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.85);
 }
