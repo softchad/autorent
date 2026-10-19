@@ -5,6 +5,7 @@ import { LatLngExpression } from "leaflet";
 import { useEffect, useState, useRef } from "react";
 import L from "leaflet";
 import { useGeoCodeMutation } from "@/store/autorentApi";
+import { LOCATIONS } from "@/utils/locations";
 
 // Koordinačių talpykla — neleidžia to paties adreso geokuoduoti kelis kartus
 const coordCache = new Map<string, LatLngExpression>();
@@ -25,6 +26,7 @@ type Automobilis = {
   modelis: string;
   numeris: string;
   lokacija: {
+    vietos_id?: number;
     pavadinimas: string;
     adresas: string;
     miestas?: string;
@@ -70,7 +72,10 @@ export default function MapComponent({ cars }: MapComponentProps) {
 
     cars.forEach((car) => {
       const loc = car.lokacija;
-      if (loc?.latitude && loc?.longitude) {
+      const known = LOCATIONS.find((place) => place.vietos_id === loc?.vietos_id && place.address === loc?.adresas);
+      if (known) {
+        withCoords.push({ ...car, coords: [known.lat, known.lng] });
+      } else if (loc?.latitude && loc?.longitude) {
         withCoords.push({ ...car, coords: [loc.latitude, loc.longitude] });
       } else if (loc?.adresas) {
         const cached = coordCache.get(loc.adresas);
@@ -85,6 +90,7 @@ export default function MapComponent({ cars }: MapComponentProps) {
     setCarsWithCoords(withCoords);
 
     if (!needGeocode.length) {
+      setIsLoading(false);
       return;
     }
 
