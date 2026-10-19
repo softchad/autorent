@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiArrowLeft, FiSend, FiPlus, FiInbox, FiCheckCircle } from "react-icons/fi";
 import {
   useConversationList,
@@ -46,15 +46,18 @@ export default function SupportInbox({
   token,
   compact = false,
   initialPrefill,
+  onPrefillConsumed,
 }: {
   token: string | null;
   compact?: boolean;
   initialPrefill?: { kategorija: string; tema: string; rezervacijos_id?: number } | null;
+  onPrefillConsumed?: () => void;
 }) {
   const { conversations, isLoading, loadError, refresh: refreshList } = useConversationList(token);
   const { reservations } = useCustomerReservations(token);
   const [openId, setOpenId] = useState<number | null>(null);
   const [composing, setComposing] = useState(false);
+  const [prefill, setPrefill] = useState(initialPrefill);
 
   const { conversation, sending, error, send, markSeen } = useConversation(token, openId);
 
@@ -68,20 +71,28 @@ export default function SupportInbox({
 
   useEffect(() => {
     if (initialPrefill) {
+      setPrefill(initialPrefill);
       setComposing(true);
       setOpenId(null);
     }
   }, [initialPrefill]);
 
   const [draft, setDraft] = useState("");
+  const activeCase = useRef(openId);
+  activeCase.current = openId;
+  const sendPending = useRef(false);
+  useEffect(() => { setDraft(""); }, [openId, token]);
 
   // Optimistiškai IŠKART išvalo laukelį, kad atsakymas atrodytų greitas - klaidos atveju tekstas sugrąžinamas atgal, kad vartotojas neprarastų to, ką rašė.
   const handleSend = async () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() || sendPending.current) return;
+    const caseId = openId;
+    sendPending.current = true;
     const text = draft;
     setDraft("");
     const ok = await send(text);
-    if (!ok) setDraft(text); // klaidos atveju juodraštis neprarandamas
+    if (!ok && activeCase.current === caseId) setDraft((current) => current || text);
+    sendPending.current = false;
     refreshList();
   };
 
@@ -92,13 +103,15 @@ export default function SupportInbox({
       <NewConversationForm
         token={token}
         reservations={reservations}
-        prefill={initialPrefill}
+        prefill={prefill}
         onCreated={(convo) => {
           setComposing(false);
+          setPrefill(null);
+          onPrefillConsumed?.();
           setOpenId(convo.pokalbio_id);
           refreshList();
         }}
-        onCancel={() => setComposing(false)}
+        onCancel={() => { setComposing(false); setPrefill(null); onPrefillConsumed?.(); }}
       />
     );
   }
@@ -154,7 +167,7 @@ export default function SupportInbox({
         )}
 
         <div className="flex items-end gap-2">
-          <textarea
+          <textarea disabled={sending}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
