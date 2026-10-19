@@ -1,5 +1,7 @@
 "use client";
 
+import { localISO } from "@/utils/formatLt";
+
 import { useMemo, useState } from "react";
 import BaseModal from "@/app/components/BaseModal";
 import { useCreateInvoiceMutation } from "@/store/autorentApi";
@@ -28,7 +30,7 @@ export default function CreateInvoiceButton({
   const [open, setOpen] = useState(false);
   const [orderId, setOrderId] = useState<number | "">("");
   const [total, setTotal] = useState<number>(0);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => localISO(new Date()));
   const [createInvoice, { isLoading }] = useCreateInvoiceMutation();
 
   // Užsakymai, kurie DAR NETURI susietos sąskaitos - jau nusąskaitytus praleidžia iš sąrašo.
@@ -41,7 +43,7 @@ export default function CreateInvoiceButton({
   const handleOpen = () => {
     setOrderId("");
     setTotal(0);
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(localISO(new Date()));
     setOpen(true);
   };
 

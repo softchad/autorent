@@ -59,13 +59,17 @@ export default function EntityModal<T extends Record<string, any>>({
   const [isEditing, setIsEditing] = useState(startInEdit);
   // Klaida iš PASKUTINIO "onSave" bandymo - rodoma šalia "Išsaugoti" mygtuko, kol vartotojas arba pataiso duomenis ir bando iš naujo, arba atšaukia; NIEKADA tiesiogiai iš "onSave" - jis gali tik ją MESTI (throw), šis state yra VIENINTELĖ vieta, kuri ją sugauna.
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const entityKey = JSON.stringify(entity);
   // Formą atstato į pradinę "entity" reikšmę, kai modalas ATSIDAROMA arba kai pati "entity" pasikeičia (pvz. pasirinkus KITĄ sąrašo eilutę) - kitaip modalas rodytų PRAĖJUSIO atidarymo liekanas.
   useEffect(() => {
     if (!isOpen) return;
     setForm(entity);
     setIsEditing(startInEdit);
     setSaveError(null);
-  }, [entity, startInEdit, isOpen]);
+  // Vienodos pradinės reikšmės neturi ištrinti juodraščio, kai tėvinis komponentas persipiešia dėl duomenų užklausos.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityKey, startInEdit, isOpen]);
 
   // automatiškai skaičiuoja bendra_kaina pagal pasirinktą automobilį ir datas
   useEffect(() => {
@@ -129,6 +133,7 @@ export default function EntityModal<T extends Record<string, any>>({
 
   // "onSave" bandymas APGAUBTAS try/catch - be šito modalas užsidarytų NET kai išsaugojimas realiai nepavyko (nes "onClose()" žemiau būtų pasiekiamas visada, nepriklausomai nuo onSave rezultato), prarandant vartotojo įvestus duomenis be jokio paaiškinimo.
   const commit = async () => {
+    if (saving) return;
     const missing = fields
       .filter((f) => {
         if (!f.required || !f.name) return false;
@@ -145,6 +150,7 @@ export default function EntityModal<T extends Record<string, any>>({
       return;
     }
     setSaveError(null);
+    setSaving(true);
     try {
       if (onSave) await onSave(form);
       setIsEditing(false);
@@ -152,6 +158,8 @@ export default function EntityModal<T extends Record<string, any>>({
     } catch (err) {
       // Modalas SĄMONINGAI NEUŽSIDARO čia - vartotojas turi galimybę pataisyti duomenis ir bandyti iš naujo, neprarandant to, ką jau įvedė.
       setSaveError(err instanceof Error ? err.message : "Nepavyko išsaugoti.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -195,6 +203,7 @@ export default function EntityModal<T extends Record<string, any>>({
 
     const rawValue = cfg.name ? String((form as Record<string, unknown>)[cfg.name] ?? "") : "";
     const common = {
+      id: `entity-${String(cfg.name)}`,
       name: cfg.name,
       value: cfg.type === "date" ? rawValue.slice(0, 10) : rawValue,
       onChange: handleChange,
@@ -248,7 +257,7 @@ export default function EntityModal<T extends Record<string, any>>({
 
     return (
       <div key={cfg.name ?? cfg.label} className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-[#F7F7F7]">
+        <label htmlFor={`entity-${String(cfg.name)}`} className="text-xs font-medium text-[#F7F7F7]">
           {cfg.label}
           {cfg.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -286,6 +295,7 @@ export default function EntityModal<T extends Record<string, any>>({
       {onSave && (
         <button
           onClick={commit}
+          disabled={saving}
           className="px-4 py-2 rounded-lg text-sm bg-[#0F597B] text-white font-medium hover:bg-[#0C4A66] transition"
         >
           Išsaugoti
