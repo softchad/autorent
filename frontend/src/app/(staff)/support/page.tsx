@@ -58,9 +58,9 @@ function StatusPill({ busena }: { busena: string }) {
 // Darbuotojų aptarnavimo skydelis - eilė kairėje (filtruojama), pasirinktas pokalbis dešinėje (žinutės+pastabos, atsakymas, prisiėmimas, perdavimas, išsprendimas).
 export default function SupportPage() {
   const [filter, setFilter] = useState<QueueFilter>("needs_reply");
-  const { conversations, isLoading, refresh: refreshList } = useStaffConversationList(filter);
+  const { conversations, isLoading, loadError: listError, refresh: refreshList } = useStaffConversationList(filter);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const { conversation, actionError, claim, reassign, reply, addNote, resolve, markSeen } = useStaffConversation(selectedId);
+  const { conversation, refresh: refreshDetail, loadError: detailError, actionError, claim, reassign, reply, addNote, resolve, markSeen } = useStaffConversation(selectedId);
 
   const { data: currentUser } = useGetCurrentUserQuery();
   const { data: employees = [] } = useGetAllEmployeesQuery();
@@ -93,6 +93,7 @@ export default function SupportPage() {
 
   // Pasirinkus KITĄ bylą sąraše, visi veiksmų formos laukai atstatomi į pradinę būseną - kitaip, pvz., į naują bylą pereitų senas, dar neišsiųstas atsakymo tekstas.
   const handleSelect = (id: number) => {
+    if (busy) return;
     setSelectedId(id);
     setMode("reply");
     setText("");
@@ -159,7 +160,7 @@ export default function SupportPage() {
 
   // Vienas mygtukas, dvi reikšmės - "mode" (reply/note) nusako, ar tekstas keliauja kaip VIEŠAS atsakymas klientui (busena -> "sprendziama"), ar VIDINĖ pastaba (klientas jos NIEKADA nemato).
   const handleSend = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || busy) return;
     setBusy(true);
     try {
       if (mode === "note") {
@@ -178,7 +179,7 @@ export default function SupportPage() {
 
   // Tas pats atsakymo tekstas kaip handleSend aukščiau, bet busena keliauja į "laukiama_kliento" - naudojama, kai darbuotojas atsakė IR dabar laukia KLIENTO sekančio žingsnio, ne savo.
   const handleWaitForClient = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || busy) return;
     setBusy(true);
     try {
       await reply(text.trim(), "laukiama_kliento");
@@ -213,6 +214,7 @@ export default function SupportPage() {
       <aside className="flex w-80 shrink-0 flex-col rounded-2xl border border-[#1C2B3A] bg-[#0E1525]">
         <div className="border-b border-[#1C2B3A] p-3">
           <h1 className="mb-2 text-lg font-bold text-[#F7F7F7]">Aptarnavimas</h1>
+          {(listError || detailError) && <p role="alert" className="mb-3 text-sm text-red-300">{listError || detailError} <button className="underline" onClick={() => { refreshList(); refreshDetail(); }}>Bandyti dar kartą</button></p>}
           <div className="flex flex-wrap gap-1">
             {FILTERS.map((f) => (
               <button
@@ -458,7 +460,7 @@ export default function SupportPage() {
                 </button>
               </div>
               <div className="flex items-end gap-2">
-                <textarea
+                <textarea disabled={busy}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={mode === "note" ? "Pastaba - klientas nemato..." : "Atsakymas klientui..."}
