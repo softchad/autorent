@@ -59,6 +59,7 @@ export default function DatePicker({
   value,
   onChange,
   minDate,
+  maxDate,
   compact = false,
   allowClear = true,
   disabledDates,
@@ -67,6 +68,7 @@ export default function DatePicker({
   value: string;
   onChange: (value: string) => void;
   minDate?: string;
+  maxDate?: string;
   compact?: boolean;
   // false kai tuščia data neturi prasmės šiame kontekste (pvz. rezervacijos datų pasirinkimas automobilio puslapyje - ten VISADA turi būti data).
   allowClear?: boolean;
@@ -130,7 +132,8 @@ export default function DatePicker({
               selected={selected}
               today={today}
               min={min}
-              disabledDates={disabledDates}
+              max={fromISO(maxDate ?? "")}
+            disabledDates={disabledDates}
               onPick={(day) => {
                 onChange(localISO(day));
                 close();
@@ -184,6 +187,7 @@ export default function DatePicker({
             selected={selected}
             today={today}
             min={min}
+            max={fromISO(maxDate ?? "")}
             disabledDates={disabledDates}
             onPick={(day) => {
               onChange(localISO(day));
@@ -204,6 +208,7 @@ function CalendarGrid({
   selected,
   today,
   min,
+  max,
   disabledDates,
   onPick,
 }: {
@@ -213,6 +218,7 @@ function CalendarGrid({
   selected: Date | null;
   today: Date;
   min: Date;
+  max: Date | null;
   disabledDates?: Set<string>;
   onPick: (d: Date) => void;
 }) {
@@ -253,7 +259,7 @@ function CalendarGrid({
           week.map((day, di) => {
             if (!day) return <div key={`${wi}-${di}`} />;
             const isBusy = !!disabledDates?.has(localISO(day));
-            const disabled = day < min || isBusy;
+            const disabled = day < min || Boolean(max && day > max) || isBusy;
             const isSelected = isSameDay(day, selected);
             const isToday = isSameDay(day, today);
             return (
