@@ -16,7 +16,7 @@ type EmployeeCreate = EmployeeOut & { slaptazodis?: string; repeat_slaptazodis?:
 // Darbuotojų administravimo lentelė (sąrašas/paieška/rolės filtras/CRUD per modalą) - visa duomenų/API logika laikoma useEmployeesData.ts hook'e.
 export default function EmployeesPage() {
   const { data: currentUser } = useGetCurrentUserQuery();
-  // Tiksliai "Administratorius" - patikrinau backend'o ROLE_PERMS (permissions.py), ten "Admin" (angliškas) NIEKADA nepripažįstamas kaip administratoriaus teisė, tad ta alternatyva čia buvo klaidinanti.
+  // Administravimo veiksmai rodomi tik Administratorius vaidmeniui, kurį backend permissions.py atpažįsta kaip turintį Perm.ADMIN teisę.
   const isAdmin = currentUser?.pareigos === "Administratorius";
 
   const {
@@ -50,16 +50,17 @@ export default function EmployeesPage() {
       required: true,
     },
   ];
-  // Slaptažodžio laukas pašalintas iš REDAGAVIMO formos - EntityModal (žr. EntityModal.tsx) formą inicijuoja TUŠČIAI šiam laukui, o "required: true" (employeeFields) blokuotų VISĄ pateikimą, kol slaptažodis iš naujo įvedamas kiekvieną kartą redaguojant BET KOKĮ kitą lauką.
+  // Redagavimo forma naudoja employeeFields be slaptažodžio: EntityModal išsaugo kitus profilio laukus nereikalaudamas pakeisti prisijungimo duomenų; slaptažodis privalomas kuriant paskyrą.
   const updateFields = employeeFields.filter((f) => f.name !== "slaptazodis");
 
-  // Lentelės stulpelių aprašas DataTable'ui, IŠVESTAS iš updateFields (tie patys laukai, kuriuos galima redaguoti, rodomi ir sąraše) - "atlyginimas" vienintelis turi SAVO formatavimą (2 skaitmenys po kablelio), kitiems pakanka plokščio DB lauko vardo.
+  // Lentelės stulpelių aprašas DataTable'ui, IŠVESTAS iš updateFields (tie patys laukai, kuriuos galima redaguoti, rodomi ir sąraše) - "atlyginimas" vienintelis turi SAVO formatavimą (2 skaitmenys po kablelio), kitiems pakanka plokščio DB lauko vardo. Backend'as (žr. employee.py get_employees) KOLEGŲ atlyginimą NEadministratoriui grąžina kaip "null" - "?." + "—" atsarginis variantas ČIA, ne ".toFixed()" tiesiai, kad tai NEsulūžtų, o IR nerodytų klaidinančio "0.00".
   const columns: Column<EmployeeOut>[] = updateFields.map((f) => ({
     label: f.label,
     accessor:
       f.name === "atlyginimas"
-        ? (row: EmployeeOut) => `${row.atlyginimas.toFixed(2)}`
+        ? (row: EmployeeOut) => row.atlyginimas?.toFixed(2) ?? "—"
         : (f.name as string),
+    sortValue: f.name === "atlyginimas" ? (row: EmployeeOut) => row.atlyginimas : undefined,
   }));
 
   columns.push({
@@ -179,7 +180,10 @@ export default function EmployeesPage() {
             try {
               await updateEmployee({
                 employeeId: selectedEmployee.darbuotojo_id,
-                employeeUpdate: updated,
+                  employeeUpdate: isAdmin ? updated : {
+                    vardas: updated.vardas, pavarde: updated.pavarde,
+                    telefono_nr: updated.telefono_nr,
+                  },
               }).unwrap();
               await refetch();
             } catch (e) {

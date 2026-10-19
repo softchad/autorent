@@ -103,6 +103,18 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.carCreate,
       }),
     }),
+    getAvailableCars: build.query<
+      GetAvailableCarsApiResponse,
+      GetAvailableCarsApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/cars/available`,
+        params: {
+          date_from: queryArg.dateFrom,
+          date_to: queryArg.dateTo,
+        },
+      }),
+    }),
     updateCar: build.mutation<UpdateCarApiResponse, UpdateCarApiArg>({
       query: (queryArg) => ({
         url: `/api/v1/cars/${queryArg.carId}`,
@@ -548,6 +560,14 @@ export type CreateCarApiResponse = /** status 200 Successful Response */ CarOut;
 export type CreateCarApiArg = {
   carCreate: CarCreate;
 };
+export type GetAvailableCarsApiResponse =
+  /** status 200 Successful Response */ CarOut[];
+export type GetAvailableCarsApiArg = {
+  /** YYYY-MM-DD */
+  dateFrom: string;
+  /** YYYY-MM-DD */
+  dateTo: string;
+};
 export type UpdateCarApiResponse = /** status 200 Successful Response */ CarOut;
 export type UpdateCarApiArg = {
   carId: number;
@@ -823,7 +843,7 @@ export type EmployeeOut = {
   el_pastas: string;
   telefono_nr: string;
   pareigos: string;
-  atlyginimas: number;
+  atlyginimas?: number | null;
   isidarbinimo_data: string;
   darbuotojo_id: number;
   links: {
@@ -1200,6 +1220,7 @@ export type CustomerProfileUpdate = {
   el_pastas?: string | null;
   telefono_nr?: string | null;
   gimimo_data?: string | null;
+  dabartinis_slaptazodis?: string | null;
 };
 export type CustomerReservationOut = {
   rezervacijos_id: number;
@@ -1295,6 +1316,7 @@ export const {
   useDeleteEmployeeMutation,
   useGetAllCarsQuery,
   useCreateCarMutation,
+  useGetAvailableCarsQuery,
   useUpdateCarMutation,
   useDeleteCarMutation,
   useGetLocationsQuery,
