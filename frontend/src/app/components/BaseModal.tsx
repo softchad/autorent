@@ -1,5 +1,6 @@
 import React from "react";
 import { FiX } from "react-icons/fi";
+import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 
 // Bendras modalo karkasas (antraštė/turinys/apatinė dalis) - naudojamas VISUR, kur reikia modalo lango (žr. CreateInvoiceButton.tsx ir EntityModal.tsx), kad stilius nesiskirtų tarp skirtingų vietų.
 type BaseModalProps = {
@@ -17,11 +18,11 @@ export default function BaseModal({ title, children, isOpen, onClose, actions }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#0E1525] border border-[#1C2B3A] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        {/* Header */}
+    <Dialog open={isOpen} onClose={() => {}} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <DialogPanel className="bg-[#0E1525] border border-[#1C2B3A] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        {/* Lango antraštė ir aiškus uždarymo veiksmas. */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#1C2B3A] shrink-0">
-          <h2 className="text-base font-semibold text-[#F7F7F7]">{title}</h2>
+          <DialogTitle className="text-base font-semibold text-[#F7F7F7]">{title}</DialogTitle>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-[#3D4F63] hover:text-[#F7F7F7] hover:bg-[#1A2238] transition"
@@ -31,18 +32,18 @@ export default function BaseModal({ title, children, isOpen, onClose, actions }:
           </button>
         </div>
 
-        {/* Body */}
+        {/* Turinys slenka atskirai, kad veiksmai liktų pasiekiami mažame ekrane. */}
         <div className="overflow-y-auto px-6 py-4 flex-1 text-sm text-[#F7F7F7]">
           {children}
         </div>
 
-        {/* Footer */}
+        {/* Veiksmai rodomi tik tada, kai langas leidžia keisti duomenis. */}
         {actions && (
           <div className="px-6 py-4 flex items-center justify-end gap-2 border-t border-[#1C2B3A] shrink-0">
             {actions}
           </div>
         )}
-      </div>
-    </div>
+      </DialogPanel>
+    </Dialog>
   );
 }
