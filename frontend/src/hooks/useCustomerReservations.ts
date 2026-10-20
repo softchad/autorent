@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { extractErrorMessage } from "@/utils/extractErrorMessage";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -20,6 +20,9 @@ export type CustomerReservation = {
 
 // Prisijungusio kliento rezervacijų sąrašas "Mano nuomos" sekcijai paskyros puslapyje.
 export function useCustomerReservations(token: string | null) {
+  const active = useRef(token);
+  active.current = token;
+  const [owner, setOwner] = useState<string | null>(null);
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +40,10 @@ export function useCustomerReservations(token: string | null) {
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setReservations(await res.json());
+      const data: CustomerReservation[] = await res.json();
+      if (signal?.aborted || active.current !== token) return;
+      setOwner(token);
+      setReservations(data);
       setError(null);
     } catch (e) {
       if ((e as { name?: string })?.name !== "AbortError") {
@@ -54,7 +60,7 @@ export function useCustomerReservations(token: string | null) {
     return () => controller.abort();
   }, [refresh]);
 
-  return { reservations, isLoading, error, refresh };
+  return { reservations: owner === token ? reservations : [], isLoading, error, refresh };
 }
 
 // Naujos rezervacijos kūrimas automobilio detalių puslapyje - atskira funkcija (ne hook'as), nes kviečiama VIENKARTINIO veiksmo metu, ne komponento viso gyvavimo metu; meta serverio klaidos pranešimą (409 užimtas, 404 nerastas ir pan.), kad kviečiantis komponentas galėtų jį tiesiog parodyti vartotojui.

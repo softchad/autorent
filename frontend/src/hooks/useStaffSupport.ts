@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -68,7 +68,9 @@ export function useStaffConversationList(filter: QueueFilter) {
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setConversations(await res.json());
+      const data: StaffConversation[] = await res.json();
+      if (signal?.aborted) return;
+      setConversations(data);
       setLoadError(null);
     } catch (e) {
       if ((e as { name?: string })?.name !== "AbortError") {
@@ -97,6 +99,9 @@ export function useStaffConversationList(filter: QueueFilter) {
 // Vieno atidaryto pokalbio duomenys ir darbuotojo veiksmai (claim/reassign/reply/addNote/resolve) - visi veiksmai eina per bendrą runAction žemiau.
 export function useStaffConversation(pokalbioId: number | null) {
   const token = useAppSelector((s) => s.auth.token);
+  const identity = `${token}:${pokalbioId}`;
+  const activeIdentity = useRef(identity);
+  activeIdentity.current = identity;
   const [conversation, setConversation] = useState<StaffConversationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // Atskiras nuo "actionError" - šis yra FONINIO poll'o klaida, tas - VARTOTOJO paspausto veiksmo (claim/reassign/reply/...) klaida; sumaišius juos, nepavykęs poll'as 5s intervalu užgožtų/trintų tik ką parodytą veiksmo klaidą.
@@ -111,16 +116,21 @@ export function useStaffConversation(pokalbioId: number | null) {
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setConversation(await res.json());
+      const data: StaffConversationDetail = await res.json();
+      if (signal?.aborted || activeIdentity.current !== identity) return;
+      setConversation(data);
       setLoadError(null);
     } catch (e) {
-      if ((e as { name?: string })?.name !== "AbortError") {
+      if (activeIdentity.current === identity && !signal?.aborted && (e as { name?: string })?.name !== "AbortError") {
         setLoadError("Nepavyko įkelti pokalbio.");
       }
     }
-  }, [token, pokalbioId]);
+  }, [token, pokalbioId, identity]);
 
   useEffect(() => {
+    setConversation(null);
+    setLoadError(null);
+    setActionError(null);
     if (!pokalbioId) {
       setConversation(null);
       return;
@@ -153,13 +163,14 @@ export function useStaffConversation(pokalbioId: number | null) {
           const errBody = await res.json().catch(() => null);
           throw new Error(errBody?.detail ?? "Veiksmas nepavyko");
         }
-        setConversation(await res.json());
+        const data: StaffConversationDetail = await res.json();
+        if (activeIdentity.current === identity) setConversation(data);
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : "Veiksmas nepavyko");
+        if (activeIdentity.current === identity) setActionError(err instanceof Error ? err.message : "Veiksmas nepavyko");
         throw err;
       }
     },
-    [token, pokalbioId]
+    [token, pokalbioId, identity]
   );
 
   const claim = useCallback(() => runAction("/claim"), [runAction]);
@@ -188,5 +199,5 @@ export function useStaffConversation(pokalbioId: number | null) {
     [token, pokalbioId]
   );
 
-  return { conversation, isLoading, loadError, actionError, claim, reassign, reply, addNote, resolve, markSeen, refresh };
+  return { conversation: conversation?.pokalbio_id === pokalbioId ? conversation : null, isLoading, loadError, actionError, claim, reassign, reply, addNote, resolve, markSeen, refresh };
 }

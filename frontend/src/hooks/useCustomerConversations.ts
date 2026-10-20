@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { extractErrorMessage } from "@/utils/extractErrorMessage";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -39,6 +39,9 @@ export type ConversationDetail = Conversation & { zinutes: SupportMessage[] };
 
 // Pokalbių sąrašas - atnaujinamas pats (20s intervalu), kad klientas pamatytų darbuotojo atsakymą nepersikraunant puslapio.
 export function useConversationList(token: string | null) {
+  const active = useRef(token);
+  active.current = token;
+  const [owner, setOwner] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -54,7 +57,10 @@ export function useConversationList(token: string | null) {
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setConversations(await res.json());
+      const data: Conversation[] = await res.json();
+      if (signal?.aborted || active.current !== token) return;
+      setOwner(token);
+      setConversations(data);
       setLoadError(null);
     } catch (e) {
       if ((e as { name?: string })?.name !== "AbortError") {
@@ -76,11 +82,15 @@ export function useConversationList(token: string | null) {
     };
   }, [refresh]);
 
-  return { conversations, isLoading, loadError, refresh };
+  return { conversations: owner === token ? conversations : [], isLoading, loadError, refresh };
 }
 
 // Atidaryto pokalbio žinutės - atnaujinamos dažniau (5s) nei sąrašas aukščiau, nes čia klientas realiu laiku laukia darbuotojo atsakymo.
 export function useConversation(token: string | null, pokalbioId: number | null) {
+  const identity = `${token}:${pokalbioId}`;
+  const active = useRef(identity);
+  active.current = identity;
+  const pending = useRef(false);
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -94,17 +104,20 @@ export function useConversation(token: string | null, pokalbioId: number | null)
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setConversation(await res.json());
+      const data: ConversationDetail = await res.json();
+      if (signal?.aborted || active.current !== identity) return;
+      setConversation(data);
       // Be šito VIENA nepavykusi apklausa amžinai paliktų klaidos žinutę ekrane, net kai KITAS (po 5s) bandymas jau pavyksta.
       setError(null);
     } catch (e) {
-      if ((e as { name?: string })?.name !== "AbortError") {
+      if (active.current === identity && !signal?.aborted && (e as { name?: string })?.name !== "AbortError") {
         setError("Nepavyko įkelti pokalbio.");
       }
     }
-  }, [token, pokalbioId]);
+  }, [token, pokalbioId, identity]);
 
   useEffect(() => {
+    setConversation(null); setError(null);
     if (!pokalbioId) {
       setConversation(null);
       return;
@@ -124,7 +137,8 @@ export function useConversation(token: string | null, pokalbioId: number | null)
   // Siunčia žinutę ir IŠKART pakeičia "conversation" atsakymu (jame jau yra naujausia žinutė) - nelaukiama kito poll'o, kad klientas pamatytų savo žinutę be delsos.
   const send = useCallback(
     async (tekstas: string) => {
-      if (!token || !pokalbioId) return false;
+      if (!token || !pokalbioId || pending.current) return false;
+      pending.current = true;
       setSending(true);
       setError(null);
       try {
@@ -137,16 +151,18 @@ export function useConversation(token: string | null, pokalbioId: number | null)
           const body = await res.json().catch(() => null);
           throw new Error(extractErrorMessage(body, "Nepavyko išsiųsti žinutės"));
         }
-        setConversation(await res.json());
+        const data: ConversationDetail = await res.json();
+        if (active.current === identity) setConversation(data);
         return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Nepavyko išsiųsti žinutės");
+        if (active.current === identity) setError(err instanceof Error ? err.message : "Nepavyko išsiųsti žinutės");
         return false;
       } finally {
+        pending.current = false;
         setSending(false);
       }
     },
-    [token, pokalbioId]
+    [token, pokalbioId, identity]
   );
 
   // /seen grąžina tik santrauką - NEpertvarkome viso conversation state.
@@ -166,7 +182,7 @@ export function useConversation(token: string | null, pokalbioId: number | null)
     [token, pokalbioId]
   );
 
-  return { conversation, isLoading, sending, error, send, markSeen, refresh };
+  return { conversation: conversation?.pokalbio_id === pokalbioId ? conversation : null, isLoading, sending, error, send, markSeen, refresh };
 }
 
 // Naujo pokalbio sukūrimas - atskira funkcija, NE hook'as, nes kviečiama VIENKARTINIO veiksmo metu (naujo pokalbio formoje), ne komponento viso gyvavimo metu.
