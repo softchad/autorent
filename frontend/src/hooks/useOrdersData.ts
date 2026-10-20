@@ -43,8 +43,8 @@ export function useOrdersData() {
     return car ? `${car.marke} ${car.modelis}` : `Automobilis #${id}`;
   };
 
-  const [updateOrder, { isLoading: updating }] = useUpdateOrderMutation();
-  const [deleteOrder, { isLoading: deleting }] = useDeleteOrderMutation();
+  const [updateOrder] = useUpdateOrderMutation();
+  const [deleteOrder] = useDeleteOrderMutation();
   const [createOrder] = useCreateOrderMutation();
 
   // Kuria NAUJĄ (id === null) arba atnaujina ESAMĄ užsakymą - backend'as (OrderUpdate) tyliai IGNORUOJA laukus, kurių jis nepriima redaguojant (žr. orderEditFields žemiau), tad VISADA siunčiame pilną "processedData", nesirūpindami, kuris kelias tai yra.
@@ -156,6 +156,7 @@ export function useOrdersData() {
       readonly: true,
       render: (form) => {
         // "form.automobilio_id" iš <select> ateina kaip string, o car.automobilio_id - skaičius, tad be Number() jie niekad nesutaptų.
+        if (form.uzsakymo_id) return locations.find((l) => l.vietos_id === Number(form.paemimo_vietos_id))?.adresas ?? "-";
         const carId = form.automobilio_id ? Number(form.automobilio_id) : null;
         const car = cars.find((c) => c.automobilio_id === carId);
         return car?.lokacija?.adresas || "—";
@@ -226,9 +227,7 @@ export function useOrdersData() {
       loadingOrders ||
       loadingClients ||
       loadingCars ||
-      loadingEmployees ||
-      updating ||
-      deleting,
+      loadingEmployees,
     search,
     setSearch,
     statusFilter,

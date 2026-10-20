@@ -15,9 +15,9 @@ import { FieldConfig } from "@/app/components/staff/EntityModal";
 
 // Rezervacijų sąrašo duomenys ir CRUD forma - naudoja reservations/page.tsx.
 export const useReservationData = () => {
-  const [createReservation, { isLoading: creating }] = useCreateReservationMutation();
-  const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation();
-  const [deleteReservation, { isLoading: deleting }] = useDeleteReservationMutation();
+  const [createReservation] = useCreateReservationMutation();
+  const [updateReservation] = useUpdateReservationMutation();
+  const [deleteReservation] = useDeleteReservationMutation();
 
   const {
     data: reservations = [],
@@ -129,7 +129,7 @@ export const useReservationData = () => {
   return {
     reservations,
     filtered,
-    isLoading: isLoading || creating || updating || deleting,
+    isLoading,
     search,
     setSearch,
     statusFilter,

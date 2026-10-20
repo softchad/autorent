@@ -11,12 +11,12 @@ import {
 import { FieldConfig } from "@/app/components/staff/EntityModal";
 import { formatApiError } from "@/utils/formatApiError";
 
-// Klientų sąrašo duomenys ir CRUD forma - naudoja clients/page.tsx; kitaip nei automobiliai, klientų endpoint'ai NEpažymėti cache tag'ais (žr. enhanceEndpoints.ts), tad po kiekvienos mutacijos sąrašas atnaujinamas rankiniu "refetch()", ne automatiškai.
+// Klientų sąrašo duomenys ir keitimo forma naudoja bendrą užklausų talpyklą; po sėkmės sąrašas atnaujinamas, kad iškart matytųsi išsaugotas įrašas.
 export function useClientsData() {
   const { data: clients = [], isLoading, refetch } = useGetAllClientsQuery();
-  const [createClientMutation, { isLoading: creating }] = useCreateClientMutation();
-  const [updateClient, { isLoading: saving }] = useUpdateClientMutation();
-  const [deleteClient, { isLoading: removing }] = useDeleteClientMutation();
+  const [createClientMutation] = useCreateClientMutation();
+  const [updateClient] = useUpdateClientMutation();
+  const [deleteClient] = useDeleteClientMutation();
   const [search, setSearch] = useState("");
 
   // Paieška skaičiuojama kliento pusėje - klientų sąrašas per mažas, kad reikėtų atskiro backend endpoint'o su query parametrais.
@@ -73,7 +73,7 @@ export function useClientsData() {
   return {
     clients,
     filtered,
-    isLoading: isLoading || creating || saving || removing,
+    isLoading,
     search,
     setSearch,
     clientFields,
