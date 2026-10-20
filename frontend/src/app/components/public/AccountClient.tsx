@@ -11,8 +11,7 @@ import LoyaltyRoad from "./LoyaltyRoad";
 import SupportInbox from "./SupportInbox";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 import { useCustomerReservations } from "@/hooks/useCustomerReservations";
-import { useCustomerLoyalty } from "@/hooks/useCustomerLoyalty";
-import { useGetCustomerDiscountCodesQuery } from "@/store/autorentApi";
+import { useCustomerLoyalty, useCustomerDiscountCodes } from "@/hooks/useCustomerLoyalty";
 import { formatLt } from "@/utils/formatLt";
 import { getCarPhoto } from "@/utils/carPhoto";
 import ClientAvatar from "./ClientAvatar";
@@ -46,7 +45,7 @@ export default function AccountClient() {
     setEditingProfile(true);
   };
 
-  // Jei pasikeitė el. paštas, CustomerAuthProvider.tsx (updateProfile) PATI pasirūpina nauju tokenu (senas JWT "sub" = senas el. paštas, nebeatpažintų kliento) - čia nereikia papildomos logikos.
+  // Savitarnos forma keičia kontaktinius duomenis, o prisijungimo el. paštas rodomas tik skaitymui, nes jo pakeitimui reikia atskiro tapatybės patvirtinimo.
   const saveProfile = async () => {
     setProfileSaving(true);
     setProfileError(null);
@@ -63,7 +62,7 @@ export default function AccountClient() {
   const { status: loyalty, error: loyaltyError, redeemError, redeem } = useCustomerLoyalty(token);
   const unredeemedRewards = loyalty?.atlygiai.filter((r) => r.busena === "neisnaudotas") ?? [];
   // "skip" kai neprisijungus - užklausos be tokeno būtų 401, nereikalingas tinklo kreipinys.
-  const { data: discountCodes, refetch: refetchDiscountCodes } = useGetCustomerDiscountCodesQuery(undefined, { skip: !token });
+  const { data: discountCodes, refetch: refetchDiscountCodes } = useCustomerDiscountCodes(token);
   // Ką tik sugeneruotas kodas rodomas IŠ KARTO, PRIEŠ klientui tektų jo ieškoti žemiau, "Mano nuolaidos kodai" sąraše.
   const [justRedeemedCode, setJustRedeemedCode] = useState<string | null>(null);
   const handleRedeem = async (atlygioId: number) => {
@@ -168,7 +167,7 @@ export default function AccountClient() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <ProfileField label="Vardas" value={profileForm.vardas} onChange={(v) => setProfileForm((f) => ({ ...f, vardas: v }))} />
                         <ProfileField label="Pavardė" value={profileForm.pavarde} onChange={(v) => setProfileForm((f) => ({ ...f, pavarde: v }))} />
-                        <ProfileField label="El. paštas" type="email" value={profileForm.el_pastas} onChange={(v) => setProfileForm((f) => ({ ...f, el_pastas: v }))} />
+                        <InfoRow icon={<FiMail />} label="Prisijungimo el. paštas" value={customer.el_pastas} />
                         <ProfileField label="Telefonas" value={profileForm.telefono_nr} onChange={(v) => setProfileForm((f) => ({ ...f, telefono_nr: v }))} />
                         <ProfileField label="Gimimo data" type="date" value={profileForm.gimimo_data} onChange={(v) => setProfileForm((f) => ({ ...f, gimimo_data: v }))} />
                       </div>
@@ -331,7 +330,7 @@ export default function AccountClient() {
 
             {tab === "pastas" && (
               <div className="rounded-2xl border border-[#1C2B3A] bg-[#0E1525] p-6">
-                <SupportInbox token={token} initialPrefill={supportPrefill} />
+                <SupportInbox token={token} initialPrefill={supportPrefill} onPrefillConsumed={() => setSupportPrefill(null)} />
               </div>
             )}
           </>

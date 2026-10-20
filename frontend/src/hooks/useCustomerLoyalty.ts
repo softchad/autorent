@@ -1,9 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { extractErrorMessage } from "@/utils/extractErrorMessage";
+import type { DiscountCodeOut } from "@/store/autorentApi";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Kliento nuolaidų sąrašas naudoja jo prisijungimo bilietą, nes darbuotojų užklausų bilietas nesuteikia prieigos prie kliento savitarnos.
+export function useCustomerDiscountCodes(token: string | null) {
+  const active = useRef(token);
+  active.current = token;
+  const [result, setResult] = useState<{ token: string; data: DiscountCodeOut[] } | null>(null);
+  const refetch = useCallback(async (signal?: AbortSignal) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API}/api/v1/customer/discount-codes`, {
+        headers: { Authorization: `Bearer ${token}` }, signal,
+      });
+      if (!response.ok) return;
+      const data: DiscountCodeOut[] = await response.json();
+      if (!signal?.aborted && active.current === token) setResult({ token, data });
+    } catch {
+      // Nepavykęs kodo gavimas nekeičia išsaugotų duomenų; sąrašas vėl užklausiamas atidarius paskyrą arba panaudojus atlygį.
+    }
+  }, [token]);
+  useEffect(() => {
+    const controller = new AbortController();
+    refetch(controller.signal);
+    return () => controller.abort();
+  }, [refetch]);
+  return { data: result?.token === token ? result.data : undefined, refetch };
+}
 
 export type LoyaltyReward = {
   atlygio_id: number;
@@ -24,6 +51,9 @@ export type LoyaltyStatus = {
 
 // Kliento lojalumo progreso būsena ir atlygių panaudojimas - kraunama vieną kartą prisijungus, vėliau iš naujo tik po sėkmingo "redeem" (nereikia nuolatinio poll'o kaip pokalbiams, progresas keičiasi tik po užsakymo).
 export function useCustomerLoyalty(token: string | null) {
+  const active = useRef(token);
+  active.current = token;
+  const [owner, setOwner] = useState<string | null>(null);
   const [status, setStatus] = useState<LoyaltyStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +72,10 @@ export function useCustomerLoyalty(token: string | null) {
         signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      setStatus(await res.json());
+      const data: LoyaltyStatus = await res.json();
+      if (signal?.aborted || active.current !== token) return;
+      setOwner(token);
+      setStatus(data);
       setError(null);
     } catch (e) {
       if ((e as { name?: string })?.name !== "AbortError") {
@@ -83,5 +116,5 @@ export function useCustomerLoyalty(token: string | null) {
     [token, refresh]
   );
 
-  return { status, isLoading, error, redeemError, redeem };
+  return { status: owner === token ? status : null, isLoading, error, redeemError, redeem };
 }
