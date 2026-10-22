@@ -1,5 +1,7 @@
 "use client";
 
+import { localISO } from "@/utils/formatLt";
+
 import { useState } from "react";
 import DataTable from "@/app/components/DataTable";
 import { ActionButtons } from "@/app/components/ActionButtons";
@@ -12,24 +14,17 @@ import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import {
   useCreateInvoiceMutation,
-  useDeleteInvoiceMutation,
   useGetAllInvoicesQuery,
-  useGetCurrentUserQuery,
 } from "@/store/autorentApi";
-import { FiFile, FiFileText } from "react-icons/fi";
+import { FiFile } from "react-icons/fi";
 
 // Užsakymų administravimas (sąrašas/paieška/statuso filtras/sąskaitos išrašymas/CRUD per modalą).
 export default function OrdersPage() {
-  const { data: currentUser } = useGetCurrentUserQuery();
-  // Sąskaitos "pergeneravimas" žemiau viduje kviečia deleteInvoice, kuris backend'e reikalauja Perm.ADMIN (žr. invoice.py) - be šios patikros bet kuris EDIT teisę turintis darbuotojas matytų mygtuką, kurį paspaudus serveris atmestų su 403.
-  const isAdmin = currentUser?.pareigos === "Administratorius";
-
   const [selected, setSelected] = useState<OrderOut | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
   const [createInvoice] = useCreateInvoiceMutation();
-  const [deleteInvoice] = useDeleteInvoiceMutation();
   const { data: allInvoices = [], refetch: refetchInvoices } = useGetAllInvoicesQuery();
 
   const {
@@ -53,10 +48,12 @@ export default function OrdersPage() {
     {
       label: "Klientas",
       accessor: (o: OrderOut) => getClientName(o.kliento_id),
+      sortValue: (o: OrderOut) => getClientName(o.kliento_id),
     },
     {
       label: "Automobilis",
       accessor: (o: OrderOut) => getCarName(o.automobilio_id),
+      sortValue: (o: OrderOut) => getCarName(o.automobilio_id),
     },
     { label: "Pradžia", accessor: "nuomos_data" },
     { label: "Pabaiga", accessor: "grazinimo_data" },
@@ -65,6 +62,7 @@ export default function OrdersPage() {
       accessor: (o: OrderOut) => (
         <StatusBadge status={o.uzsakymo_busena || ""} />
       ),
+      sortValue: (o: OrderOut) => o.uzsakymo_busena || null,
     },
     {
       label: "Veiksmai",
@@ -73,22 +71,16 @@ export default function OrdersPage() {
         const existing = allInvoices.find((inv) => inv.order_id === o.uzsakymo_id);
         return (
         <div className="flex items-center gap-1">
-        {(!existing || isAdmin) && (
+        {!existing && (
         <button
           title={existing ? "Pergeneruoti sąskaitą" : "Išrašyti sąskaitą"}
           onClick={async () => {
-            // Pergeneravimas (kai "existing" jau yra) yra NAIKINANTIS veiksmas - patvirtinimas reikalingas, kaip IR invoices/page.tsx analogiškame veiksme.
-            if (existing && !window.confirm(`Pergeneruoti sąskaitą nr. ${existing.invoice_id}? Esama sąskaita bus ištrinta ir sukurta nauja.`)) return;
             try {
-              // RIZIKA: šie du veiksmai NĖRA atomiški (backend neturi vieno "regenerate" endpoint'o) - jei deleteInvoice pavyksta, bet createInvoice žemiau nepavyktų, sąskaita būtų IŠTRINTA be pakaitalo (ta pati rizika kaip invoices/page.tsx).
-              if (existing) {
-                await deleteInvoice({ invoiceId: existing.invoice_id }).unwrap();
-              }
               await createInvoice({
                 invoiceCreate: {
                   order_id: o.uzsakymo_id,
                   total: o.bendra_kaina,
-                  invoice_date: new Date().toISOString().slice(0, 10),
+                  invoice_date: localISO(new Date()),
                 },
               }).unwrap();
               await refetchInvoices();
@@ -100,7 +92,7 @@ export default function OrdersPage() {
           className="p-1.5 rounded-lg transition-all text-base text-[#3D4F63] hover:bg-amber-900/30 hover:text-amber-400"
           aria-label={existing ? "Pergeneruoti sąskaitą" : "Išrašyti sąskaitą"}
         >
-          {existing ? <FiFileText /> : <FiFile />}
+          <FiFile />
         </button>
         )}
         <ActionButtons
