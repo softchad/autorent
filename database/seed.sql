@@ -9,6 +9,7 @@ TRUNCATE TABLE `Pokalbio_Pastabos`;
 TRUNCATE TABLE `Pokalbio_Zinutes`;
 TRUNCATE TABLE `Pokalbiai`;
 TRUNCATE TABLE `Lojalumo_Atlygiai`;
+TRUNCATE TABLE `Nuolaidos_Kodai`;
 TRUNCATE TABLE `Rezervavimas`;
 TRUNCATE TABLE `Saskaitos`;
 TRUNCATE TABLE `Uzsakymai`;
