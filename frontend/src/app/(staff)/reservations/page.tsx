@@ -9,8 +9,8 @@ import { useReservationData } from "@/hooks/useReservationData";
 import StatusBadge from "@/app/components/StatusBadge";
 import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
-import type { ReservationUpdate } from "@/store/autorentApi";
-import { useGetCurrentUserQuery } from "@/store/autorentApi";
+import type { ReservationUpdate, OrderCreate } from "@/store/autorentApi";
+import { useGetCurrentUserQuery, useCreateOrderMutation } from "@/store/autorentApi";
 import { FiCheck, FiMapPin } from "react-icons/fi";
 import Image from "next/image";
 import { getCarPhoto } from "@/utils/carPhoto";
@@ -23,6 +23,7 @@ type Rezervacija = NonNullable<
 // Rezervacijų administravimas (sąrašas/paieška/statuso filtras/greitas patvirtinimas/CRUD per modalą).
 export default function ReservationsPage() {
   const { data: currentUser } = useGetCurrentUserQuery();
+  const [createOrder, { isLoading: converting }] = useCreateOrderMutation();
   // Trynimas backend'e reikalauja Perm.ADMIN (žr. reservation.py delete_reservation - "negrįžtamas veiksmas"), ne vien Perm.EDIT kaip redagavimas - be šios patikros bet kuris EDIT teisę turintis darbuotojas matytų trynimo mygtuką, kurį paspaudus serveris atmestų su 403.
   const isAdmin = currentUser?.pareigos === "Administratorius";
 
@@ -49,26 +50,51 @@ export default function ReservationsPage() {
     {
       label: "Klientas",
       accessor: (r: Rezervacija) => getClientName(r.kliento_id),
+      sortValue: (r: Rezervacija) => getClientName(r.kliento_id),
     },
     {
       label: "Automobilis",
       accessor: (r: Rezervacija) => getCarName(r.automobilio_id),
+      sortValue: (r: Rezervacija) => getCarName(r.automobilio_id),
     },
     { label: "Pradžia", accessor: "rezervacijos_pradzia" },
     { label: "Pabaiga", accessor: "rezervacijos_pabaiga" },
     {
       label: "Būsena",
       accessor: (r: Rezervacija) => <StatusBadge status={r.busena} />,
+      sortValue: (r: Rezervacija) => r.busena,
     },
     {
       label: "Veiksmai",
       // "r" čia yra TOS KONKREČIOS eilutės rezervacija, uždaryta (closure) šiai vienai stulpelio funkcijai.
       accessor: (r: Rezervacija) => (
         <ActionButtons
-          show={{ view: true, edit: true, delete: isAdmin, extra: r.busena === "laukia" }}
-          extraLabel="Patvirtinti"
+          show={{ view: true, edit: true, delete: isAdmin, extra: !converting && (r.busena === "laukia" || r.busena === "patvirtinta") }}
+          extraLabel={r.busena === "patvirtinta" ? "Išnuomoti" : "Patvirtinti"}
           extraIcon={<FiCheck className="text-base" />}
           onExtra={async () => {
+            if (r.busena === "patvirtinta") {
+              const car = cars.find((c) => c.automobilio_id === r.automobilio_id);
+              if (!currentUser || !car?.lokacija || converting) return;
+              if (!window.confirm("Sukurti nuomos užsakymą iš šios rezervacijos?")) return;
+              const days = Math.max(1, Math.round((Date.parse(r.rezervacijos_pabaiga) - Date.parse(r.rezervacijos_pradzia)) / 86400000));
+              const orderCreate: OrderCreate & { rezervacijos_id: number } = {
+                rezervacijos_id: r.rezervacijos_id,
+                kliento_id: r.kliento_id, automobilio_id: r.automobilio_id,
+                darbuotojo_id: currentUser.darbuotojo_id,
+                nuomos_data: r.rezervacijos_pradzia, grazinimo_data: r.rezervacijos_pabaiga,
+                paemimo_vietos_id: car.lokacija.vietos_id, grazinimo_vietos_id: car.lokacija.vietos_id,
+                bendra_kaina: days * car.kaina_parai,
+                uzsakymo_busena: "patvirtinta", turi_papildomas_paslaugas: false,
+              };
+              try {
+                const created = await createOrder({ orderCreate }).unwrap();
+                alert(`Sukurtas užsakymas #${created.uzsakymo_id}. Tęskite skiltyje „Užsakymai“.`);
+              } catch (err) {
+                alert(formatApiError(err, "Nepavyko sukurti užsakymo."));
+              }
+              return;
+            }
             if (!window.confirm("Patvirtinti šią rezervaciją?")) return;
             try {
               await saveReservation(r.rezervacijos_id, { busena: "patvirtinta" });
@@ -87,7 +113,7 @@ export default function ReservationsPage() {
             setModalOpen(true);
           }}
           onDelete={async () => {
-            if (!window.confirm("Ar tikrai norite atšaukti rezervaciją?")) return;
+            if (!window.confirm("Ar tikrai norite negrįžtamai ištrinti rezervaciją?")) return;
             try {
               await handleDelete(r.rezervacijos_id);
             } catch (err) {
