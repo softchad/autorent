@@ -5,12 +5,12 @@ from app.db.base import Base
 
 
 class DiscountCode(Base):
-    __tablename__ = "nuolaidos_kodai"
+    __tablename__ = "Nuolaidos_Kodai"
 
     kodo_id = Column(Integer, primary_key=True, index=True)
     # "AUTORENT" + 6 skaitmenys (žr. generate_unique_code servisų faile) - unique, kad DU kodai niekada negalėtų sutapti.
     kodas = Column(String(20), unique=True, nullable=False, index=True)
-    kliento_id = Column(Integer, ForeignKey("klientai.kliento_id"), nullable=False)
+    kliento_id = Column(Integer, ForeignKey("Klientai.kliento_id"), nullable=False)
     verte_eur = Column(Numeric(10, 2), nullable=False)
     # "lojalumas" (automatiškai per /customer/loyalty/rewards/{id}/redeem) arba "aptarnavimas" (darbuotojo ranka sukurtas, žr. staff_support.py).
     kilme = Column(String(20), nullable=False)

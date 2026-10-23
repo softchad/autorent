@@ -232,6 +232,51 @@ def test_full_staff_workflow_reply_note_resolve_seen(auth_headers):
     assert seen.status_code == 200, seen.text
 
 
+# "/seen" (mark_seen) NETURI pastumti bylos į sąrašo galą - atnaujinimo_data (naudojama needs_reply rikiavimui, žr. list_conversations) turi LIKTI nepaliesta, kitaip seniausia neatsakyta byla "pasislėptų" už naujesnių vien dėl to, kad kažkas ją atsidarė (žr. support_service.mark_seen).
+def test_mark_seen_does_not_bump_atnaujinimo_data(auth_headers, db_session):
+    _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    pokalbio_id = _make_conversation()
+
+    # Use a distinctly old timestamp so this cannot pass by running in the same second.
+    from datetime import datetime
+    from app.models.support_conversation import SupportConversation
+    db_session.query(SupportConversation).filter_by(pokalbio_id=pokalbio_id).update(
+        {"atnaujinimo_data": datetime(2020, 1, 1)}
+    )
+    db_session.commit()
+
+    before = client.get("/api/v1/support/conversations", headers=support_headers).json()
+    before_updated = next(c["atnaujinimo_data"] for c in before if c["pokalbio_id"] == pokalbio_id)
+
+    seen = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/seen",
+        json={"zinutes_id": 1},
+        headers=support_headers,
+    )
+    assert seen.status_code == 200, seen.text
+
+    after = client.get("/api/v1/support/conversations", headers=support_headers).json()
+    after_updated = next(c["atnaujinimo_data"] for c in after if c["pokalbio_id"] == pokalbio_id)
+    assert after_updated == before_updated
+
+
+# Byla priskirta darbuotojui A - darbuotojas B (taip pat aptarnavimo rolė) NEGALI jos force-close'inti per /resolve, lygiai taip pat, kaip jau negali atsakyti per /messages (žr. support_service.resolve_conversation ownership patikrą).
+def test_resolve_requires_assigned_staff(auth_headers):
+    _, headers_a = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    _, headers_b = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    pokalbio_id = _make_conversation()
+
+    claimed = client.post(f"/api/v1/support/conversations/{pokalbio_id}/claim", headers=headers_a)
+    assert claimed.status_code == 200, claimed.text
+
+    resp = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/resolve",
+        json={"santrauka": "Bandau uždaryti svetimą bylą"},
+        headers=headers_b,
+    )
+    assert resp.status_code == 403
+
+
 # Aptarnavimo darbuotojas gali išduoti kompensacijos kodą TO pokalbio klientui - kliento_id turi būti išvestas iš PAČIO pokalbio (žr. GenerateDiscountCodeRequest komentarą), ne iš užklausos kūno, kodas turi gautis "aptarnavimas" kilmės.
 def test_issue_discount_code_for_conversation(auth_headers):
     _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
@@ -247,6 +292,32 @@ def test_issue_discount_code_for_conversation(auth_headers):
     assert body["kodas"].startswith("AUTORENT")
     assert body["kilme"] == "aptarnavimas"
     assert body["verte_eur"] == 10.0
+
+
+# "verte_eur" PRIVALO turėti viršutinę ribą (MAX_MANUAL_DISCOUNT_EUR, žr. schemas/discount_code.py) - be jos aptarnavimo prieigą turintis darbuotojas galėtų išduoti BET KOKIO dydžio kodą.
+def test_issue_discount_code_rejects_value_above_cap(auth_headers):
+    _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    pokalbio_id = _make_conversation()
+
+    resp = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/discount-code",
+        json={"verte_eur": 5000.0, "priezastis": "Bandymas viršyti ribą"},
+        headers=support_headers,
+    )
+    assert resp.status_code == 422
+
+
+# "priezastis" turi viršutinę ribą (žr. schemas/discount_code.py MAX_PRIEZASTIS_LEN) - be jos per ilgas tekstas MySQL strict mode lūžtų kaip neaiškus 500, ne aiškus 422.
+def test_issue_discount_code_rejects_too_long_priezastis(auth_headers):
+    _, support_headers = _make_employee_headers(auth_headers, "Klientų aptarnavimas")
+    pokalbio_id = _make_conversation()
+
+    resp = client.post(
+        f"/api/v1/support/conversations/{pokalbio_id}/discount-code",
+        json={"verte_eur": 10.0, "priezastis": "x" * 300},
+        headers=support_headers,
+    )
+    assert resp.status_code == 422
 
 
 # Mechanikas NĖRA aptarnavimo rolė - neturi galėti išduoti kompensacijos kodų, net jei žinotų pokalbio_id.
