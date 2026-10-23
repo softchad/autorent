@@ -1,7 +1,9 @@
 # Sąskaitų CRUD endpointai - sąskaita visada susieta su VIENU konkrečiu užsakymu (1:1), ne keliais.
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError  # klaida, kurią duomenų bazė meta, kai pažeidžiamas UNIQUE apribojimas (žr. create_invoice žemiau)
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.api.deps import get_db
 from app.schemas.invoice import InvoiceCreate, InvoiceOut
 from app.models.order import Order
@@ -17,12 +19,16 @@ router = APIRouter(
 )
 
 # "get" lambda - leidžia priimti IR dict'ą (get_all_invoices grąžina žodynus iš repozitorijos JOIN užklausos), IR DB objektą (create_invoice grąžina tiesiog Invoice modelio eilutę) tuo pačiu kodu.
+# dict'o atveju raktai PERVARDYTI (.label("invoice_id")/.label("order_id") get_all_invoices užklausoje), tad "saskaitos_id"/"uzsakymo_id" dict'e NIEKADA neegzistuoja - "obj.get(key)" tyliai grąžintų None, ne klaidą, ir nuoroda taptų "/invoices/None". ORM objekto (create_invoice) atveju TIKRAS atributo vardas vis tiek yra "saskaitos_id"/"uzsakymo_id" - tad dict ir ORM šakos reikalauja SKIRTINGŲ raktų vardų, ne bendro lambda.
 def generate_invoice_links(invoice) -> list[dict]:
-    get = lambda obj, key: obj.get(key) if isinstance(obj, dict) else getattr(obj, key)
+    if isinstance(invoice, dict):
+        invoice_id, order_id = invoice.get("invoice_id"), invoice.get("order_id")
+    else:
+        invoice_id, order_id = invoice.saskaitos_id, invoice.uzsakymo_id
     return [
-        {"rel": "self", "href": f"/invoices/{get(invoice, 'saskaitos_id')}"},
-        {"rel": "order", "href": f"/orders/{get(invoice, 'uzsakymo_id')}"},
-        {"rel": "delete", "href": f"/invoices/{get(invoice, 'saskaitos_id')}"}
+        {"rel": "self", "href": f"/invoices/{invoice_id}"},
+        {"rel": "order", "href": f"/orders/{order_id}"},
+        {"rel": "delete", "href": f"/invoices/{invoice_id}"}
     ]
 
 
@@ -39,8 +45,8 @@ def get_all_invoices(db: Session = Depends(get_db)):
             Invoice.suma.label("total"),
             Invoice.saskaitos_data.label("invoice_date"),
             Order.uzsakymo_busena.label("status"),
-            klientas_model.Client.vardas.label("client_first_name"),
-            klientas_model.Client.pavarde.label("client_last_name"),
+            func.coalesce(Invoice.gavejo_vardas, klientas_model.Client.vardas).label("client_first_name"),
+            func.coalesce(Invoice.gavejo_pavarde, klientas_model.Client.pavarde).label("client_last_name"),
         )
         .join(Order, Invoice.uzsakymo_id == Order.uzsakymo_id)
         .join(klientas_model.Client, Order.kliento_id == klientas_model.Client.kliento_id)
@@ -82,9 +88,16 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
         uzsakymo_id=invoice.order_id,
         suma=invoice.total,
         saskaitos_data=invoice.invoice_date,
+        gavejo_vardas=client.vardas,
+        gavejo_pavarde=client.pavarde,
     )
     db.add(created)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # "existing" patikra aukščiau yra check-THEN-insert - du VIENU METU ateinantys createInvoice kreipiniai abu galėtų ją praeiti PRIEŠ bet kuriam užsicommit'inant . DB UNIQUE apribojimas (žr. models/invoice.py) yra TIKRA apsauga nuo šios lenktynių spragos - šis "except" tiesiog paverčia antrojo pralaimėtojo klaidą suprantama 409, ne neaiškia 500.
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Šis užsakymas jau turi sąskaitą.")
     db.refresh(created)
 
     return {

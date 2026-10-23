@@ -7,7 +7,7 @@ from app.models import Location
 client = TestClient(app)
 
 
-# "scope='module', autouse" nebuvo pažymėta ČIA (tik eksplicitiškai per ensure_place_exists parametrą žemiau) - Location(1) reikalinga, kad automobilis (dabartine_vieta_id NOT NULL) ir prepared_order galėtų egzistuoti.
+# Modulio testams paruošiama Location(1), nes sąskaitos užsakymo automobiliui būtinas dabartine_vieta_id išorinis raktas; fixture naudojama per prepared_order priklausomybę.
 @pytest.fixture(scope="module")
 def ensure_place_exists(db_session):
     vieta = db_session.query(Location).filter_by(vietos_id=1).first()
@@ -127,7 +127,28 @@ def test_create_invoice_duplicate_rejected(example_invoice_data, auth_headers):
     assert second.status_code == 409
 
 
-# Neegzistuojantis order_id turi grąžinti aiškų 404 PRIEŠ bandant įrašyti - regresijos testas realiam bug'ui (anksčiau sulūžo su 500, žr. invoice.py).
+# Atskira SQLite sesija tiesiogiai įterpia dvi sąskaitas tam pačiam užsakymui: tikrinamas models/invoice.py UNIQUE apribojimas, nepriklausomai nuo API išankstinės patikros; rollback nepaveikia bendros testų sesijos.
+def test_invoice_unique_constraint_rejects_direct_duplicate_insert():
+    from datetime import date
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy.orm import sessionmaker
+    from app.db.base import Base
+    from app.models.invoice import Invoice
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine)()
+
+    db.add(Invoice(uzsakymo_id=1, suma=50.0, saskaitos_data=date(2024, 6, 1)))
+    db.commit()
+
+    db.add(Invoice(uzsakymo_id=1, suma=70.0, saskaitos_data=date(2024, 6, 2)))
+    with pytest.raises(IntegrityError):
+        db.commit()
+
+
+# Sąskaitos kūrimas neegzistuojančiam užsakymui turi grąžinti aiškų 404 prieš bandant įrašyti išoriniu raktu susietą sąskaitą.
 def test_create_invoice_order_not_found(auth_headers):
     resp = client.post(
         "/api/v1/invoices/",
@@ -155,6 +176,25 @@ def test_get_all_invoices(auth_headers):
         assert_invoiceout_fields(invoices[0])
 
 
+# Sąskaitų sąrašo atsakyme naudojami invoice_id ir order_id; HATEOAS nuorodos turi apimti tikrus šių įrašų ID, kad klientas galėtų pasiekti susietus išteklius.
+def test_get_all_invoices_links_contain_real_ids_not_none(prepared_order, auth_headers):
+    resp = client.post(
+        "/api/v1/invoices/",
+        json={"order_id": prepared_order, "total": 55.5, "invoice_date": "2024-06-01"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.json()
+    invoice_id = resp.json()["invoice_id"]
+
+    list_resp = client.get("/api/v1/invoices/", headers=auth_headers)
+    assert list_resp.status_code == 200
+    listed = next(inv for inv in list_resp.json() if inv["invoice_id"] == invoice_id)
+    hrefs = {link["rel"]: link["href"] for link in listed["links"]}
+    assert hrefs["self"] == f"/invoices/{invoice_id}"
+    assert hrefs["order"] == f"/orders/{prepared_order}"
+    assert "None" not in hrefs["self"] and "None" not in hrefs["order"]
+
+
 # Pilnas kūrimo-ištrynimo ciklas VIENAME teste - sukurta sąskaita realiai DINGSTA iš sąrašo po ištrynimo.
 def test_delete_invoice(prepared_order, auth_headers):
     invoice_resp = client.post(
@@ -172,3 +212,19 @@ def test_delete_invoice(prepared_order, auth_headers):
     get_resp = client.get("/api/v1/invoices/", headers=auth_headers)
     ids = [inv["invoice_id"] for inv in get_resp.json()]
     assert invoice_id not in ids
+
+
+# Profilyje pakeistas vardas neturi pakeisti jau išrašyto dokumento gavėjo.
+def test_invoice_recipient_survives_profile_change(prepared_order, auth_headers, db_session):
+    from app.models.order import Order
+    from app.models.client import Client
+
+    created = client.post("/api/v1/invoices/", json={"order_id": prepared_order, "total": 50, "invoice_date": "2024-06-01"}, headers=auth_headers)
+    assert created.status_code == 200, created.text
+    original = created.json()
+    customer = db_session.get(Client, db_session.get(Order, prepared_order).kliento_id)
+    customer.vardas = "Changed"
+    db_session.commit()
+    invoices = client.get("/api/v1/invoices/", headers=auth_headers).json()
+    issued = next(invoice for invoice in invoices if invoice["invoice_id"] == original["invoice_id"])
+    assert issued["client_first_name"] == original["client_first_name"]
