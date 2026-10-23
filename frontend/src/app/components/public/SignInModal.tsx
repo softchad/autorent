@@ -6,6 +6,7 @@ import Image from "next/image";
 import { FiX, FiBriefcase, FiEye, FiEyeOff } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/logo-mark.png";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import { useCustomerAuth } from "@/app/providers/CustomerAuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -16,9 +17,13 @@ type Mode = "login" | "register";
 export default function SignInModal({
   isOpen,
   onClose,
+  onSuccess,
+  returnTo,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
+  returnTo?: string;
 }) {
   const { customer, login, register, logout } = useCustomerAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -32,7 +37,7 @@ export default function SignInModal({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Komponentas NEUNMOUNTINAMAS uždarius (tėvas visada jį renderina, žr. PublicHeader.tsx) - be šito efekto senos reikšmės likdavo laukuose kitą kartą atidarius modalą, nes useState išlieka tarp "isOpen=false" kadrų.
+  // PublicHeader išlaiko SignInModal sumontuotą ir uždarytą, todėl atidarymo efektas išvalo laukus bei klaidas prieš naują prisijungimo ar registracijos bandymą.
   useEffect(() => {
     if (isOpen) {
       setMode("login");
@@ -88,6 +93,7 @@ export default function SignInModal({
   // Vienas handler'is dviem veiksmams - "mode" nusako, ar siunčiama login, ar register užklausa; sėkmės atveju modalas užsidaro (onClose), klaidos atveju tekstas lieka laukeliuose ir rodomas "error".
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -103,7 +109,7 @@ export default function SignInModal({
           slaptazodis,
         });
       }
-      onClose();
+      (onSuccess ?? onClose)();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nepavyko atlikti veiksmo");
     } finally {
@@ -113,14 +119,14 @@ export default function SignInModal({
 
   return (
     // z-[2000] - Leaflet žemėlapio (/automobiliai) vidiniai sluoksniai siekia iki z-index:1000 (žr. tą pačią pastabą PublicHeader.tsx) - z-50 čia leisdavo žemėlapiui "pavogti" paspaudimus per modalą ir jis neatsidarydavo/neblur'indavo fono tame puslapyje.
-    <div
+    <Dialog open={mounted} onClose={onClose} aria-label="Prisijungimas"
       className={`fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onClick={(e) => {
         if (mouseDownOnBackdrop.current && e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      <DialogPanel
         className={`relative w-full max-w-sm bg-[#0E1525] border border-[#1C2B3A] rounded-2xl shadow-2xl px-8 py-9 max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0"}`}
       >
         <button
@@ -170,7 +176,7 @@ export default function SignInModal({
             </p>
 
             <button
-              onClick={() => { window.location.href = `${API}/api/v1/customer/google/login`; }}
+              onClick={() => { sessionStorage.setItem("customer_return_path", returnTo ?? window.location.pathname + window.location.search); window.location.href = `${API}/api/v1/customer/google/login`; }}
               className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 text-sm font-semibold py-2.5 rounded-lg transition shadow"
             >
               <FcGoogle size={20} />
@@ -285,7 +291,7 @@ export default function SignInModal({
           <FiBriefcase className="shrink-0" />
           Prisijungimas darbuotojams
         </Link>
-      </div>
-    </div>
+      </DialogPanel>
+    </Dialog>
   );
 }

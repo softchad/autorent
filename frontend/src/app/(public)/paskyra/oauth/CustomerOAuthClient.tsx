@@ -20,7 +20,11 @@ export default function CustomerOAuthClient() {
     }
     // ".catch" BŪTINAS - applyTokenFromOAuth meta klaidą, jei tokenas negalioja (žr. CustomerAuthProvider.tsx); be šito vartotojas būtų TYLIAI nukreiptas į /paskyra NEprisijungęs, be jokio paaiškinimo.
     applyTokenFromOAuth(token)
-      .then(() => router.replace("/paskyra"))
+      .then(() => {
+        const returnTo = sessionStorage.getItem("customer_return_path");
+        sessionStorage.removeItem("customer_return_path");
+        router.replace(returnTo && /^\/automobiliai\/[1-9]\d*(?:\?[^#]*)?$/.test(returnTo) ? returnTo : "/paskyra");
+      })
       .catch(() => setError(true));
   }, [applyTokenFromOAuth, router]);
 

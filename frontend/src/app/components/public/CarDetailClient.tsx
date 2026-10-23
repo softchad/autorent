@@ -35,9 +35,9 @@ const STATUS_NOTE: Record<string, string> = {
   remonte: "Šis automobilis šiuo metu remontuojamas.",
 };
 
-export default function CarDetailClient({ id }: { id: number }) {
+export default function CarDetailClient({ id, initialDates }: { id: number; initialDates?: { dateFrom: string; dateTo: string } }) {
   const router = useRouter();
-  const [search, setSearch] = useState<SearchValue>({ location: "", ...defaultDateRange() });
+  const [search, setSearch] = useState<SearchValue>({ location: "", ...(initialDates ?? defaultDateRange()) });
   const { car, isLoading, notFound, error: dateRangeError } = usePublicCar(id, { dateFrom: search.dateFrom, dateTo: search.dateTo });
   const busyDates = useCarBusyDates(id);
   const hasDateRange = Boolean(search.dateFrom && search.dateTo);
@@ -59,6 +59,7 @@ export default function CarDetailClient({ id }: { id: number }) {
     : 0;
 
   const handleReserve = async () => {
+    if (booking === "submitting" || dateRangeError || isLoading) return;
     if (!customer || !token || !car) {
       setPendingReservation(true);
       setSignInOpen(true);
@@ -121,7 +122,11 @@ export default function CarDetailClient({ id }: { id: number }) {
               </div>
             )}
 
-            {!isLoading && car && (
+            {!isLoading && !notFound && dateRangeError && (
+              <p role="alert" className="mb-4 rounded-xl border border-red-900 p-4 text-red-300">{dateRangeError}</p>
+            )}
+
+            {!isLoading && !notFound && car && (
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
                 <div>
                   <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-[#1C2B3A]">
@@ -250,9 +255,9 @@ export default function CarDetailClient({ id }: { id: number }) {
                           label="Iki"
                           value={search.dateTo}
                           onChange={(v) => setSearch((s) => ({ ...s, dateTo: v }))}
-                          minDate={search.dateFrom}
+                          minDate={nextDay(search.dateFrom)}
                           allowClear={false}
-                          disabledDates={busyDates}
+                          maxDate={[...busyDates].filter((date) => date >= search.dateFrom).sort()[0]}
                         />
                       </div>
 
@@ -287,7 +292,7 @@ export default function CarDetailClient({ id }: { id: number }) {
 
                       <button
                         onClick={handleReserve}
-                        disabled={!hasDateRange || !car.laisvas_pasirinktu_laikotarpiu || booking === "submitting"}
+                        disabled={!hasDateRange || Boolean(dateRangeError) || !car.laisvas_pasirinktu_laikotarpiu || booking === "submitting"}
                         title={
                           !hasDateRange
                             ? "Pasirink nuomos laikotarpį"
@@ -318,7 +323,7 @@ export default function CarDetailClient({ id }: { id: number }) {
         <PublicFooter />
       </div>
 
-      <SignInModal isOpen={signInOpen} onClose={() => setSignInOpen(false)} />
+      <SignInModal returnTo={`/automobiliai/${id}?${new URLSearchParams({ dateFrom: search.dateFrom, dateTo: search.dateTo })}`} isOpen={signInOpen} onSuccess={() => setSignInOpen(false)} onClose={() => { setSignInOpen(false); setPendingReservation(false); }} />
     </div>
   );
 }
