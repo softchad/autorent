@@ -13,7 +13,7 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    // Sinchronizuoja tokeną VISUR, kur jo reikia: Redux (reaktyvus UI per šios sesijos gyvavimą), localStorage (išlieka po puslapio perkrovimo, žr. AuthHydrate.tsx) IR "token" slapuke (vienintelis šaltinis, kurį middleware.ts gali patikrinti serverio pusėje, PRIEŠ bet kokiam kliento JS paleidimui) - visi trys TURI keistis kartu, kitaip, pvz., Redux/localStorage rodytų "atsijungęs", o middleware (skaitantis TIK slapuką) vis tiek leistų pasiekti apsaugotą puslapį.
+    // Darbuotojo bilietas sinchronizuojamas Redux būsenoje, localStorage ir token slapuke: AuthGuard atkuria sesiją naršyklėje, middleware tikrina maršruto prieigą, o baseApi prideda bilietą prie API užklausų.
     setToken(state, action: PayloadAction<string | null>) {
       state.token = action.payload;
       if (action.payload) {

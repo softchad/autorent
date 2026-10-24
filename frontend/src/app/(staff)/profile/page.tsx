@@ -108,7 +108,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* Rodoma VISIEMS, be sąlygos - patikrinau ROLE_PERMS (permissions.py), "Svečias" NĖRA reali, DB egzistuojanti pareigybė (nė vienas darbuotojas negali turėti šios reikšmės), tad slaptažodžio keitimas prasmingas KIEKVIENAM realiam darbuotojui. */}
+      {/* Slaptažodžio keitimo forma rodoma prisijungusiems darbuotojams; /change-password API tikrina dabartinį slaptažodį ir grąžina aiškią klaidą paskyrai, prisijungiančiai tik per OAuth. */}
       <section className="bg-[#0E1525] p-6 rounded-xl shadow-xl">
         <h2 className="text-lg font-semibold mb-4 text-white">
           Keisti slaptažodį

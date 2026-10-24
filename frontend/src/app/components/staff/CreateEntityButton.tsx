@@ -8,7 +8,7 @@ type Props<T extends Record<string, any>> = {
   buttonLabel: string;
   modalTitle: string;
   fields: FieldConfig<T>[];
-  // "Partial<T>" (ne "Omit<T, 'id' | `${string}_id`>", kaip buvo anksčiau) - tas Omit raštas pašalindavo IŠ TIPO visus laukus, kurių vardas baigiasi "_id", NE TIK naujo įrašo PATĮ identifikatorių (pvz. automobilio_id kuriant automobilį), bet IR tikrus, REIKALINGUS užsienio raktus (pvz. dabartine_vieta_id automobiliui) - tie laukai realiai siunčiami forma (žr. atitinkamą FieldConfig[] sąrašą), tiesiog TypeScript jų "nematė", versdamas naudoti "as unknown as X" apeinimus kiekviename puslapyje.
+  // Partial<T> aprašo dalinį formos įrašą ir išlaiko ryšių ID laukus, pavyzdžiui, automobilio dabartine_vieta_id; EntityModal surenka reikšmes, o puslapio onCreate perduoda jas API.
   onCreate: (newData: Partial<T>) => Promise<void>;
   initial?: Partial<T>;
   extraData?: {

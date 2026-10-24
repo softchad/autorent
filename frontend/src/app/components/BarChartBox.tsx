@@ -21,7 +21,7 @@ type BarChartBoxProps = {
   valueLabel?: string;
 };
 
-// Stulpelinė diagrama bendrame tamsiame stiliuje - numatytasis barColor "#4BAFD4" (ne senasis "#1E2B45", kurio kontrastas prieš šio dėžutės foną "#0E1525" buvo vos ~1.3:1, t.y. stulpeliai beveik nematomi puslapiuose, kurie barColor nenurodo, pvz. dashboard/page.tsx); "#4BAFD4" duoda ~7.3:1.
+// Bendra stulpelinė diagrama naudojama dashboard puslapyje; numatytoji šviesiai mėlyna barColor spalva išlaiko stulpelius aiškiai matomus tamsiame fone.
 export default function BarChartBox({
   title,
   data,
