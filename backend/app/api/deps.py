@@ -16,6 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 def get_employee_by_email(db: Session, email: str) -> Employee | None:
     return db.query(Employee).filter(Employee.el_pastas == email).first()
 
+# Kliento paieška pagal prisijungimo adresą atskirta nuo darbuotojų, kad paskyrų tipai nesusimaišytų.
 def get_client_by_email(db: Session, email: str) -> Client | None:
     return db.query(Client).filter(Client.el_pastas == email).first()
 
@@ -33,7 +34,7 @@ def get_db():
         # "yield" (ne "return") - kodas PO yield paleidžiamas TIK kai užklausa baigta (sėkmingai ar su klaida), tad čia saugu uždaryti sesiją - FastAPI pati pasirūpina šia tvarka.
         db.close()
 
-# Patvirtina, kad užklausą atlieka PRISIJUNGĘS DARBUOTOJAS (ne klientas) - naudojamas kone visuose administravimo endpoint'uose per Depends(get_current_user).
+# Darbuotojų API priklausomybė patikrina JWT parašą, galiojimą ir staff tipą, randa darbuotoją pagal sub ID ir palygina ver su DB token_version; permissions.py šį darbuotoją naudoja teisių patikroms.
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
@@ -41,37 +42,43 @@ def get_current_user(
     try:
         # "jwt.decode" - JWT (JSON Web Token, "skaitmeninis bilietas") patikrinimas: ar parašas sutampa su SECRET_KEY (reiškia, serveris PATS jį išdavė), ir ar jis NEpasibaigęs. Jei bet kas netinka - meta JWTError žemiau.
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        # "sub" (subject) - JWT standartinis laukas "kam šis bilietas priklauso"; šiame projekte tai yra el. paštas.
-        email = payload.get("sub")
-        if not email:
+        sub = payload.get("sub")
+        if not sub:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        # Kliento tokenas niekada neturi būti priimtas kaip darbuotojo, net jei tas pats el. paštas sutampa abiejose lentelėse - riba yra tokeno "type" laukas, ne vien tai, ar el. paštas rastas Darbuotojai lentelėje.
+        # Kliento tokenas niekada neturi būti priimtas kaip darbuotojo - riba yra tokeno "type" laukas.
         if payload.get("type") == "customer":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    except JWTError:
+        darbuotojo_id = int(sub)
+    except (JWTError, ValueError, TypeError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    user = get_employee_by_email(db, email)
+    user = db.query(Employee).filter(Employee.darbuotojo_id == darbuotojo_id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    # Bilieto ver turi sutapti su darbuotojo token_version bazėje; versijos pakeitimas atšaukia turimas sesijas net ir nepasibaigus jų galiojimo laikui.
+    if payload.get("ver") != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return user
 
 
-# Patvirtina, kad užklausą atlieka PRISIJUNGĘS KLIENTAS (ne darbuotojas) - naudojamas customer.py/customer_auth.py/customer_support.py/customer_loyalty.py endpointuose.
+# Patvirtina, kad užklausą atlieka PRISIJUNGĘS KLIENTAS (ne darbuotojas) - naudojamas customer.py/customer_auth.py/customer_support.py/customer_loyalty.py endpointuose. Tas pats id+versijos principas kaip get_current_user aukščiau.
 def get_current_customer(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Client:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
+        sub = payload.get("sub")
         # Simetriška taisyklė kaip get_current_user aukščiau - darbuotojo tokenas čia negalioja, tikrinama pagal aiškų "type" lauką, ne tik lentelės paiešką.
-        if not email or payload.get("type") != "customer":
+        if not sub or payload.get("type") != "customer":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    except JWTError:
+        kliento_id = int(sub)
+    except (JWTError, ValueError, TypeError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    customer = get_client_by_email(db, email)
+    customer = db.query(Client).filter(Client.kliento_id == kliento_id).first()
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    if payload.get("ver") != customer.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return customer
