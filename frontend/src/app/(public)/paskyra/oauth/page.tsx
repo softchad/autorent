@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import CustomerOAuthClient from "./CustomerOAuthClient";
 
-// Logika ATSKIRTA į CustomerOAuthClient.tsx ("use client"), nes "dynamic"/"fetchCache" žemiau Next.js tyliai IGNORUOJA, jei juos eksportuotų "use client" failas (patikrinta tapačiame /oauth/page.tsx kelyje - sulietas variantas sukompiliuoja, bet puslapis tampa statiniu, be klaidos pranešimo).
+// Serverio puslapis nustato Next.js vykdymo režimą, o CustomerOAuthClient naršyklėje perduoda gautą bilietą CustomerAuthProvider ir atkuria patikrintą grįžimo kelią.
 // "dynamic"/"fetchCache" - neleidžia šio puslapio statiškai sugeneruoti ar cache'uoti, nes kiekvienas apsilankymas skirtas VIENAM konkrečiam OAuth grąžinimui.
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";

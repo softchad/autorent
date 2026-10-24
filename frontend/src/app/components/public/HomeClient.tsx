@@ -28,7 +28,7 @@ import PieChartBox from "@/app/components/PieChartBox";
 import stripes from "@/assets/texture-stripes.png";
 import dotsBg from "@/assets/texture-dots.png";
 
-// Nuotraukų šaltiniai (stock/AI generuotos) licencija nepatvirtinta - naudojamos tik demonstracijai šiame etape, prieš viešą paleidimą reikės pakeisti patvirtintomis.
+// Nuotraukų naudojimo teisės nepatvirtintos, todėl jos skirtos demonstracijai ir prieš viešinimą turi būti patikrintos arba pakeistos.
 // href nustatytas TIK kai kortelė realiai atitinka filtruojamą DB lauką (kebulo_tipas arba kuro_tipas) - grynai estetinės kategorijos (sportinė/prabangos klasė, dinamiškas dizainas...) tokio lauko sistemoje neturi, tad veda į bendrą sąrašą, ne į suklastotą filtrą.
 const fleetPhotos = [
   {

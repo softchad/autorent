@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import AccountClient from "@/app/components/public/AccountClient";
 
-// Logika ATSKIRTA į AccountClient.tsx ("use client"), nes "metadata" eksportas žemiau Next.js VISIŠKAI UŽDRAUDŽIA "use client" faile - skirtingai nuo "dynamic"/"fetchCache" (žr. /oauth/page.tsx, kur tai tyliai ignoruojama), su "metadata" tai iškart sulaužytų "npm run build" (patikrinta - tiksli klaida: "You are attempting to export 'metadata' from a component marked with 'use client', which is disallowed").
+// Next.js metaduomenys eksportuojami šiame serverio puslapyje, o interaktyvus profilis, rezervacijos ir pokalbiai perduodami AccountClient komponentui su use client.
 
 // Specialus Next.js eksportas - sistema PATI sudeda šiuos laukus į <head> (title/description) paieškos sistemoms ir nuorodos peržiūrai soc. tinkluose.
 export const metadata: Metadata = {

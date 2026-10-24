@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Kokius duomenis AutoRent renka, kam juos naudoja ir kaip su mumis susisiekti dėl duomenų klausimų.",
 };
 
-// Teisinio turinio tekstas - "slapukai"/"analitika" (5 skyrius) patikrinti prieš TIKRĄ kodą (nėra jokio analitikos scenarijaus, patikrinta grep'u; klientų sesija - localStorage, darbuotojų - slapukas), kad ši apžvalga neklaidintų.
+// Privatumo puslapis aprašo paskyrų ir nuomos duomenis; kliento bilietas saugomas localStorage, darbuotojo – localStorage ir slapuke, o išoriniam prisijungimui naudojama OAuth sesija.
 const sections = [
   {
     title: "1. Kokius duomenis renkame",
