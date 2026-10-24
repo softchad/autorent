@@ -257,7 +257,7 @@ def test_create_reservation_conflict_rejected(client, auth_headers, created_rese
     assert resp.status_code == 409
 
 
-# "other" rezervacija perkeliama TIESIAI į created_reservation užimtas datas - turi būti atmesta, nepriklausomai nuo to, kad JI PATI anksčiau neturėjo konflikto (tikrina, kad persidengimo patikra vyksta IR update, ne tik create kelyje).
+# Esamos rezervacijos perkėlimas į kitos rezervacijos užimtą laikotarpį turi būti atmestas: availability_service konfliktai tikrinami ir atnaujinant, ne tik kuriant.
 def test_update_reservation_conflict_rejected(client, auth_headers, created_reservation, res_dependencies):
     kliento_id, automobilio_id = res_dependencies
     other_resp = client.post(
@@ -280,6 +280,28 @@ def test_update_reservation_conflict_rejected(client, auth_headers, created_rese
     assert resp.status_code == 409
 
     client.delete(f"/api/v1/reservations/{other_id}", headers=auth_headers)
+
+
+# Tas pats klientas negali rezervuoti kito automobilio persidengiančiomis datomis; tikrinama availability_service.client_has_conflict taisyklė rezervacijos kūrimo kelyje.
+def test_create_reservation_rejected_when_client_has_other_reservation(client, auth_headers, created_reservation, res_dependencies):
+    kliento_id, _ = res_dependencies
+    other_car_resp = client.post("/api/v1/cars/", json=unique_car_data(), headers=auth_headers)
+    assert other_car_resp.status_code == 200, other_car_resp.json()
+    other_car_id = other_car_resp.json()["automobilio_id"]
+
+    resp = client.post(
+        "/api/v1/reservations/",
+        json={
+            "kliento_id": kliento_id, "automobilio_id": other_car_id,
+            "rezervacijos_pradzia": "2030-07-02", "rezervacijos_pabaiga": "2030-07-04",
+            "busena": "laukia",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 409
+    assert "klientas" in resp.json()["detail"].lower()
+
+    client.delete(f"/api/v1/cars/{other_car_id}", headers=auth_headers)
 
 
 # "Uzsakymai" lentelėje JAU yra aktyvus (vykdoma) užsakymas tam pačiam automobiliui/datoms - nauja REZERVACIJA tomis pačiomis dienomis turi būti atmesta, net jei Rezervavimas lentelėje pačioje nieko nėra (žr. availability_service.car_has_conflict - tikrina ABI lenteles, ne tik Rezervavimas).
@@ -313,6 +335,46 @@ def test_create_reservation_rejected_when_car_has_active_order(client, auth_head
     client.delete(f"/api/v1/orders/{order_id}", headers=auth_headers)
 
 
+# Automobilis, kurio automobilio_statusas="servise" - NEGALI būti rezervuotas, net jei konkrečios dienos "laisvos" pagal booking'us (žr. reservation.py NOT_BOOKABLE_STATUSES patikrą).
+# Neegzistuojantis automobilio_id/kliento_id turi grąžinti AIŠKŲ 404, NE nulūžti su neaiškia 500 (FK apribojimo IntegrityError) db.commit() metu.
+def test_create_reservation_rejects_nonexistent_car(client, auth_headers, res_dependencies):
+    kliento_id, _ = res_dependencies
+    resp = client.post("/api/v1/reservations/", json={
+        "kliento_id": kliento_id, "automobilio_id": 999999,
+        "rezervacijos_pradzia": "2031-11-01", "rezervacijos_pabaiga": "2031-11-05",
+        "busena": "laukia",
+    }, headers=auth_headers)
+    assert resp.status_code == 404
+
+
+def test_create_reservation_rejects_nonexistent_client(client, auth_headers, res_dependencies):
+    _, automobilio_id = res_dependencies
+    resp = client.post("/api/v1/reservations/", json={
+        "kliento_id": 999999, "automobilio_id": automobilio_id,
+        "rezervacijos_pradzia": "2031-11-01", "rezervacijos_pabaiga": "2031-11-05",
+        "busena": "laukia",
+    }, headers=auth_headers)
+    assert resp.status_code == 404
+
+
+def test_create_reservation_rejected_when_car_in_service(client, auth_headers, res_dependencies):
+    kliento_id, _ = res_dependencies
+    car_data = unique_car_data()
+    car_data["automobilio_statusas"] = "servise"
+    car_resp = client.post("/api/v1/cars/", json=car_data, headers=auth_headers)
+    assert car_resp.status_code == 200, car_resp.json()
+    car_id = car_resp.json()["automobilio_id"]
+
+    resp = client.post("/api/v1/reservations/", json={
+        "kliento_id": kliento_id, "automobilio_id": car_id,
+        "rezervacijos_pradzia": "2031-10-01", "rezervacijos_pabaiga": "2031-10-05",
+        "busena": "laukia",
+    }, headers=auth_headers)
+    assert resp.status_code == 409
+
+    client.delete(f"/api/v1/cars/{car_id}", headers=auth_headers)
+
+
 # Patikrina, kad getLatestReservations grąžina papildomą AUTOMOBILIO/KLIENTO info (JOIN, žr. get_latest_reservations_with_details) - ne tik pačios rezervacijos laukus.
 def test_get_latest_reservations(client, auth_headers, created_reservation):
     resp = client.get("/api/v1/reservations/latest", params={"limit": 50}, headers=auth_headers)
@@ -321,3 +383,33 @@ def test_get_latest_reservations(client, auth_headers, created_reservation):
     assert isinstance(items, list)
     match = next(r for r in items if r["rezervacijos_id"] == created_reservation)
     assert "marke" in match and "vardas" in match
+
+
+# Su pokalbiu susietos rezervacijos trynimas turi grąžinti 409 dėl išorinio rakto; testas vykdomas modulio gale, nes endpointo rollback paveiktų bendrus modulio sesijos duomenis.
+def test_delete_reservation_with_linked_support_case_returns_409(client, auth_headers, res_dependencies):
+    from app.models.support_conversation import SupportConversation
+
+    kliento_id, automobilio_id = res_dependencies
+    res_resp = client.post("/api/v1/reservations/", json={
+        "kliento_id": kliento_id,
+        "automobilio_id": automobilio_id,
+        "rezervacijos_pradzia": "2031-07-01",
+        "rezervacijos_pabaiga": "2031-07-05",
+        "busena": "laukia",
+    }, headers=auth_headers)
+    assert res_resp.status_code == 200, res_resp.json()
+    rid = res_resp.json()["rezervacijos_id"]
+
+    # Susiejimas su pagalbos pokalbiu sukuriamas TIESIAI per DB (ne per customer_support.py endpoint'ą, kuriam reikėtų atskiro kliento JWT) - testui reikia TIKSLIAI šios rezervacijos, kuri jau sukurta ADMIN teisėmis aukščiau.
+    from app.api.deps import get_db
+    db_session = next(app.dependency_overrides[get_db]())
+    convo = SupportConversation(
+        kliento_id=kliento_id, tema="Klausimas apie rezervaciją", kategorija="rezervacija",
+        busena="atvira", rezervacijos_id=rid,
+    )
+    db_session.add(convo)
+    db_session.commit()
+
+    resp = client.delete(f"/api/v1/reservations/{rid}", headers=auth_headers)
+    assert resp.status_code == 409, resp.json()
+    # Sąmoningai BE cleanup - endpoint'as viduje jau kvietė "db.rollback()" (žr. komentarą aukščiau prie testo pavadinimo), tad ši sesija nebepatikima tolesniems sakiniams; kadangi šis testas PASKUTINIS faile, likutinė eilutė DB'je nekenkia (visa testinė DB vis tiek išmetama po sesijos, žr. conftest.py setup_test_database).

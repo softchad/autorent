@@ -1,6 +1,7 @@
 # Rezervacijų CRUD endpointai - darbuotojų pusėje IŠ ANKSTO pažymima, kad klientas ateityje pasiims konkretų automobilį (dar NE realus užsakymas, žr. order.py).
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import desc
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.schemas import reservation as schemas
@@ -85,15 +86,28 @@ def get_all_reservations(db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.ReservationOut, operation_id="createReservation",
              dependencies=[Depends(require_perm(Perm.EDIT))])
 def create_reservation(reservation: schemas.ReservationCreate, db: Session = Depends(get_db)):
-    # SELECT ... FOR UPDATE - užrakina automobilio eilutę, kad du vienu metu kuriami rezervavimai/užsakymai dėl TO PATIES automobilio negalėtų abu pamatyti "laisva" prieš bet kuriam užsicommit'inant.
-    availability_service.lock_car_row(db, reservation.automobilio_id)
-    # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - automobilis, kurį kažkas JAU nuomojasi (Uzsakymai), negali būti vėl rezervuotas tomis pačiomis dienomis.
-    if reservation.busena != "atšaukta" and availability_service.car_has_conflict(
-        db, reservation.automobilio_id, reservation.rezervacijos_pradzia, reservation.rezervacijos_pabaiga
-    ):
-        raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+    # SELECT ... FOR UPDATE - užrakina automobilio IR kliento eilutes, kad du vienu metu kuriami rezervavimai/užsakymai dėl TO PATIES automobilio ARBA TO PATIES kliento negalėtų abu pamatyti "laisva" prieš bet kuriam užsicommit'inant.
+    car = availability_service.lock_car_row(db, reservation.automobilio_id)
+    if not car:
+        raise HTTPException(status_code=404, detail="Automobilis nerastas")
+    if not availability_service.lock_client_row(db, reservation.kliento_id):
+        raise HTTPException(status_code=404, detail="Klientas nerastas")
+    # Automobilio fizinė būsena tikrinama nepriklausomai nuo datų: servise ar remonte esantis automobilis nerezervuojamas ir neišnuomojamas; tas pats ribojimas taikomas klientų savitarnos API.
+    if car and car.automobilio_statusas in availability_service.NOT_BOOKABLE_STATUSES and reservation.busena != "atšaukta":
+        raise HTTPException(status_code=409, detail="Šis automobilis šiuo metu neišnuomojamas (servise/remonte).")
+    if reservation.busena != "atšaukta":
+        # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - automobilis, kurį kažkas JAU nuomojasi (Uzsakymai), negali būti vėl rezervuotas tomis pačiomis dienomis.
+        if availability_service.car_has_conflict(
+            db, reservation.automobilio_id, reservation.rezervacijos_pradzia, reservation.rezervacijos_pabaiga
+        ):
+            raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+        # availability_service tikrina kliento aktyvias rezervacijas ir užsakymus, kad jis tuo pačiu laikotarpiu negalėtų užimti kelių automobilių.
+        if availability_service.client_has_conflict(
+            db, reservation.kliento_id, reservation.rezervacijos_pradzia, reservation.rezervacijos_pabaiga
+        ):
+            raise HTTPException(status_code=409, detail="Klientas jau turi kitą rezervuotą automobilį tomis dienomis.")
 
-    created = Reservation(**reservation.dict())
+    created = Reservation(**reservation.dict(), kaina_parai=car.kaina_parai)
     db.add(created)
     db.commit()
     db.refresh(created)
@@ -120,13 +134,39 @@ def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate,
     if pabaiga <= pradzia:
         raise HTTPException(status_code=400, detail="Pabaigos data turi būti vėlesnė nei pradžios data")
 
-    availability_service.lock_car_row(db, automobilio_id)
-    # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - "exclude_reservation_id" - redaguojant ESAMĄ rezervaciją, ji PATI neturi būti laikoma "konfliktu" su savimi.
-    if busena != "atšaukta" and availability_service.car_has_conflict(
-        db, automobilio_id, pradzia, pabaiga, exclude_reservation_id=rezervacijos_id
-    ):
-        raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+    kliento_id = changes.get("kliento_id", existing.kliento_id)
+    original_owner = (existing.automobilio_id, existing.kliento_id)
+    car = availability_service.lock_car_row(db, automobilio_id)
+    if not car:
+        raise HTTPException(status_code=404, detail="Automobilis nerastas")
+    if not availability_service.lock_client_row(db, kliento_id):
+        raise HTTPException(status_code=404, detail="Klientas nerastas")
+    # Po laukimo perskaitome dabartinę rezervaciją; pakeitus jos savininką ar automobilį reikia naujo prašymo su teisingais užraktais.
+    existing = db.query(Reservation).filter(Reservation.rezervacijos_id == rezervacijos_id).populate_existing().with_for_update().first()
+    if not existing or (existing.automobilio_id, existing.kliento_id) != original_owner:
+        raise HTTPException(status_code=409, detail="Rezervacija buvo pakeista. Atnaujinkite sąrašą ir bandykite dar kartą.")
+    pradzia = changes.get("rezervacijos_pradzia", existing.rezervacijos_pradzia)
+    pabaiga = changes.get("rezervacijos_pabaiga", existing.rezervacijos_pabaiga)
+    busena = changes.get("busena", existing.busena)
+    if pabaiga <= pradzia:
+        raise HTTPException(status_code=400, detail="Pabaigos data turi būti vėlesnė nei pradžios data")
+    # Fizinė automobilio būsena (servise/remonte) - svarbu IR čia, nes "automobilio_id" GALI būti pakeistas šiuo PUT (perskiriant rezervaciją KITAM automobiliui).
+    if car and car.automobilio_statusas in availability_service.NOT_BOOKABLE_STATUSES and busena != "atšaukta":
+        raise HTTPException(status_code=409, detail="Šis automobilis šiuo metu neišnuomojamas (servise/remonte).")
+    if busena != "atšaukta":
+        # Tikrina KARTU rezervacijas IR užsakymus (ne tik Rezervavimas lentelę) - "exclude_reservation_id" - redaguojant ESAMĄ rezervaciją, ji PATI neturi būti laikoma "konfliktu" su savimi.
+        if availability_service.car_has_conflict(
+            db, automobilio_id, pradzia, pabaiga, exclude_reservation_id=rezervacijos_id
+        ):
+            raise HTTPException(status_code=409, detail="Automobilis jau rezervuotas šiomis dienomis.")
+        # Tas pats, kas order.py update_order - "exclude_reservation_id" - ESAMA rezervacija pati savaime nelaikoma konfliktu su savimi.
+        if availability_service.client_has_conflict(
+            db, kliento_id, pradzia, pabaiga, exclude_reservation_id=rezervacijos_id
+        ):
+            raise HTTPException(status_code=409, detail="Klientas jau turi kitą rezervuotą automobilį tomis dienomis.")
 
+    if automobilio_id != existing.automobilio_id:
+        existing.kaina_parai = car.kaina_parai
     for field, value in changes.items():
         setattr(existing, field, value)
 
@@ -145,6 +185,11 @@ def delete_reservation(rezervacijos_id: int, db: Session = Depends(get_db)):
     if not reservation:
         raise HTTPException(status_code=404, detail="Rezervacija nerasta")
     db.delete(reservation)
-    db.commit()
+    # rezervacija GALI būti susieta su pagalbos pokalbiu (Pokalbiai.rezervacijos_id, RESTRICT FK); be šio try/except toks DELETE lūžtų kaip neaiškus 500, ne aiškus 409.
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Rezervacijos ištrinti negalima - su ja susietas pagalbos pokalbis.")
     return {"ok": True}
 
