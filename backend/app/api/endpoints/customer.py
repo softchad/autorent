@@ -9,7 +9,7 @@ from app.models.reservation import Reservation
 from app.rate_limit import limiter  # apsauga nuo per dažno kviečiamo endpoint'o (@limiter.limit(...) žemiau)
 from app.schemas.customer_reservation import CustomerReservationCreate, CustomerReservationOut
 from app.services import availability_service  # availability_service.lock_car_row - naudojamas žemiau, prieš tikrinant laisvumą
-from app.services.availability_service import get_busy_car_ids, NOT_BOOKABLE_STATUSES  # get_busy_car_ids - grąžina užimtų automobilių ID per datų langą; NOT_BOOKABLE_STATUSES - fizinės automobilio būsenos (servise/remonte), kai jis neišnuomojamas NEPRIKLAUSOMAI nuo datų
+from app.services.availability_service import NOT_BOOKABLE_STATUSES
 
 router = APIRouter(prefix="/customer", tags=["Customer"])
 
@@ -26,7 +26,7 @@ def create_reservation(
     if payload.date_from >= payload.date_to:
         raise HTTPException(status_code=400, detail="Pabaigos data turi būti vėlesnė nei pradžios data")
 
-    car = db.query(Car).filter(Car.automobilio_id == payload.automobilio_id).first()
+    car = availability_service.lock_car_row(db, payload.automobilio_id)
     if not car:
         raise HTTPException(status_code=404, detail="Automobilis nerastas")
 
@@ -34,13 +34,16 @@ def create_reservation(
     if car.automobilio_statusas in NOT_BOOKABLE_STATUSES:
         raise HTTPException(status_code=409, detail="Šis automobilis šiuo metu neišnuomojamas")
 
-    # SELECT ... FOR UPDATE - užrakina šią automobilio eilutę DB lygmeniu, kad du vienu metu atėję prašymai dėl TO PATIES automobilio negalėtų abu vienu metu pamatyti "laisva" prieš bet kuriam užsicommit'inant (lenktynių spraga).
-    availability_service.lock_car_row(db, car.automobilio_id)
+    # SELECT ... FOR UPDATE - užrakina šią automobilio IR kliento eilutes DB lygmeniu, kad du vienu metu atėję prašymai dėl TO PATIES automobilio ARBA TO PATIES kliento negalėtų abu vienu metu pamatyti "laisva" prieš bet kuriam užsicommit'inant (lenktynių spraga).
+    availability_service.lock_client_row(db, current_customer.kliento_id)
 
     # Tas pats laisvumo skaičiavimas, kurį klientas jau matė automobilio puslapio kalendoriuje - čia patvirtinamas IŠ NAUJO serveryje, nes nuo tada kitas klientas galėjo spėti užimti tas pačias datas.
-    busy_car_ids = get_busy_car_ids(db, payload.date_from, payload.date_to)
-    if car.automobilio_id in busy_car_ids:
+    if availability_service.car_has_conflict(db, car.automobilio_id, payload.date_from, payload.date_to):
         raise HTTPException(status_code=409, detail="Automobilis jau užimtas pasirinktu laikotarpiu")
+
+    # Tas pats, kas darbuotojų order.py/reservation.py - klientas negali vienu metu rezervuoti/nuomotis DVIEJŲ automobilių, nepriklausomai nuo to, per kurį kelią (savitarna čia, ar darbuotojas) antrasis booking'as buvo sukurtas.
+    if availability_service.client_has_conflict(db, current_customer.kliento_id, payload.date_from, payload.date_to):
+        raise HTTPException(status_code=409, detail="Jau turite kitą rezervaciją/užsakymą šiomis dienomis")
 
     # Nauja rezervacija visada pradeda "laukia" būsena - ją į "patvirtinta" arba "atšaukta" paverčia darbuotojas vėliau administravimo pusėje, klientas pats jos patvirtinti negali.
     reservation = Reservation(
@@ -49,6 +52,8 @@ def create_reservation(
         rezervacijos_pradzia=payload.date_from,
         rezervacijos_pabaiga=payload.date_to,
         busena="laukia",
+        # UŽFIKSUOJAME dabartinę kainą ČIA (sukūrimo metu), kad vėlesnis flotilės kainos pakeitimas NEpaveiktų ŠIOS rezervacijos rodomos/patvirtintos kainos (žr. _to_out žemiau).
+        kaina_parai=car.kaina_parai,
     )
     db.add(reservation)
     db.commit()
@@ -73,10 +78,10 @@ def get_reservations(
     return [_to_out(reservation, car) for reservation, car in rows]
 
 
-# Paverčia DB eilutes į atsakymo formatą IR paskaičiuoja kainą - dienų skaičius gaunamas iš datų atimties, bendra kaina = parų skaičius * kaina parai (automobilio dabartinė kaina, ne užfiksuota rezervacijos sukūrimo metu).
+# Paverčia DB eilutes į atsakymo formatą IR paskaičiuoja kainą - dienų skaičius gaunamas iš datų atimties, bendra kaina = parų skaičius * kaina parai.  - naudojama UŽFIKSUOTA rezervacijos.kaina_parai (sukūrimo metu), NE automobilio DABARTINĖ kaina - "or" atkrinta prie automobilio dabartinės kainos TIK senoms (prieš šį pakeitimą sukurtoms) rezervacijoms, kurių stulpelis yra NULL.
 def _to_out(reservation: Reservation, car: Car) -> CustomerReservationOut:
     dienu_skaicius = (reservation.rezervacijos_pabaiga - reservation.rezervacijos_pradzia).days
-    kaina_parai = float(car.kaina_parai)
+    kaina_parai = float(reservation.kaina_parai if reservation.kaina_parai is not None else car.kaina_parai)
     return CustomerReservationOut(
         rezervacijos_id=reservation.rezervacijos_id,
         automobilio_id=car.automobilio_id,

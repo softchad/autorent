@@ -102,6 +102,45 @@ def test_create_customer_reservation_invalid_dates(auth_headers):
     assert resp.status_code == 400
 
 
+# Rezervacijos sukūrimo metu užfiksuotas paros tarifas turi išlikti toks pats customer.py atsakyme, net darbuotojui pakeitus automobilio kainą.
+def test_reservation_price_unaffected_by_later_car_price_change(auth_headers):
+    car_id = _make_car(auth_headers, kaina_parai=50.0)
+    token = _customer_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_resp = client.post(
+        "/api/v1/customer/reservations",
+        json={"automobilio_id": car_id, "date_from": "2027-03-10", "date_to": "2027-03-15"},
+        headers=headers,
+    )
+    assert create_resp.status_code == 200, create_resp.text
+    original_total = create_resp.json()["viso_kaina"]
+    assert original_total == pytest.approx(5 * 50.0)
+
+    patch_resp = client.put(f"/api/v1/cars/{car_id}", json={"kaina_parai": 200.0}, headers=auth_headers)
+    assert patch_resp.status_code == 200, patch_resp.text
+
+    list_resp = client.get("/api/v1/customer/reservations", headers=headers)
+    assert list_resp.status_code == 200
+    listed = list_resp.json()[0]
+    assert listed["kaina_parai"] == 50.0
+    assert listed["viso_kaina"] == pytest.approx(5 * 50.0)
+
+
+# Klientų rezervacijų API turi atmesti pradžią praeityje ir tiesioginei HTTP užklausai, kuriai frontend kalendoriaus apribojimai netaikomi.
+def test_create_customer_reservation_rejects_past_date(auth_headers):
+    car_id = _make_car(auth_headers)
+    token = _customer_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.post(
+        "/api/v1/customer/reservations",
+        json={"automobilio_id": car_id, "date_from": "2001-01-01", "date_to": "2001-01-02"},
+        headers=headers,
+    )
+    assert resp.status_code == 422
+
+
 # Neegzistuojantis automobilio_id turi grąžinti aiškų 404, ne sulūžti ar tyliai sukurti rezervaciją be galiojančio automobilio.
 def test_create_customer_reservation_car_not_found(auth_headers):
     token = _customer_token()
