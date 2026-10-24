@@ -6,7 +6,7 @@ EMPLOYEE_SAMPLE = {
     "el_pastas": "employee.test@viko.lt",
     "slaptazodis": "Testas123!",
     "telefono_nr": "+37061111111",
-    "pareigos": "Testuotojas",
+    "pareigos": "Vadybininkas",
     "atlyginimas": 1200.50,
     "isidarbinimo_data": "2024-02-01",
 }
@@ -89,7 +89,7 @@ def test_update_employee_rejects_invalid_values(client, created_employee_id, aut
     assert resp.status_code == 422
 
 
-# TOS PAČIOS vardas/pavarde/pareigos validatorių taisyklės kaip aukščiau, bet KŪRIMO (POST), ne atnaujinimo keliui - niekur anksčiau nebuvo testuota, ar jos veikia IR čia.
+# Darbuotojo kūrimo API turi atmesti netinkamą vardą, pavardę ir pareigas pagal EmployeeBase taisykles, kaip ir dalinio atnaujinimo kelias.
 @pytest.mark.parametrize("field,value", [
     ("vardas", "A"),
     ("pavarde", "B"),
@@ -166,7 +166,79 @@ def test_update_employee_password_by_admin_actually_works(client, auth_headers):
     client.delete(f"/api/v1/employees/{emp_id}", headers=auth_headers)
 
 
-# PASTABA: delete_employee grąžinamas 409 (IntegrityError, kai darbuotojas priskirtas užsakymui) čia TYČIA nebandomas automatiniu testu - šio modulio "client"/"db_session" fixture'ai visiems šio failo testams dalijasi VIENĄ bendrą transakciją, o endpoint'o "except IntegrityError: db.rollback()" tokioje sąrankoje nutrina NE TIK nepavykusį veiksmą, bet IR visus ankstesnius, dar neužcommit'intus šios transakcijos įrašus (pvz. auth_headers sukurtą administratorių) - visi TOLESNI šio failo testai tada nepavyktų dėl "User not found", nesusiję su realiu bug'u (tai patvirtinta - bandymas pridėti šį testą realiai sulaužė test_edit_role_employee_cannot_self_promote testą žemiau, kol šis testas nebuvo pašalintas). Elgsena NEpatikrinta rankiniu būdu prieš tikrą MySQL DB - tai dar reikia padaryti prieš gynimą.
+# EDIT teisę turintis darbuotojas (Vadybininkas - NE administratorius) negali redaguoti KITO darbuotojo paskyros, net paprasto, ne-ADMIN_ONLY lauko - tik SAVO (žr. employee.py update_employee ownership patikrą).
+def test_edit_role_employee_cannot_edit_other_employee(client, auth_headers):
+    non_admin = EMPLOYEE_SAMPLE.copy()
+    non_admin["el_pastas"] = "employee.editor@viko.lt"
+    non_admin["pareigos"] = "Vadybininkas"
+    resp = client.post("/api/v1/employees/", json=non_admin, headers=auth_headers)
+    assert resp.status_code == 200, resp.json()
+    editor_id = resp.json()["darbuotojo_id"]
+
+    other = EMPLOYEE_SAMPLE.copy()
+    other["el_pastas"] = "employee.victim@viko.lt"
+    other_resp = client.post("/api/v1/employees/", json=other, headers=auth_headers)
+    assert other_resp.status_code == 200, other_resp.json()
+    other_id = other_resp.json()["darbuotojo_id"]
+
+    login_resp = client.post("/api/v1/login", json={
+        "el_pastas": non_admin["el_pastas"], "slaptazodis": non_admin["slaptazodis"],
+    })
+    assert login_resp.status_code == 200, login_resp.json()
+    editor_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+
+    resp = client.put(
+        f"/api/v1/employees/{other_id}",
+        json={"telefono_nr": "+37060099999"},
+        headers=editor_headers,
+    )
+    assert resp.status_code == 403
+
+    client.delete(f"/api/v1/employees/{editor_id}", headers=auth_headers)
+    client.delete(f"/api/v1/employees/{other_id}", headers=auth_headers)
+
+
+# GET /employees/ reikalauja tik VIEW teisės (ją turi IR Vadybininkas/Mechanikas/Klientų aptarnavimas, ne tik administratorius) - NEadministratorius neturi matyti KOLEGŲ atlyginimo (žr. employee.py get_employees), bet SAVO - gali.
+def test_get_employees_hides_salary_from_non_admin_except_own(client, auth_headers):
+    viewer = EMPLOYEE_SAMPLE.copy()
+    viewer["el_pastas"] = "employee.viewer@viko.lt"
+    viewer["pareigos"] = "Mechanikas"
+    viewer_resp = client.post("/api/v1/employees/", json=viewer, headers=auth_headers)
+    assert viewer_resp.status_code == 200, viewer_resp.json()
+    viewer_id = viewer_resp.json()["darbuotojo_id"]
+
+    colleague = EMPLOYEE_SAMPLE.copy()
+    colleague["el_pastas"] = "employee.colleague@viko.lt"
+    colleague_resp = client.post("/api/v1/employees/", json=colleague, headers=auth_headers)
+    assert colleague_resp.status_code == 200, colleague_resp.json()
+    colleague_id = colleague_resp.json()["darbuotojo_id"]
+
+    login_resp = client.post("/api/v1/login", json={
+        "el_pastas": viewer["el_pastas"], "slaptazodis": viewer["slaptazodis"],
+    })
+    assert login_resp.status_code == 200, login_resp.json()
+    viewer_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+
+    resp = client.get("/api/v1/employees/", headers=viewer_headers)
+    assert resp.status_code == 200
+    rows = {e["darbuotojo_id"]: e for e in resp.json()}
+    assert rows[viewer_id]["atlyginimas"] == viewer["atlyginimas"]
+    assert rows[colleague_id]["atlyginimas"] is None
+
+    client.delete(f"/api/v1/employees/{viewer_id}", headers=auth_headers)
+    client.delete(f"/api/v1/employees/{colleague_id}", headers=auth_headers)
+
+
+# Nežinoma "pareigos" reikšmė (net jei >= 2 simboliai) turi atmesti 422 - kitaip has_perm (permissions.py) tyliai grąžintų tuščią teisių rinkinį be jokios klaidos (žr. schemas/employee.py validate_pareigos).
+def test_create_employee_rejects_unknown_pareigos(client, auth_headers):
+    data = EMPLOYEE_SAMPLE.copy()
+    data["el_pastas"] = "employee.badrole@viko.lt"
+    data["pareigos"] = "Direktorius"
+    resp = client.post("/api/v1/employees/", json=data, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+# Šio modulio testai dalijasi viena transakcija: po susieto darbuotojo trynimo IntegrityError atliekamas rollback panaikintų ir bendrus paruoštus įrašus, todėl šio kelio testui reikia atskiros sesijos.
 
 
 # Vadybininkas (VIEW+EDIT) negali pats sau pasikeisti rolės į Administratorius per PUT - tik ADMIN_ONLY_FIELDS sąraše esantys laukai (employee.py) reikalauja administratoriaus teisės.
@@ -201,3 +273,41 @@ def test_edit_role_employee_cannot_self_promote(client, auth_headers):
     assert basic_update_resp.json()["vardas"] == "Pasikeitęs"
 
     client.delete(f"/api/v1/employees/{emp_id}", headers=auth_headers)
+
+
+# Paskutinio administratoriaus vaidmens pakeitimas turi būti atmestas prieš įrašymą; conftest.py paruoštas vienintelis administratorius po užklausos turi išlaikyti administravimo teises.
+def test_cannot_demote_last_administrator(client, auth_headers):
+    admins = [e for e in client.get("/api/v1/employees/", headers=auth_headers).json() if e["pareigos"] == "Administratorius"]
+    assert len(admins) == 1, "Šis testas prielaida - lygiai VIENAS administratorius šiuo metu."
+    admin_id = admins[0]["darbuotojo_id"]
+
+    resp = client.put(
+        f"/api/v1/employees/{admin_id}",
+        json={"pareigos": "Mechanikas"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 409, resp.json()
+
+    # Rolė realiai NEpasikeitė - sąrašas vis tiek rodo TĄ PATĮ VIENĄ administratorių.
+    still_admins = [e for e in client.get("/api/v1/employees/", headers=auth_headers).json() if e["pareigos"] == "Administratorius"]
+    assert len(still_admins) == 1
+
+
+# Paskutinio administratoriaus ištrynimas turi būti atmestas prieš db.delete ir sandorio patvirtinimą, kad sistemoje liktų administravimo paskyra.
+def test_unchanged_admin_email_does_not_revoke_own_session(client, auth_headers):
+    me = client.get("/api/v1/me", headers=auth_headers)
+    assert me.status_code == 200, me.text
+    employee = me.json()
+    response = client.put(f"/api/v1/employees/{employee['darbuotojo_id']}", headers=auth_headers,
+                          json={"el_pastas": employee["el_pastas"], "vardas": employee["vardas"]})
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me", headers=auth_headers).status_code == 200
+
+
+def test_cannot_delete_last_administrator(client, auth_headers):
+    admins = [e for e in client.get("/api/v1/employees/", headers=auth_headers).json() if e["pareigos"] == "Administratorius"]
+    assert len(admins) == 1, "Šis testas prielaida - lygiai VIENAS administratorius šiuo metu."
+    admin_id = admins[0]["darbuotojo_id"]
+
+    resp = client.delete(f"/api/v1/employees/{admin_id}", headers=auth_headers)
+    assert resp.status_code == 409, resp.json()
