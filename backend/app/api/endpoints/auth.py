@@ -5,13 +5,16 @@ from sqlalchemy.orm import Session
 
 from app.schemas.auth import LoginRequest, TokenResponse, UserInfo, ChangePasswordRequest
 from app.models.client import Client
-from app.services.auth_service import verify_password, create_access_token, get_password_hash  # slaptažodžio tikrinimas ir JWT "bilieto" (įrodymas, kad esi prisijungęs) kūrimas
+from app.services.auth_service import verify_password, create_staff_token, create_customer_token, get_password_hash  # slaptažodžio tikrinimas ir JWT "bilieto" (įrodymas, kad esi prisijungęs) kūrimas
 from app.api.deps import get_current_user, get_db, get_employee_by_email, get_client_by_email  # "automatiškai paduok man" dabartinį prisijungusį vartotoją ir ryšį su duomenų baze
-from app.rate_limit import limiter  # apsauga nuo per dažno spėliojimo iš eilės (@limiter.limit(...) žemiau)
+from app.rate_limit import limiter, login_identity_key  # apsauga nuo per dažno spėliojimo iš eilės (@limiter.limit(...) žemiau); login_identity_key - PAPILDOMAS el. pašto raktas, kad IP rotavimas nepaneigtų limito
 from authlib.integrations.starlette_client import OAuth  # paketas, mokantis "susikalbėti" su Google/GitHub prisijungimo sistema
 from utils.config import settings  # reikšmės iš .env failo - slapti raktai ir adresai, kurių nerodome viešai kode
 
 router = APIRouter()
+
+# Fiksuotas, PRIEŠ laiką paskaičiuotas bcrypt hash - naudojamas ŽEMIAU (login/login_swagger), kai el. paštas DB iš viso nerastas, kad VIS TIEK įvyktų (lėtas) bcrypt palyginimas su JUO. Be šito "tokio naudotojo nėra" atsakymas grįžtų IŠKART (praleidus verify_password), o "slaptažodis neteisingas" - tik PO bcrypt skaičiavimo; ta laiko skirtumas (matomas net per tinklą) leistų atspėti, kurie el. paštai realiai užregistruoti, nors HTTP atsakymas abiem atvejais identiškas.
+_DUMMY_PASSWORD_HASH = get_password_hash("šis-hash-niekada-nenaudojamas-tikram-prisijungimui")
 
 # Kai naudotojas sėkmingai prisijungia per Google/GitHub, naršyklė nukreipiama į FRONTEND_URL; GOOGLE/GITHUB_REDIRECT_URL - "grįžimo" adresai, kuriuos TU pats užregistravai Google/GitHub paskyrų kūrimo puslapyje.
 FRONTEND_URL = str(settings.FRONTEND_URL).rstrip("/")
@@ -65,11 +68,14 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     if not token:
         raise HTTPException(status_code=400, detail="Nepavyko gauti GitHub tokeno.")
 
-    # El. paštas gali būti paslėptas naudotojo GitHub profilyje, tad klausiame atskirai /user/emails ir renkamės pirminį/patvirtintą.
+    # El. paštas gali būti paslėptas naudotojo GitHub profilyje, tad klausiame atskirai /user/emails ir renkamės pirminį/patvirtintą. ATSARGINIS variantas turi BŪTI "verified": true (GitHub leidžia pridėti SVETIMĄ, dar nepatvirtintą el. paštą prie savo paskyros) - be šito patikrinimo kažkas galėtų prisijungti kaip DARBUOTOJAS su el. paštu, kurio realiai NEVALDO, vien pridėjęs jį kaip nepatvirtintą antrinį prie SAVO GitHub paskyros.
     emails = (await oauth.github.get("user/emails", token=token)).json()
-    email = next((e["email"] for e in emails if e.get("primary") and e.get("verified")), None) or (emails[0]["email"] if emails else None)
+    email = (
+        next((e["email"] for e in emails if e.get("primary") and e.get("verified")), None)
+        or next((e["email"] for e in emails if e.get("verified")), None)
+    )
     if not email:
-        raise HTTPException(status_code=400, detail="Nepavyko gauti el. pašto iš GitHub.")
+        raise HTTPException(status_code=400, detail="Nepavyko gauti patvirtinto el. pašto iš GitHub.")
 
     # Ieškome DARBUOTOJO su šiuo el. paštu mūsų duomenų bazėje - jei jo nėra, paskyra NESUKURIAMA automatiškai (tik administratorius gali sukurti darbuotoją).
     user = get_employee_by_email(db, email)
@@ -77,14 +83,14 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url=f"{FRONTEND_URL}/login?error=not_staff", status_code=303)
 
     # JWT - tai kaip skaitmeninis bilietas, kurį frontend'as toliau prisega prie KIEKVIENOS savo užklausos, kad serveris žinotų, kas prisijungęs.
-    jwt_token = create_access_token(data={"sub": email, "type": "staff", "auth": "github"})
+    jwt_token = create_staff_token(user, auth="github")
     return RedirectResponse(url=f"{FRONTEND_URL}/oauth#access_token={jwt_token}", status_code=303)
 
 # ---------- Google ----------
 # Google prisijungimą naudoja IR darbuotojai, IR klientai - todėl yra DU "login" endpointai (šis - darbuotojams), bet VIENAS bendras /google/callback žemiau.
 @router.get("/google/login", operation_id="googleLogin")
 async def google_login(request: Request):
-    # "session" - tai serverio trumpalaikė atmintis, susieta su ŠIO naudotojo naršykle. Čia įsimename "staff", kad /google/callback (kai naudotojas grįš iš Google) žinotų, kad tai buvo darbuotojo prisijungimas, ne kliento.
+    # OAuth paskirtis įrašoma į pasirašytą naršyklės sesijos slapuką; /google/callback pagal ją atskiria darbuotojo prisijungimą nuo kliento prisijungimo.
     request.session["oauth_intent"] = "staff"
     return await oauth.google.authorize_redirect(
         request,
@@ -104,10 +110,10 @@ async def customer_google_login(request: Request):
         prompt="select_account",
     )
 
-# Google naudotoją nukreipia ČIA po prisijungimo - pagal anksčiau įsimintą "staff"/"customer" žymę, prijungiame kaip DARBUOTOJĄ arba KLIENTĄ.
+# Google grąžintą OAuth atsakymą priima bendras callback; sesijoje įrašytas staff arba customer ketinimas parenka darbuotojo arba kliento paskyros kelią.
 @router.get("/google/callback", name="google_callback", operation_id="googleCallback")
 async def google_callback(request: Request, db: Session = Depends(get_db)):
-    # Išsitraukiame anksčiau įsimintą žymę ir ją IŠTRINAME iš sesijos (daugiau nereikės).
+    # Prisijungimo ketinimas perskaitomas ir pašalinamas iš sesijos, kad būtų panaudotas tik šiam OAuth grįžimui.
     intent = request.session.pop("oauth_intent", "staff")
     token = await oauth.google.authorize_access_token(request)
 
@@ -123,7 +129,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     # Be patvirtinto el. pašto tęsti nesaugu - atmetame abu "blogus" atvejus (nėra el. pašto / jis nepatvirtintas).
     if not userinfo or not userinfo.get("email"):
         raise HTTPException(status_code=400, detail="Nepavyko gauti Google el. pašto.")
-    if not userinfo.get("email_verified", True):
+    # "False" (NE "True") kaip trūkstamos reikšmės atsarginis variantas - jei šis saugumui svarbus laukas kada nors ATEITŲ VISIŠKAI nebūtų atsakyme (skirtingas Google API atsakymo formatas ar pan.), privalu ATMESTI, ne tyliai PRIIMTI, laikant jį "patvirtintu" vien dėl to, kad signalo nebuvo.
+    if not userinfo.get("email_verified", False):
         raise HTTPException(status_code=400, detail="Google el. paštas nepatvirtintas.")
 
     email = userinfo["email"]
@@ -141,7 +148,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url=f"{FRONTEND_URL}/login?error=not_staff", status_code=303)
 
     # Rastam darbuotojui išduodamas JWT "bilietas" - lygiai tas pats principas kaip GitHub kelyje aukščiau.
-    jwt_token = create_access_token(data={"sub": email, "type": "staff", "auth": "google"})
+    jwt_token = create_staff_token(user, auth="google")
     return RedirectResponse(url=f"{FRONTEND_URL}/oauth#access_token={jwt_token}", status_code=303)
 
 # Skirtingai nei darbuotojui (kuriam paskyra NIEKADA nekuriama automatiškai), KLIENTUI paskyra sukuriama iš karto, jei jos dar nėra - tai ir yra "lengva užsiregistruoti su Google" patogumas.
@@ -160,18 +167,29 @@ def _get_or_create_customer_token(db: Session, email: str, first: str, last: str
         db.add(customer)
         db.commit()
         db.refresh(customer)
-    return create_access_token(data={"sub": email, "type": "customer", "auth": auth})
+    elif customer.slaptazodis is not None:
+        # Google patvirtinus el. pašto nuosavybę, esama slaptažodinė kliento paskyra susiejama su OAuth: slaptažodis panaikinamas, o token_version padidinama, kad deps.py atmestų jos turimus senus bilietus.
+        customer.slaptazodis = None
+        customer.token_version += 1
+        db.commit()
+        db.refresh(customer)
+    return create_customer_token(customer, auth=auth)
 
 # ---------- Klasikinis prisijungimas ----------
 # "Normalus" prisijungimas - darbuotojas įveda el. paštą + slaptažodį (klientams toks pat, bet kitame faile - customer_auth.py).
 @router.post("/login", response_model=TokenResponse, operation_id="login")
-@limiter.limit("5/minute")  # leidžiama bandyti ne dažniau nei 5 kartus per minutę - apsauga nuo slaptažodžio spėliojimo botais
+@limiter.limit("5/minute")  # leidžiama bandyti ne dažniau nei 5 kartus per minutę PAGAL IP - apsauga nuo slaptažodžio spėliojimo botais
+@limiter.limit("5/minute", key_func=login_identity_key)  # TAS PATS limitas, bet PAGAL el. paštą (žr. rate_limit.py) - be šito IP rotavimas (VPN/proxy) visiškai paneigtų limitą aukščiau
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     db_user = get_employee_by_email(db, payload.el_pastas)
-    if not db_user or not verify_password(payload.slaptazodis, db_user.slaptazodis):
+    # "has_password" - TIKRINA ABU atvejus (naudotojo iš viso nėra, ARBA jis yra, bet jungiasi TIK per Google/GitHub ir slaptazodis=NULL); be šios patikros antrasis atvejis bandytų "verify_password(x, None)" ir mestų neaiškų AttributeError (500), ne aiškų 401.
+    has_password = bool(db_user and db_user.slaptazodis)
+    # "verify_password" kviečiamas VISADA (net kai has_password=False, su _DUMMY_PASSWORD_HASH) - žr. _DUMMY_PASSWORD_HASH komentarą aukščiau dėl laiko matomo šoninio kanalo.
+    password_ok = verify_password(payload.slaptazodis, db_user.slaptazodis if has_password else _DUMMY_PASSWORD_HASH)
+    if not has_password or not password_ok:
         raise HTTPException(status_code=401, detail="Neteisingas el. paštas arba slaptažodis")
     # Viskas gerai - sukuriame JWT "bilietą" ir atiduodame frontend'ui, kuris jį saugos ir naudos ateities užklausoms.
-    token = create_access_token(data={"sub": db_user.el_pastas, "type": "staff"})
+    token = create_staff_token(db_user)
     return TokenResponse(access_token=token)
 
 # JWT "bilietas" neturi serverio atmintyje jokios žymos "galiojantis" - tad jo "atšaukti" nėra kaip, šis endpointas realiai NIEKO neišvalo serveryje. Tikrą atsijungimą atlieka frontend'as - tiesiog išmesdamas tokeną iš savo atminties.
@@ -184,22 +202,30 @@ def logout():
 def me(current_user = Depends(get_current_user)):
     return current_user
 
-# Leidžia prisijungusiam darbuotojui pasikeisti savo slaptažodį - reikalaujame žinoti SENĄ slaptažodį, kad kažkas kitas, radęs tavo atvirą sesiją, negalėtų jo pasikeisti už tave.
+# Leidžia prisijungusiam darbuotojui pasikeisti savo slaptažodį - reikalaujame žinoti SENĄ slaptažodį, kad kažkas kitas, radęs tavo atvirą sesiją, negalėtų jo pasikeisti už tave. Rate limit'as - be jo, trumpalaikį (pvz. XSS pavogtą) JWT turintis asmuo galėtų NERIBOTAI spėlioti TIKRĄ slaptažodį čia pat ir, atspėjęs, įsitvirtinti paskyroje IR PO TO, kai pavogtas tokenas baigs galioti.
 @router.post("/change-password", operation_id="changePassword")
-def change_password(request: ChangePasswordRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+@limiter.limit("5/minute")
+def change_password(payload: ChangePasswordRequest, request: Request, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     user = get_employee_by_email(db, current_user.el_pastas)
-    if not verify_password(request.senas_slaptazodis, user.slaptazodis):
+    # "slaptazodis" GALI būti NULL - darbuotojas, kuris JUNGIASI TIK per Google/GitHub OAuth (žr. google_callback/github_callback aukščiau), savo slaptažodžio neturi; "verify_password(x, None)" kitaip mestų neaiškų AttributeError (500), ne aiškų 400.
+    if not user.slaptazodis:
+        raise HTTPException(status_code=400, detail="Jūsų paskyra neturi slaptažodžio (prisijungiate per Google/GitHub) - slaptažodžio keitimas negalimas.")
+    if not verify_password(payload.senas_slaptazodis, user.slaptazodis):
         raise HTTPException(status_code=400, detail="Neteisingas dabartinis slaptažodis")
-    user.slaptazodis = get_password_hash(request.naujas_slaptazodis)
+    user.slaptazodis = get_password_hash(payload.naujas_slaptazodis)
     db.commit()
     return {"message": "Password updated successfully"}
 
 # Tas pats patikrinimas kaip /login aukščiau, bet priima duomenis KITU formatu (forma, ne JSON) - to reikalauja automatinė API dokumentacija (/docs), kad jos "Authorize" mygtukas veiktų. Frontend'as šito endpointo nenaudoja.
 @router.post("/token", response_model=TokenResponse, operation_id="swaggerLogin")
-@limiter.limit("5/minute")
+@limiter.limit("5/minute")  # PAGAL IP
+@limiter.limit("5/minute", key_func=login_identity_key)  # TAS PATS limitas PAGAL "username" - be šito /login'o brute-force apsauga būtų trivialiai apeinama tiesiog taikant į ŠĮ, ne /login, endpoint'ą
 def login_swagger(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = get_employee_by_email(db, username)
-    if not user or not verify_password(password, user.slaptazodis):
+    # "has_password" - ta pati OAuth-only patikra kaip "login" aukščiau.
+    has_password = bool(user and user.slaptazodis)
+    password_ok = verify_password(password, user.slaptazodis if has_password else _DUMMY_PASSWORD_HASH)
+    if not has_password or not password_ok:
         raise HTTPException(status_code=401, detail="Neteisingi prisijungimo duomenys")
-    token = create_access_token(data={"sub": user.el_pastas, "type": "staff"})
+    token = create_staff_token(user)
     return TokenResponse(access_token=token)

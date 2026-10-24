@@ -8,7 +8,7 @@ TEST_USER = {
     "el_pastas": "test.auth@viko.lt",
     "slaptazodis": "Slaptas123!",
     "telefono_nr": "+37061234567",
-    "pareigos": "Testuotojas",
+    "pareigos": "Vadybininkas",
     "atlyginimas": 1000,
     "isidarbinimo_data": "2024-01-01"
 }
@@ -120,6 +120,26 @@ def test_change_password_wrong_old_pw(client, create_test_user):
 
 
 # JWT YRA BE SERVERIO BŪSENOS - "logout" NEGALI realiai "atšaukti" tokeno DB pusėje (jis tiesiog liktų galiojantis, kol pasibaigs jo laikas); šis endpoint'as tik grąžina patvirtinimą, kad FRONTEND'AS ištrintų tokeną iš SAVO atminties - serveris pats jo neseka ir negali "pamiršti".
+# Tik per Google ar GitHub prisijungiančio darbuotojo slaptažodis bazėje yra NULL; /login ir /token turi atmesti slaptažodinį bandymą su 401, o ne bandyti tikrinti nesančią maišą.
+def test_login_rejects_oauth_only_employee_cleanly(client, auth_headers, db_session):
+    from app.models.employee import Employee
+    from datetime import date
+
+    oauth_only = Employee(
+        vardas="OAuth", pavarde="Tik", el_pastas=f"oauthonly{uuid4().hex[:8]}@viko.lt",
+        telefono_nr="+37060000111", pareigos="Mechanikas", atlyginimas=1000,
+        isidarbinimo_data=date(2024, 1, 1), slaptazodis=None,
+    )
+    db_session.add(oauth_only)
+    db_session.commit()
+
+    resp = client.post("/api/v1/login", json={"el_pastas": oauth_only.el_pastas, "slaptazodis": "bandymas123"})
+    assert resp.status_code == 401
+
+    resp_token = client.post("/api/v1/token", data={"username": oauth_only.el_pastas, "password": "bandymas123"})
+    assert resp_token.status_code == 401
+
+
 def test_logout(client):
     resp = client.post("/api/v1/logout")
     assert resp.status_code == 200

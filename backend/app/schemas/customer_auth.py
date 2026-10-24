@@ -1,6 +1,7 @@
 # Kliento (ne darbuotojo) prisijungimo/profilio formos - VISIŠKAI atskiras identitetas nuo app/schemas/auth.py (darbuotojų), su savo JWT "type" reikšme, savo DB lentele (Klientai, ne Darbuotojai).
 from datetime import date, datetime, timezone
 from pydantic import BaseModel, EmailStr, field_validator
+from app.services.auth_service import MAX_PASSWORD_BYTES
 
 
 # Tiksli amžiaus patikra (metai/mėnuo/diena, ne tik metų skirtumas) - naudojama ABIEJUOSE validatoriuose žemiau, kad nuomoti automobilį galėtų TIK pilnamečiai (žr. nuomos-taisykles puslapį frontend'e, 1 skyrius).
@@ -19,6 +20,7 @@ class CustomerRegisterRequest(BaseModel):
     gimimo_data: date
     slaptazodis: str
 
+    # Vardai tikrinami, kad tuščias ar per trumpas tekstas nepatektų į kliento ar darbuotojo įrašą.
     @field_validator("vardas", "pavarde")
     @classmethod
     def validate_names(cls, v: str) -> str:
@@ -26,6 +28,7 @@ class CustomerRegisterRequest(BaseModel):
             raise ValueError("Vardas ir pavardė turi būti bent 2 simbolių ilgio")
         return v.strip()
 
+    # Telefono formatas tikrinamas, kad kontaktas atitiktų formose naudojamas taisykles.
     @field_validator("telefono_nr")
     @classmethod
     def validate_telefono(cls, v: str) -> str:
@@ -33,11 +36,15 @@ class CustomerRegisterRequest(BaseModel):
             raise ValueError("Telefono numeris per trumpas")
         return v
 
+    # Slaptažodžio ribos tikrinamos prieš maišymą, kad bcrypt neapkirptų jo nepastebimai.
     @field_validator("slaptazodis")
     @classmethod
     def validate_slaptazodis(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("Slaptažodis turi būti bent 8 simbolių ilgio")
+        # bcrypt (auth_service.py) tyliai apdoroja TIK pirmus 72 baitus; be šios patikros du SKIRTINGI, bet iki 72 baito sutampantys slaptažodžiai autentifikuotųsi kaip TAS PATS.
+        if len(v.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            raise ValueError(f"Slaptažodis negali būti ilgesnis nei {MAX_PASSWORD_BYTES} baitų")
         return v
 
     # Dvi atskiros sveiko proto patikros - gimimo data NEGALI būti ateityje (akivaizdi spragos naudojimo klaida), IR negali būti NEREALIAI sena (prieš 1900 m., tikriausiai įvesties klaida, ne tikras amžius).
@@ -86,7 +93,10 @@ class CustomerProfileUpdate(BaseModel):
     el_pastas: EmailStr | None = None
     telefono_nr: str | None = None
     gimimo_data: date | None = None
+    # PRIVALOMAS TIK kai keičiamas el_pastas (žr. customer_auth.py update_profile) - el. pašto nuosavybė NIEKUR nepatikrinama (nėra laiško patvirtinimo), tad be šio patikrinimo bet kas, radęs/pavogęs ATVIRĄ SESIJĄ (JWT), galėtų NEŽINODAMAS slaptažodžio "persiregistruoti" paskyrą ant kito el. pašto.
+    dabartinis_slaptazodis: str | None = None
 
+    # Vardai tikrinami, kad tuščias ar per trumpas tekstas nepatektų į kliento ar darbuotojo įrašą.
     @field_validator("vardas", "pavarde")
     @classmethod
     def validate_names(cls, v: str | None) -> str | None:
@@ -94,13 +104,15 @@ class CustomerProfileUpdate(BaseModel):
             raise ValueError("Vardas ir pavardė turi būti bent 2 simbolių ilgio")
         return v.strip() if v else v
 
+    # CustomerProfileUpdate tikrina kiekvieną pateiktą telefono reikšmę, įskaitant tuščią eilutę; nepateiktus laukus customer_auth.py praleidžia per exclude_unset=True.
     @field_validator("telefono_nr")
     @classmethod
     def validate_telefono(cls, v: str | None) -> str | None:
-        if v and len(v.strip()) < 6:
+        if v is not None and len(v.strip()) < 6:
             raise ValueError("Telefono numeris per trumpas")
         return v
 
+    # Gimimo data negali būti ateityje, nes ji naudojama kliento tinkamumui tikrinti.
     @field_validator("gimimo_data")
     @classmethod
     def validate_gimimo_data(cls, v: date | None) -> date | None:
@@ -117,5 +129,5 @@ class CustomerProfileUpdate(BaseModel):
 
 # Tas pats, kas CustomerInfo, PLIUS access_token - žr. customer_auth.py update_profile, kodėl naujas tokenas kartais reikalingas.
 class CustomerProfileUpdateOut(CustomerInfo):
-    # Užpildoma TIK kai el_pastas pasikeitė - senas tokenas (JWT "sub" = senas el. paštas) nebeatpažintų kliento, tad frontend'as turi jį iškart pakeisti.
+    # Pakeitus el. paštą customer_auth.py padidina token_version ir grąžina naują bilietą; CustomerAuthProvider jį išsaugo, kad dabartinė kliento sesija liktų galiojanti.
     access_token: str | None = None

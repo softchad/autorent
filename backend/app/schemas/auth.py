@@ -1,6 +1,7 @@
 # Darbuotojų (ne kliento, žr. customer_auth.py) prisijungimo/profilio formos - naudojamos auth.py endpoint'uose.
 from pydantic import BaseModel, field_validator
 from datetime import date
+from app.services.auth_service import MAX_PASSWORD_BYTES
 
 class LoginRequest(BaseModel):
     el_pastas: str
@@ -32,4 +33,7 @@ class ChangePasswordRequest(BaseModel):
     def validate_naujas_slaptazodis(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("Slaptažodis turi būti bent 8 simbolių ilgio")
+        # žr. customer_auth.py analogišką patikrą.
+        if len(v.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            raise ValueError(f"Slaptažodis negali būti ilgesnis nei {MAX_PASSWORD_BYTES} baitų")
         return v
