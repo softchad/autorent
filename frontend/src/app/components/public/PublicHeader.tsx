@@ -88,7 +88,7 @@ export default function PublicHeader({
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-[#1C2B3A] bg-[#0B121F]/85 backdrop-blur">
-        {/* h-16 FIKSUOTAS, NE py-3.5 (auto pagal turinį) - su py.. aukštis sektųsi pagal AUKŠČIAUSIĄ vaiką, o paieškos pilė (kai atsiranda) buvo aukštesnė už logotipo/meniu pusę, tad visa juosta "išsiplėsdavo"; fiksuotas h-16 garantuoja TĄ PATĮ aukštį nepriklausomai nuo to, ar paieška rodoma. */}
+        {/* Fiksuotas h-16 aukštis išlaiko vienodą antraštės dydį tiek su paieška, tiek be jos; paieškos, logotipo ir meniu elementai telpa tame pačiame išdėstyme. */}
         <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -107,7 +107,7 @@ export default function PublicHeader({
 
           {/* min-w-0 BŪTINA - be jo šis flex-1 elementas "stumia" header'į platesnį nei langas, kai atsiranda paieškos forma (flex elementai pagal nutylėjimą turi min-width:auto, kuris leidžia jiems išsiplėsti per turinio dydį); max-w-2xl žemiau apriboja pačios formos plotį, kad ji visada tilptų į tą pačią juostą. */}
           <div
-            className={`hidden min-w-0 flex-1 items-center justify-center overflow-hidden transition-all duration-300 ease-out md:flex ${
+            className={`hidden min-w-0 flex-1 items-center justify-center overflow-hidden transition-all duration-300 ease-out lg:flex ${
               showCompactSearch ? "max-h-14 opacity-100" : "max-h-0 opacity-0"
             }`}
           >
@@ -175,10 +175,17 @@ export default function PublicHeader({
             </button>
           )}
         </div>
+        {showCompactSearch && (
+          <div className="border-t border-[#1C2B3A] px-3 py-2 lg:hidden">
+            <SearchForm value={searchValue} onChange={onSearchChange} onSubmit={onSearchSubmit} variant="compact" />
+          </div>
+        )}
       </header>
 
       {/* Visą puslapį patamsinantis overlay meniu - ne nuolat matoma šoninė juosta; visada sumontuotas DOM'e (ne {navOpen && ...}), kad transform/opacity pereitų sklandžiai - sąlyginis mount/unmount reikštų, kad nėra ką animuoti uždarant. */}
       <div
+        inert={!navOpen}
+        aria-hidden={!navOpen}
         className={`fixed inset-0 z-[2000] flex transition-opacity duration-300 ease-out ${
           navOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}

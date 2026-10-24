@@ -41,7 +41,7 @@ export default function SearchForm({
     return (
       <form
         onSubmit={handleSubmit}
-        className="hidden lg:flex items-center gap-5 bg-[#1A2238] border border-[#1C2B3A] rounded-full pl-6 pr-1.5 py-1.5 shadow-lg"
+        className="flex flex-wrap items-center gap-2 lg:gap-5 bg-[#1A2238] border border-[#1C2B3A] rounded-2xl lg:rounded-full px-3 lg:pl-6 lg:pr-1.5 py-1.5 shadow-lg"
       >
         <LocationSearch value={value.location} onChange={(v) => set({ location: v })} placeholder="Vieta" compact />
         <div className="h-5 w-px bg-[#1C2B3A] shrink-0" />
@@ -51,7 +51,7 @@ export default function SearchForm({
           label="Iki"
           value={value.dateTo}
           onChange={(v) => set({ dateTo: v })}
-          minDate={value.dateFrom}
+          minDate={nextDay(value.dateFrom)}
           compact
           allowClear={false}
         />
@@ -91,7 +91,7 @@ export default function SearchForm({
             label="Iki"
             value={value.dateTo}
             onChange={(v) => set({ dateTo: v })}
-            minDate={value.dateFrom}
+            minDate={nextDay(value.dateFrom)}
             allowClear={false}
           />
         </div>
