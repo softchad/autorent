@@ -66,6 +66,7 @@ export default function CarsPage() {
     {
       label: "Modelis",
       accessor: (a: Automobilis) => `${a.marke} ${a.modelis}`,
+      sortValue: (a: Automobilis) => `${a.marke} ${a.modelis}`,
     },
     { label: "Numeris", accessor: "numeris" },
     { label: "Būsena", accessor: "automobilio_statusas" },
@@ -74,6 +75,7 @@ export default function CarsPage() {
       label: "Kaina",
       // Rodoma BE ".toFixed(2)" - tas pats raštas naudojamas IR viešame AutomobiliaiClient.tsx/CarDetailClient.tsx (sąžiningumo/nuoseklumo dėlei, tas pats skaičius visur atrodo vienodai).
       accessor: (a: Automobilis) => `${a.kaina_parai} €`,
+      sortValue: (a: Automobilis) => Number(a.kaina_parai),
     },
     {
       label: "Veiksmai",
@@ -179,7 +181,7 @@ export default function CarsPage() {
           onClose={() => setModalOpen(false)}
           onSave={async (updated) => {
             try {
-              // "updated" turi IR automobilio_id/links (nereikalingi CarUpdate'ui) - saugu siųsti kaip yra, patikrinau: CarUpdate (schemas/car.py) NEnaudoja "extra=forbid", tad backend TYLIAI ignoruoja nežinomus laukus (patikrinta tiesiogiai paleidus schemą su jais).
+              // EntityModal grąžintas automobilio objektas perduodamas atnaujinimui; backend CarUpdate priima savo schemos laukus ir ignoruoja atsakymui skirtus automobilio_id bei links.
               await updateCar({
                 carId: selectedCar.automobilio_id,
                 carUpdate: updated,

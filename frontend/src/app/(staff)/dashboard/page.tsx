@@ -63,16 +63,19 @@ export default function DashboardPage() {
     {
       label: "Automobilis",
       accessor: (r: Reservation) => getAutomobilis(r.automobilio_id),
+      sortValue: (r: Reservation) => getAutomobilis(r.automobilio_id),
     },
     {
       label: "Klientas",
       accessor: (r: Reservation) => getKlientas(r.kliento_id),
+      sortValue: (r: Reservation) => getKlientas(r.kliento_id),
     },
     { label: "Pradžia", accessor: "rezervacijos_pradzia" },
     { label: "Pabaiga", accessor: "rezervacijos_pabaiga" },
     {
       label: "Būsena",
       accessor: (r: Reservation) => <StatusBadge status={r.busena} />,
+      sortValue: (r: Reservation) => r.busena,
     },
     {
       label: "Veiksmai",
@@ -128,7 +131,7 @@ export default function DashboardPage() {
         />
         <StatCard
           color="bg-[#5B2C3A]"
-          title="Neapmokėtos sąskaitos"
+          title="Nebaigtų nuomų sąskaitos"
           value={neapmoketosSaskaitos}
           icon={<FiCreditCard />}
         />

@@ -1,3 +1,4 @@
+import { localISO } from "@/utils/formatLt";
 import { useMemo } from "react";
 import {
   useGetAllCarsQuery,
@@ -6,10 +7,13 @@ import {
   useGetStaffConversationsQuery,
   useGetAllClientsQuery,
   useGetLatestReservationsQuery,
+  useGetCurrentUserQuery,
 } from "@/store/autorentApi";
 
 // Dashboard'o suvestinės skaičiai - daug mažų, nebrangių užklausų atskirai (ne vienas "dashboard stats" endpoint'as), nes kiekvienas sąrašas jau turi savo cache tarp puslapių (automobiliai/užsakymai/klientai/sąskaitos).
 export function useDashboardStats() {
+  const { data: me } = useGetCurrentUserQuery();
+  const canSupport = me && ["Administratorius", "Vadybininkas", "Klient\u0173 aptarnavimas"].includes(me.pareigos);
   // Atšauktos NEĮEINA čia - backend'as (GET /reservations/latest) jas atmeta PRIEŠ limit'ą, kitaip dashboard'as rodytų mažiau nei 5 įrašus, kai keletas naujausių būtų atšauktos.
   const {
     data: latestReservations = [],
@@ -21,7 +25,7 @@ export function useDashboardStats() {
   const { data: uzsakymai = [], isLoading: loadingU } = useGetAllOrdersQuery();
   const { data: klientai = [], isLoading: loadingK } = useGetAllClientsQuery();
   const { data: saskaitos = [], isLoading: loadingS } = useGetAllInvoicesQuery();
-  const { data: pokalbiai = [], isLoading: loadingP } = useGetStaffConversationsQuery({ filter: "needs_reply" });
+  const { data: pokalbiai = [], isLoading: loadingP } = useGetStaffConversationsQuery({ filter: "needs_reply" }, { skip: !canSupport });
 
   const isLoading =
     loadingLatest || loadingA || loadingU || loadingK || loadingS || loadingP;
@@ -56,7 +60,7 @@ export function useDashboardStats() {
     .sort((a, b) => new Date(a.atnaujinimo_data).getTime() - new Date(b.atnaujinimo_data).getTime())
     .slice(0, 5);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISO(new Date());
   const siandienGrazinimai = uzsakymai.filter(
     (u) => u.grazinimo_data === today
   ).length;

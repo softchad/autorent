@@ -36,6 +36,7 @@ export default function ClientsPage() {
     {
       label: "Vardas ir Pavardė",
       accessor: (k: Klientas) => `${k.vardas} ${k.pavarde}`,
+      sortValue: (k: Klientas) => `${k.vardas} ${k.pavarde}`,
     },
     { label: "El. paštas", accessor: "el_pastas" },
     { label: "Telefonas", accessor: "telefono_nr" },
@@ -44,6 +45,7 @@ export default function ClientsPage() {
       // "—" (brūkšnys), ne tuščia eilutė ar "null" - DB stulpelis neturi NOT NULL apribojimo (žr. schema.sql), tad reikšmė gali realiai būti null.
       accessor: (k: Klientas) =>
         k.registracijos_data ? new Date(k.registracijos_data).toLocaleDateString("lt-LT") : "—",
+      sortValue: (k: Klientas) => k.registracijos_data ? new Date(k.registracijos_data) : null,
     },
     {
       label: "Veiksmai",
