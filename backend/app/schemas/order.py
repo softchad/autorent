@@ -19,6 +19,7 @@ class OrderBase(BaseModel):
     uzsakymo_busena: str
     turi_papildomas_paslaugas: bool
 
+    # Leidžiamos tik tos būsenos, pagal kurias sistema sprendžia apie aktyvią nuomą ar rezervaciją.
     @field_validator("uzsakymo_busena")
     @classmethod
     def validate_busena(cls, v: str) -> str:
@@ -26,6 +27,7 @@ class OrderBase(BaseModel):
             raise ValueError(f"Negalima būsena. Leistinos: {', '.join(VALID_BUSENA)}")
         return v
 
+    # Neigiama ar nulinė nuomos kaina neturi patekti į kainos skaičiavimą.
     @field_validator("bendra_kaina")
     @classmethod
     def validate_kaina(cls, v: float) -> float:
@@ -42,9 +44,10 @@ class OrderBase(BaseModel):
         return self
 
 
-# "nuolaidos_kodas" NEgali būti OrderBase dalis - jis NIEKADA nesaugomas Uzsakymai lentelėje (žr. order.py endpoint'ą), tik VIENKARTINIS nurodymas, kiek atimti iš bendra_kaina kūrimo metu.
+# "nuolaidos_kodas" NEgali būti OrderBase dalis - jis NIEKADA nesaugomas Uzsakymai lentelėje (žr. order.py endpoint'ą), tik VIENKARTINIS nurodymas, kiek atimti iš bendra_kaina kūrimo metu. "rezervacijos_id" TAIP PAT NĖRA Uzsakymai lentelės stulpelis - jis nurodo, KURIĄ rezervaciją šis užsakymas PAVERČIA realia nuoma (žr. order.py create_order), kad TOS PAČIOS rezervacijos nebeliktų blokuojamos kaip "kito" booking'o.
 class OrderCreate(OrderBase):
     nuolaidos_kodas: Optional[str] = None
+    rezervacijos_id: Optional[int] = None
 
 
 # NEgali paveldėti OrderBase - leidžia keisti TIK 3 laukus (žr. order.py endpoint'o komentarą, kodėl klientas/automobilis/kaina nekeičiami per PUT). validate_dates iš OrderBase ČIA NEPASIEKIAMA (nuomos_data nėra šios schemos lauko dalis) - tad TA PATI patikra atliekama RANKA endpoint'e (order.py), prieš priskiriant naują grazinimo_data.
@@ -53,6 +56,7 @@ class OrderUpdate(BaseModel):
     grazinimo_data: Optional[date] = None
     turi_papildomas_paslaugas: Optional[bool] = None
 
+    # Leidžiamos tik tos būsenos, pagal kurias sistema sprendžia apie aktyvią nuomą ar rezervaciją.
     @field_validator("uzsakymo_busena")
     @classmethod
     def validate_busena(cls, v: Optional[str]) -> Optional[str]:

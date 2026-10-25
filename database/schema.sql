@@ -16,7 +16,9 @@ CREATE TABLE `Klientai` (
   `telefono_nr`        VARCHAR(255) NOT NULL,
   `gimimo_data`        DATE         NOT NULL,
   `registracijos_data` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  `slaptazodis`        VARCHAR(255) NULL
+  `slaptazodis`        VARCHAR(255) NULL,
+  -- Kliento token_version lyginama su JWT ver lauku backend/app/api/deps.py; versijos padidinimas atšaukia paskyros turimas sesijas nepakeičiant jos ID.
+  `token_version`      INTEGER      NOT NULL DEFAULT 0
 );
 
 -- Darbuotojai — įmonės personalas su pareigomis ir atlyginimu
@@ -29,7 +31,9 @@ CREATE TABLE `Darbuotojai` (
   `pareigos`         VARCHAR(255)  NOT NULL,
   `atlyginimas`      DECIMAL(10,2) NOT NULL,
   `isidarbinimo_data` DATE         NOT NULL,
-  `slaptazodis`      VARCHAR(255)  NULL
+  `slaptazodis`      VARCHAR(255)  NULL,
+  -- Ta pati priežastis, kaip Klientai.token_version aukščiau.
+  `token_version`    INTEGER       NOT NULL DEFAULT 0
 );
 
 -- Pristatymo_Vietos — paėmimo ir grąžinimo punktai Lietuvoje
@@ -85,7 +89,10 @@ CREATE TABLE `Uzsakymai` (
   `grazinimo_vietos_id`      INTEGER       NOT NULL,
   `bendra_kaina`             DECIMAL(10,2) NOT NULL,
   `uzsakymo_busena`          ENUM('laukiama', 'patvirtinta', 'vykdoma', 'užbaigta', 'atšaukta') NOT NULL,
-  `turi_papildomas_paslaugas` BOOLEAN      NOT NULL DEFAULT FALSE
+  `turi_papildomas_paslaugas` BOOLEAN      NOT NULL DEFAULT FALSE,
+  -- fiksuota (ne procentinė) nuolaidos kodo suma, pritaikyta sukūrimo metu; NIEKADA nebekinta per visą užsakymo gyvavimą (žr. backend/app/api/endpoints/order.py update_order kainos pertaikymo komentarą).
+  `taikyta_nuolaida_eur`     DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `bazine_kaina_parai`       DECIMAL(18,8) NULL
 );
 
 -- Rezervavimas — išankstinės rezervacijos prieš patvirtinant užsakymą
@@ -96,15 +103,20 @@ CREATE TABLE `Rezervavimas` (
   `rezervacijos_pradzia` DATE   NOT NULL,
   `rezervacijos_pabaiga` DATE   NOT NULL,
   `busena`              ENUM('patvirtinta', 'atšaukta', 'laukia') NOT NULL,
+  -- Rezervacijos paros tarifas užfiksuojamas sukūrimo metu, kad parko kainų pakeitimai nekeistų rezervacijos vertės; NULL reiškia nežinomą istorinį tarifą, kurį customer.py turi įvertinti formuodamas atsakymą.
+  `kaina_parai`         DECIMAL(10,2) NULL,
   CHECK (`rezervacijos_pabaiga` > `rezervacijos_pradzia`)
 );
 
 -- Saskaitos — finansiniai dokumentai susieti su užsakymais
 CREATE TABLE `Saskaitos` (
   `saskaitos_id`  INTEGER       PRIMARY KEY AUTO_INCREMENT,
-  `uzsakymo_id`   INTEGER       NOT NULL,
+  -- UNIQUE - vienas užsakymas gali turėti TIK VIENĄ sąskaitą (1:1 ryšys); be šio apribojimo du vienu metu ateinantys createInvoice kreipiniai abu praeitų "ar jau yra" patikrą (žr. backend/app/api/endpoints/invoice.py) PRIEŠ bet kuriam užsicommit'inant ir sukurtų DVI sąskaitas tam pačiam užsakymui .
+  `uzsakymo_id`   INTEGER       NOT NULL UNIQUE,
   `suma`          DECIMAL(10,2) NOT NULL,
-  `saskaitos_data` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `saskaitos_data` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `gavejo_vardas` VARCHAR(255) NULL,
+  `gavejo_pavarde` VARCHAR(255) NULL
 );
 
 -- ----------------------------------------------------------------
