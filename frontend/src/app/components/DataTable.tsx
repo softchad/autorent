@@ -17,7 +17,7 @@ export type DataTableProps<T> = {
   itemsPerPage?: number;
 };
 
-// Reikšmė, pagal kurią lyginama rūšiuojant - "sortValue" turi pirmenybę (žr. komentarą aukščiau), kitaip imama TIESIOG lauko reikšmė, nebent accessor yra funkcija be "sortValue" (tada rūšiavimas tai eilutei neleidžiamas, žr. isSortable žemiau, tad čia tiesiog grąžinama undefined).
+// sortValue pateikia palyginamą reikšmę formatuojamam stulpeliui; įprastam laukui reikšmė skaitoma iš row, o funkciniam accessor be sortValue rūšiavimas nesiūlomas.
 function getSortValue<T>(col: Column<T>, row: T): string | number | Date | null | undefined {
   if (col.sortValue) return col.sortValue(row);
   if (typeof col.accessor === "function") return undefined;
@@ -50,22 +50,25 @@ export default function DataTable<T>({
     setCurrentPage(1);
   };
 
-  // Nulinis (null/undefined) reikšmes VISADA stumia į sąrašo galą, nepriklausomai nuo rūšiavimo tvarkos - kitaip jos "šokinėtų" tarp pradžios/galo kaskart pakeičiant kryptį, kas atrodytų netvarkingai.
+  // Trūkstamos reikšmės paliekamos sąrašo gale abiem kryptimis; skaičiai lyginami skaitmeniškai, datos pagal laiką, o tekstas pagal lietuvišką tvarką.
   const sortedData = useMemo(() => {
     if (sortIndex === null) return data;
     const col = columns[sortIndex];
-    const withValues = data.map((row) => ({ row, value: getSortValue(col, row) }));
+    if (!col) return data;
+    const withValues = data.map((row) => {
+      const raw = getSortValue(col, row);
+      const value = raw instanceof Date ? raw.getTime() : raw;
+      return { row, value: typeof value === "number" && !Number.isFinite(value) ? null : value };
+    });
     withValues.sort((a, b) => {
       if (a.value == null && b.value == null) return 0;
       if (a.value == null) return 1;
       if (b.value == null) return -1;
       let cmp: number;
-      if (a.value instanceof Date || b.value instanceof Date) {
-        cmp = new Date(a.value).getTime() - new Date(b.value).getTime();
-      } else if (typeof a.value === "number" && typeof b.value === "number") {
+      if (typeof a.value === "number" && typeof b.value === "number") {
         cmp = a.value - b.value;
       } else {
-        cmp = String(a.value).localeCompare(String(b.value), "lt");
+        cmp = String(a.value).localeCompare(String(b.value), "lt", { numeric: true, sensitivity: "base" });
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -114,18 +117,23 @@ export default function DataTable<T>({
               return (
                 <th
                   key={i}
-                  onClick={sortable ? () => handleSort(i) : undefined}
-                  className={`px-4 py-3 text-left text-xs font-semibold text-[#4BAFD4] uppercase tracking-wider ${sortable ? "cursor-pointer select-none hover:text-[#6CC4EE]" : ""} ${col.className ?? ""}`}
+                  scope="col"
+                  aria-sort={sortable ? (sortIndex === i ? (sortDir === "asc" ? "ascending" : "descending") : "none") : undefined}
+                  className={`px-4 py-3 text-left text-xs font-semibold text-[#4BAFD4] uppercase tracking-wider ${col.className ?? ""}`}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {col.label}
-                    {sortable && (
-                      <span className="inline-flex flex-col -space-y-1 text-[10px]">
+                  {sortable ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSort(i)}
+                      className="inline-flex w-full items-center gap-1 text-left uppercase tracking-wider hover:text-[#6CC4EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#4BAFD4]"
+                    >
+                      {col.label}
+                      <span aria-hidden="true" className="inline-flex flex-col -space-y-1 text-[10px]">
                         <FiChevronUp className={sortIndex === i && sortDir === "asc" ? "text-[#4BAFD4]" : "text-[#3D4F63]"} />
                         <FiChevronDown className={sortIndex === i && sortDir === "desc" ? "text-[#4BAFD4]" : "text-[#3D4F63]"} />
                       </span>
-                    )}
-                  </span>
+                    </button>
+                  ) : col.label}
                 </th>
               );
             })}
