@@ -9,6 +9,7 @@ import Image from "next/image";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import logo from "@/assets/logo-mark.png";
+import { formatApiError } from "@/utils/formatApiError";
 
 const BACKEND = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1`;
 
@@ -33,10 +34,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [login, { isLoading, isError }] = useLoginMutation();
+  const [login, { isLoading, isError, error }] = useLoginMutation();
 
   // Tikra klaida (neteisingas el. paštas/slaptažodis) rodoma per "isError" iš useLoginMutation aukščiau - "catch {}" čia tik sulaiko unwrap() išmestą klaidą, kad ji NEpasiektų konsolės kaip "unhandled", UI apie nepavykimą jau praneša kitu keliu.
   const handleLogin = async () => {
+    if (isLoading) return;
     try {
       const res = await login({
         loginRequest: { el_pastas: email, slaptazodis: password },
@@ -110,7 +112,7 @@ export default function LoginPage() {
           {/* Klaida */}
           {isError && (
             <p className="text-red-400 text-xs mt-3 text-center">
-              Neteisingas el. paštas arba slaptažodis
+              {formatApiError(error, "Nepavyko prisijungti. Patikrinkite ryšį ir bandykite dar kartą.")}
             </p>
           )}
           {oauthError && (

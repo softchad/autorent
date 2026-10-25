@@ -60,13 +60,7 @@ export default function CarResultsMap({
       style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
     >
-      {/*
-        CARTO's free dark_all basemap dabar reikalauja API rakto (patikrinta realiu
-        užklausimu - dabar grąžina "API KEY REQUIRED" vietoj tikro žemėlapio; ta pati
-        problema veikia ir darbuotojų MapComponent.tsx). Naudojame standartinius,
-        tikrai nemokamus OpenStreetMap plytelius su CSS invert filtru, kad atrodytų
-        tamsūs ir atitiktų puslapio stilių.
-      */}
+      {/* Leaflet žemėlapis naudoja viešas OpenStreetMap plyteles, o tamsus stilius pritaikomas CSS filtru; padalinių pasiūlymai rodomi kainos žymekliais. */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
