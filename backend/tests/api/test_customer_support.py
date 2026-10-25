@@ -310,6 +310,122 @@ def test_unread_flag_true_after_staff_reply_then_false_after_seen(auth_headers, 
     assert seen_resp.json()["neperskaityta"] is False
 
 
+# Kiekviena nauja kliento žinutė turi atnaujinti pokalbio veiklos laiką, net kai būsena lieka atvira; tai tikrina support_service.add_customer_message įrašomą atnaujinimo_data.
+def test_second_message_with_unchanged_status_still_bumps_activity(auth_headers, db_session):
+    from app.models.support_conversation import SupportConversation
+
+    token = _registered_customer()
+    convo = _create_conversation(token)
+    db_convo = db_session.query(SupportConversation).filter_by(pokalbio_id=convo["pokalbio_id"]).first()
+    before = db_convo.atnaujinimo_data
+
+    resp = client.post(
+        f"/api/v1/customer/support/conversations/{convo['pokalbio_id']}/messages",
+        json={"tekstas": "Antra žinutė, būsena nesikeičia (vis tiek 'atvira')."},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    db_session.refresh(db_convo)
+    assert db_convo.atnaujinimo_data >= before
+
+
+# Perskaitymo žymos atnaujinimas neturi keisti pokalbio veiklos laiko, nes darbuotojų eilė rikiuojama pagal tikras žinutes ir veiksmus, o ne jų skaitymą.
+def test_mark_seen_never_touches_activity_timestamp(auth_headers, db_session):
+    from app.models.support_conversation import SupportConversation
+
+    token = _registered_customer()
+    convo = _create_conversation(token)
+    last_msg_id = convo["zinutes"][-1]["zinutes_id"]
+    db_convo = db_session.query(SupportConversation).filter_by(pokalbio_id=convo["pokalbio_id"]).first()
+    before = db_convo.atnaujinimo_data
+
+    resp = client.post(
+        f"/api/v1/customer/support/conversations/{convo['pokalbio_id']}/seen",
+        json={"zinutes_id": last_msg_id},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    db_session.refresh(db_convo)
+    assert db_convo.atnaujinimo_data == before
+
+
+# Perskaitymo žyma ribojama paskutinės egzistuojančios pokalbio žinutės ID, kad per didelė kliento pateikta reikšmė nepaslėptų būsimų neperskaitytų žinučių.
+def test_mark_seen_clamps_future_message_id(auth_headers, db_session):
+    from app.models.support_conversation import SupportConversation
+    from app.models.employee import Employee
+    from app.services import support_service
+
+    token = _registered_customer()
+    convo = _create_conversation(token)
+
+    fake_future_id = convo["zinutes"][-1]["zinutes_id"] + 999999
+    seen_resp = client.post(
+        f"/api/v1/customer/support/conversations/{convo['pokalbio_id']}/seen",
+        json={"zinutes_id": fake_future_id},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert seen_resp.status_code == 200, seen_resp.text
+
+    db_convo = db_session.query(SupportConversation).filter_by(pokalbio_id=convo["pokalbio_id"]).first()
+    emp = db_session.query(Employee).filter_by(pareigos="Administratorius").first()
+    support_service.add_staff_message(db_session, db_convo, emp.darbuotojo_id, "Naujas tikras atsakymas", "sprendziama")
+
+    list_resp = client.get("/api/v1/customer/support/conversations", headers={"Authorization": f"Bearer {token}"})
+    listed = next(c for c in list_resp.json() if c["pokalbio_id"] == convo["pokalbio_id"])
+    assert listed["neperskaityta"] is True
+
+
+# Pasikeitus su pokalbiu susietos rezervacijos klientui, pradinio pokalbio savininkas turi matyti tik savo pokalbį, o ne kito kliento automobilį ir datas.
+def test_reassigned_reservation_context_hidden_from_former_owner(auth_headers, db_session):
+    from app.models.client import Client
+    from app.models.reservation import Reservation
+
+    token_a = _registered_customer()
+    email_a = client.get("/api/v1/customer/me", headers={"Authorization": f"Bearer {token_a}"}).json()["el_pastas"]
+    kliento_a_id = db_session.query(Client).filter_by(el_pastas=email_a).first().kliento_id
+
+    token_b = _registered_customer()
+    email_b = client.get("/api/v1/customer/me", headers={"Authorization": f"Bearer {token_b}"}).json()["el_pastas"]
+    kliento_b_id = db_session.query(Client).filter_by(el_pastas=email_b).first().kliento_id
+
+    car = _create_car(db_session)
+    reservation = Reservation(
+        kliento_id=kliento_a_id, automobilio_id=car.automobilio_id,
+        rezervacijos_pradzia=date(2026, 11, 1), rezervacijos_pabaiga=date(2026, 11, 5),
+        busena="patvirtinta",
+    )
+    db_session.add(reservation)
+    db_session.commit()
+
+    convo = client.post(
+        "/api/v1/customer/support/conversations",
+        json={
+            "tema": "Klausimas apie rezervaciją", "pranesimas": "Ar galiu pakeisti datą?",
+            "kategorija": "kita", "rezervacijos_id": reservation.rezervacijos_id,
+        },
+        headers={"Authorization": f"Bearer {token_a}"},
+    ).json()
+    assert convo["rezervacija"] is not None
+
+    reassign_resp = client.put(
+        f"/api/v1/reservations/{reservation.rezervacijos_id}",
+        json={
+            "kliento_id": kliento_b_id,
+            "rezervacijos_pradzia": "2029-03-10",
+            "rezervacijos_pabaiga": "2029-03-14",
+        },
+        headers=auth_headers,
+    )
+    assert reassign_resp.status_code == 200, reassign_resp.text
+
+    reread = client.get(
+        f"/api/v1/customer/support/conversations/{convo['pokalbio_id']}",
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert reread.status_code == 200, reread.text
+    assert reread.json()["rezervacija"] is None
+
+
 # Darbuotojo žinutės autorius klientui rodomas kaip "AutoRent (Vardas)" - NIEKADA el. paštas ar telefonas (žr. _author_names_map customer_support.py faile).
 def test_staff_message_author_name_has_autorent_prefix(auth_headers, db_session):
     from app.models.support_conversation import SupportConversation

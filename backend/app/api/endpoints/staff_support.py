@@ -1,7 +1,7 @@
 # Darbuotojų pusė pagalbos pokalbių sistemos - leidžia peržiūrėti, prisiimti ir atsakyti į klientų pokalbius; prieiga apribota ATSKIRU pareigų sąrašu (SUPPORT_ROLES), ne bendra EDIT teise, kurią turi IR mechanikai, bet jie neturi matyti privačių klientų pokalbių.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc  # desc/asc - rikiavimo tvarka (žr. list_conversations žemiau, kodėl kartais reikia AUGANČIOS, ne mažėjančios)
+from sqlalchemy import func, desc, asc  # desc/asc - rikiavimo tvarka (žr. list_conversations žemiau, kodėl kartais reikia AUGANČIOS, ne mažėjančios)
 
 from app.api.deps import get_db, get_current_user
 from app.models.employee import Employee
@@ -67,20 +67,15 @@ def _reservation_context_map(db: Session, rezervacijos_ids: list[int]) -> dict[i
     }
 
 
-# Grąžina {pokalbio_id: PASKUTINĖ žinutė} - rikiuojame SENIAUSIAS pirmi ir tiesiog PERRAŠOME žodyną eidami per visas, tad paskutinis perrašymas visada yra naujausia žinutė.
+# Grąžina {pokalbio_id: PASKUTINĖ žinutė} - SQL parenka tik didžiausio ID žinutę kiekvienam pokalbiui, nekraudama visos istorijos.
 def _last_messages_map(db: Session, pokalbio_ids: list[int]) -> dict[int, SupportMessage]:
     if not pokalbio_ids:
         return {}
-    rows = (
-        db.query(SupportMessage)
-        .filter(SupportMessage.pokalbio_id.in_(pokalbio_ids))
-        .order_by(SupportMessage.zinutes_id.asc())
-        .all()
-    )
-    last: dict[int, SupportMessage] = {}
-    for m in rows:
-        last[m.pokalbio_id] = m
-    return last
+    latest = db.query(func.max(SupportMessage.zinutes_id)).filter(
+        SupportMessage.pokalbio_id.in_(pokalbio_ids)
+    ).group_by(SupportMessage.pokalbio_id)
+    rows = db.query(SupportMessage).filter(SupportMessage.zinutes_id.in_(latest)).all()
+    return {message.pokalbio_id: message for message in rows}
 
 
 # Žinutės DB laikomos su autoriaus ID (darbuotojo arba kliento) - šis paverčia tuos ID į žmogiškus vardus, kad darbuotojų sąsaja matytų vardus, ne skaičius (skirtingai nei customer_support.py, darbuotojas ČIA matosi su TIKRU vardu, ne "AutoRent" prefiksu).
@@ -283,7 +278,7 @@ def resolve(
     current_user: Employee = Depends(require_support_access),
 ):
     convo = _get_conversation(db, pokalbio_id)
-    support_service.resolve_conversation(db, convo, request.santrauka)
+    support_service.resolve_conversation(db, convo, current_user.darbuotojo_id, request.santrauka)
     return _to_detail(db, convo)
 
 

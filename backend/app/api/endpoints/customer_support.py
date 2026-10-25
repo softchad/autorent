@@ -1,7 +1,7 @@
 # Kliento pusė pagalbos pokalbių sistemos - klientas čia gali pradėti naują pokalbį su AutoRent darbuotojais, peržiūrėti savo pokalbių sąrašą ir rašyti/skaityti žinutes; pati pokalbio/žinutės kūrimo logika laikoma VIENAME bendrame faile (support_service.py), kurį naudoja IR šis failas, IR darbuotojų pusės support.py, kad abi pusės visada veiktų identiškai, nesiskirdamos tarpusavyje.
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import desc  # rikiuoti NAUJAUSIUS pirmi (žr. list_conversations žemiau)
+from sqlalchemy import func, desc, tuple_  # desc - rikiuoti NAUJAUSIUS pirmi (žr. list_conversations žemiau); tuple_ - sudėtinė (rezervacijos_id, kliento_id) IN patikra žr. _reservation_context_map
 
 from app.api.deps import get_db, get_current_customer
 from app.models.client import Client
@@ -25,15 +25,16 @@ from app.services import support_service  # bendra pokalbių logika (sukūrimas,
 router = APIRouter(prefix="/customer/support", tags=["Customer Support"])
 
 
-# Vienu DB kreipiniu paverčia rezervacijų ID sąrašą į žodyną {rezervacijos_id: automobilio info} - naudojama rodyti, su kokiu automobiliu susijęs pokalbis.
-def _reservation_context_map(db: Session, rezervacijos_ids: list[int]) -> dict[int, ReservationContext]:
-    ids = {i for i in rezervacijos_ids if i}
-    if not ids:
+# Vienu DB kreipiniu paverčia (rezervacijos_id, kliento_id) poras į žodyną {rezervacijos_id: automobilio info} - naudojama rodyti, su kokiu automobiliu susijęs pokalbis.
+# "kliento_id" ČIA PRIVALOMAS kartu su rezervacijos_id (NE vien rezervacijos_id.in_(...)) - : rezervacijos SAVININKAS (kliento_id) GALI pasikeisti VĖLIAU (darbuotojas perskiria rezervaciją kitam klientui, žr. reservation.py update_reservation), bet pokalbio "rezervacijos_id" nuoroda IŠLIEKA SENA. Be šios sudėtinės (rezervacijos_id, kliento_id) patikros, SENAS pokalbio savininkas toliau matytų NAUJO (dabartinio) rezervacijos savininko automobilio/datų informaciją - ši funkcija dabar grąžina kontekstą TIK kai dabartinė DB eilutė VIS TIEK priklauso TAM PAČIAM klientui, kuriam priklauso pats pokalbis.
+def _reservation_context_map(db: Session, pairs: list[tuple[int, int]]) -> dict[int, ReservationContext]:
+    pairs = {(rid, cid) for rid, cid in pairs if rid}
+    if not pairs:
         return {}
     rows = (
         db.query(Reservation, Car)
         .join(Car, Reservation.automobilio_id == Car.automobilio_id)
-        .filter(Reservation.rezervacijos_id.in_(ids))
+        .filter(tuple_(Reservation.rezervacijos_id, Reservation.kliento_id).in_(pairs))
         .all()
     )
     return {
@@ -48,20 +49,15 @@ def _reservation_context_map(db: Session, rezervacijos_ids: list[int]) -> dict[i
     }
 
 
-# Grąžina {pokalbio_id: PASKUTINĖ žinutė} - rikiuojame SENIAUSIAS pirmi ir tiesiog PERRAŠOME žodyną eidami per visas, tad paskutinis perrašymas visada yra naujausia žinutė.
+# Grąžina {pokalbio_id: PASKUTINĖ žinutė} - SQL parenka tik didžiausio ID žinutę kiekvienam pokalbiui, nekraudama visos istorijos.
 def _last_messages_map(db: Session, pokalbio_ids: list[int]) -> dict[int, SupportMessage]:
     if not pokalbio_ids:
         return {}
-    rows = (
-        db.query(SupportMessage)
-        .filter(SupportMessage.pokalbio_id.in_(pokalbio_ids))
-        .order_by(SupportMessage.zinutes_id.asc())
-        .all()
-    )
-    last: dict[int, SupportMessage] = {}
-    for m in rows:
-        last[m.pokalbio_id] = m
-    return last
+    latest = db.query(func.max(SupportMessage.zinutes_id)).filter(
+        SupportMessage.pokalbio_id.in_(pokalbio_ids)
+    ).group_by(SupportMessage.pokalbio_id)
+    rows = db.query(SupportMessage).filter(SupportMessage.zinutes_id.in_(latest)).all()
+    return {message.pokalbio_id: message for message in rows}
 
 
 # Paverčia pokalbių sąrašą į "santraukos" formatą (sąrašo/apžvalgos rodymui, ne pilną žinučių turinį) - vienu kreipiniu visiems, ne po vieną kiekvienam pokalbiui.
@@ -69,9 +65,9 @@ def _to_summaries(db: Session, convos: list[SupportConversation]) -> list[Conver
     if not convos:
         return []
     pokalbio_ids = [c.pokalbio_id for c in convos]
-    rezervacijos_ids = [c.rezervacijos_id for c in convos if c.rezervacijos_id]
+    rezervacijos_pairs = [(c.rezervacijos_id, c.kliento_id) for c in convos if c.rezervacijos_id]
     last_map = _last_messages_map(db, pokalbio_ids)
-    res_map = _reservation_context_map(db, rezervacijos_ids)
+    res_map = _reservation_context_map(db, rezervacijos_pairs)
 
     out = []
     for convo in convos:

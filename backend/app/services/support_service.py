@@ -1,4 +1,5 @@
 # Pagalbos pokalbių verslo taisyklės (sukūrimas, žinutės, būsenų perėjimai) - BENDRAS failas, kurį naudoja IR customer_support.py (klientas), IR staff_support.py (darbuotojas), kad abi pusės visada veiktų pagal TAS PAČIAS taisykles, nepriklausomai nuo to, kas konkrečiai kviečia.
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
@@ -71,6 +72,8 @@ def add_customer_message(db: Session, convo: SupportConversation, kliento_id: in
     db.add(msg)
     # Bet kuri kliento žinutė (net į JAU IŠSPRĘSTĄ bylą) grąžina pokalbį atgal į "atvira" būseną - atsakingas darbuotojas ir sprendimo santrauka NEIŠTRINAMI, tiesiog byla vėl laikoma neatsakyta.
     convo.busena = "atvira"
+    # atnaujinimo_data priskiriama kiekvienai naujai žinutei: nekintanti atvira būsena savaime nesukuria SQL UPDATE, todėl vien modelio onupdate nepakanka veiklos laikui ir aptarnavimo eilės tvarkai palaikyti.
+    convo.atnaujinimo_data = func.now()
     db.add(convo)
     db.commit()
     db.refresh(msg)
@@ -88,14 +91,25 @@ def add_staff_message(
     if next_status not in NEXT_STAFF_STATUSES:
         raise HTTPException(status_code=400, detail="Neleistina būsena po atsakymo")
 
+    if convo.darbuotojo_id is None:
+        # ATOMIC "UPDATE ... WHERE darbuotojo_id IS NULL" - LYGIAI TA PATI apsauga, kaip claim_conversation aukščiau. Be jos du darbuotojai, VIENU METU atsakantys į NEPRISKIRTĄ bylą, abu praeitų patikrą aukščiau (abu dar skaito "None") IR abu įrašytų savo žinutę - PIRMOJI assignment UPDATE čia, PRIEŠ žinutės įrašymą, garantuoja, kad pavėlavęs sužinos apie konfliktą 403 klaida, NE tyliai įrašys antrą atsakymą.
+        claimed = (
+            db.query(SupportConversation)
+            .filter(SupportConversation.pokalbio_id == convo.pokalbio_id, SupportConversation.darbuotojo_id.is_(None))
+            .update({"darbuotojo_id": darbuotojo_id})
+        )
+        if claimed == 0:
+            raise HTTPException(status_code=403, detail="Bylą tvarko kitas darbuotojas")
+        convo.darbuotojo_id = darbuotojo_id
+
     msg = SupportMessage(
         pokalbio_id=convo.pokalbio_id, autoriaus_tipas="darbuotojas",
         darbuotojo_id=darbuotojo_id, tekstas=tekstas,
     )
     db.add(msg)
     convo.busena = next_status
-    if convo.darbuotojo_id is None:
-        convo.darbuotojo_id = darbuotojo_id
+    # Darbuotojo žinutė atnaujina veiklos laiką ir kai būsena nesikeičia; taip aptarnavimo eilė atspindi atsakymą, o ne tik būsenos perėjimą.
+    convo.atnaujinimo_data = func.now()
     db.add(convo)
     db.commit()
     db.refresh(msg)
@@ -139,8 +153,10 @@ def reassign_conversation(db: Session, convo: SupportConversation, darbuotojo_id
     return convo
 
 
-# Darbuotojas žymi bylą IŠSPRĘSTA - santrauka PRIVALOMA, kad kiti darbuotojai (ar pats klientas, grįžęs vėliau) matytų, KAIP klausimas buvo išspręstas, ne tik kad "uždaryta".
-def resolve_conversation(db: Session, convo: SupportConversation, santrauka: str) -> SupportConversation:
+# Pokalbį užbaigiantis darbuotojas turi būti jo atsakingas asmuo; privaloma santrauka perduodama klientui ir darbuotojams, kad jie matytų sprendimo rezultatą.
+def resolve_conversation(db: Session, convo: SupportConversation, darbuotojo_id: int, santrauka: str) -> SupportConversation:
+    if convo.darbuotojo_id is not None and convo.darbuotojo_id != darbuotojo_id:
+        raise HTTPException(status_code=403, detail="Bylą tvarko kitas darbuotojas")
     santrauka = _clean(santrauka, 1, 1000, "Santrauka")
     convo.busena = "isspresta"
     convo.sprendimo_santrauka = santrauka
@@ -163,11 +179,23 @@ def add_note(db: Session, convo: SupportConversation, darbuotojo_id: int, teksta
 # Pažymi, kiek TOLIAUSIAI (kurį zinutes_id) ši pusė (darbuotojas arba klientas, žr. "is_staff") matė - naudojama "neperskaityta" žymai skaičiuoti abiejose pusėse.
 def mark_seen(db: Session, convo: SupportConversation, is_staff: bool, last_seen_id: int) -> SupportConversation:
     field = "darbuotojo_paskutinis_matytas" if is_staff else "kliento_paskutinis_matytas"
-    current = getattr(convo, field) or 0
-    # Riba gali tik DIDĖTI - jei vartotojas atsidarė pokalbį SENAME įrenginyje/kortelėje su pasenusiais duomenimis, jis negali atsitiktinai "sumažinti" to, kas jau buvo matyta kitur.
-    if last_seen_id > current:
-        setattr(convo, field, last_seen_id)
-        db.add(convo)
-        db.commit()
-        db.refresh(convo)
+    column = getattr(SupportConversation, field)
+
+    # klientas/darbuotojas gali atsiųsti BET KOKĮ sveikąjį skaičių (net ateities ar svetimo pokalbio žinutės ID), nepriklausomai nuo to, kokios žinutės realiai egzistuoja ŠIAME pokalbyje. Apkarpome iki DIDŽIAUSIO realaus šio pokalbio zinutes_id - didesnė atsiųsta reikšmė NIEKADA neįrašoma, kad vėliau atėjusi NAUJA (realiai dar nematyta) žinutė visada liktų aptinkama kaip "neperskaityta".
+    max_real_id = (
+        db.query(func.max(SupportMessage.zinutes_id))
+        .filter(SupportMessage.pokalbio_id == convo.pokalbio_id)
+        .scalar()
+    ) or 0
+    last_seen_id = min(last_seen_id, max_real_id)
+
+    # vienas atominis, monotoniškas UPDATE. Laiko stulpelį
+    # priskiriame jam pačiam: taip SQLAlchemy onupdate nepakeičia tikros veiklos laiko
+    # ir nereikia antro UPDATE, kuris galėtų perrašyti naujesnės žinutės laiką.
+    db.query(SupportConversation).filter(
+        SupportConversation.pokalbio_id == convo.pokalbio_id,
+        or_(column.is_(None), column < last_seen_id),
+    ).update({field: last_seen_id, "atnaujinimo_data": SupportConversation.atnaujinimo_data})
+    db.commit()
+    db.refresh(convo)
     return convo
