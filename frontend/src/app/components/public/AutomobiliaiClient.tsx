@@ -157,10 +157,10 @@ function SeatsFilterDropdown({
 // Rezultato "plytelė" - apvalus, iškylantis mygtukas, ne Excel lentelės eilutė. Puikaus
 // pasiūlymo žymeklis (oranžinis švytėjimas) skirtas TOP 3 pagal "Rekomenduojama" balą,
 // nepriklausomai nuo realiai pasirinkto rūšiavimo - tai nuoseklus "geras sandoris" ženklas.
-function ResultCard({ car, isTopPick }: { car: PublicCar; isTopPick: boolean }) {
+function ResultCard({ car, isTopPick, dateFrom, dateTo }: { car: PublicCar; isTopPick: boolean; dateFrom: string; dateTo: string }) {
   return (
     <Link
-      href={`/automobiliai/${car.automobilio_id}`}
+      href={`/automobiliai/${car.automobilio_id}?${new URLSearchParams({ dateFrom, dateTo })}`}
       className={`group relative flex gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 ${
         isTopPick
           ? "border-[#FF7A1A]/50 bg-[#1A2238] shadow-[0_0_0_1px_rgba(255,122,26,0.15),0_8px_24px_-8px_rgba(255,122,26,0.35)] hover:shadow-[0_0_0_1px_rgba(255,122,26,0.3),0_12px_32px_-8px_rgba(255,122,26,0.5)]"
@@ -234,22 +234,17 @@ export default function AutomobiliaiClient() {
     const loc = searchParams.get("location");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
-    if (loc || dateFrom || dateTo) {
-      setSearch((s) => ({
-        ...s,
-        location: loc ?? s.location,
-        dateFrom: dateFrom ?? s.dateFrom,
-        dateTo: dateTo ?? s.dateTo,
-      }));
-    }
+    setSearch({ location: loc ?? "", dateFrom: dateFrom ?? defaultDateRange().dateFrom, dateTo: dateTo ?? defaultDateRange().dateTo });
+    setMarke([]); setPavaruDeze([]); setMinKaina(""); setMaxKaina(""); setSedimosVietos(null);
+
   }, [searchParams]);
 
   // Iš pradinio puslapio "Automobilių tipai" kortelių (ateina su ?kebulas= arba ?kuras=).
   useEffect(() => {
     const kebulas = searchParams.get("kebulas");
     const kuras = searchParams.get("kuras");
-    if (kebulas) setKebuloTipas([kebulas]);
-    if (kuras) setKuroTipas([kuras]);
+    setKebuloTipas(kebulas ? [kebulas] : []);
+    setKuroTipas(kuras ? [kuras] : []);
   }, [searchParams]);
 
   // search.location visada tiksliai atitinka vieno padalinio miestą (LocationSearch
@@ -257,9 +252,9 @@ export default function AutomobiliaiClient() {
   // sinchronizuojame su juo - taip pasikeitus antraštės vietos laukui rezultatai
   // realiai atsinaujina, o ne tik iš pradinio URL.
   useEffect(() => {
-    if (!search.location) return;
+    if (!search.location) { setVietosId(null); return; }
     const match = LOCATIONS.find((l) => l.city === search.location);
-    if (match) setVietosId(match.vietos_id);
+    setVietosId(match?.vietos_id ?? null);
   }, [search.location]);
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
@@ -374,7 +369,7 @@ export default function AutomobiliaiClient() {
     setMaxKaina("");
     setSedimosVietos(null);
     setVietosId(null);
-    setSearch((s) => ({ ...s, ...defaultDateRange() }));
+    setSearch({ location: "", ...defaultDateRange() });
     // BŪTINA - be šito URL (?kebulas=/?kuras=/?location=/...) liktų SENAS, ir perkrovus puslapį efektai aukščiau (searchParams -> search/kebuloTipas/kuroTipas) VĖL pritaikytų TUOS PAČIUS filtrus, kuriuos vartotojas ką tik "išvalė".
     router.replace("/automobiliai");
   };
@@ -390,36 +385,17 @@ export default function AutomobiliaiClient() {
     (search.dateTo !== defaultRange.dateTo ? 1 : 0);
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-[#0B121F]">
+    <div className="relative flex min-h-screen flex-col bg-[#0B121F] lg:h-screen lg:overflow-hidden">
       <MapTexture />
-      <div className="relative z-10 flex h-full flex-col">
+      <div className="relative z-10 flex flex-1 flex-col lg:h-full lg:min-h-0">
         <PublicHeader
           searchValue={search}
           onSearchChange={setSearch}
           onSearchSubmit={() => router.push(buildAutomobiliaiHref(search))}
         />
 
-        {/* Filtrų juosta - vieta/datos valdomos VIRŠUTINĖJE paieškos juostoje (header'yje),
-            ne čia pakartotinai - dvi atskiros paieškos juostos vienos po kitos buvo tikra
-            dubliavimo/"per storo top bar" priežastis. Čia tik likę filtrai, sugrupuoti su
-            plonais skirtukais - KIEKVIENAS savo atskiras mygtukas, jokio sujungto "Daugiau
-            filtrų" meniu. */}
+        {/* Lokacija ir datos valdomos PublicHeader paieškoje; ši juosta keičia kainos, markės, kėbulo, kuro, vietų skaičiaus ir pavarų dėžės filtrus, pagal kuriuos atrenkamas sąrašas ir žemėlapio pasiūlymai. */}
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#1C2B3A] bg-[#0E1525]/80 px-4 py-2.5 backdrop-blur sm:px-6">
-          {vietosId && (
-            <span className="flex items-center gap-1.5 rounded-lg border border-[#0F597B] bg-[#0F597B]/20 px-3 py-2 text-sm text-[#4BAFD4]">
-              <FiMapPin className="text-xs" />
-              {LOCATIONS.find((l) => l.vietos_id === vietosId)?.name ?? "Pasirinkta vieta"}
-              {/* Išvalo IR "search.location" (ne vien vietosId) - sinchronizavimo effect'as žemiau reaguoja TIK į "search.location" PASIKEITIMĄ; jei jis liktų senas, pakartotinis TOS PAČIOS vietos pasirinkimas antraštėje po šito paspaudimo nebūtų aptiktas kaip pokytis, ir žemėlapio filtras neatsistatytų. */}
-              <button
-                onClick={() => { setVietosId(null); setSearch((s) => ({ ...s, location: "" })); }}
-                aria-label="Pašalinti vietos filtrą"
-                className="text-[#4BAFD4]/70 hover:text-[#4BAFD4]"
-              >
-                <FiX className="text-xs" />
-              </button>
-            </span>
-          )}
-
           <div className="flex items-center gap-1.5">
             <input
               type="number"
@@ -460,8 +436,8 @@ export default function AutomobiliaiClient() {
             </button>
           )}
 
-          <div className="ml-auto flex items-center gap-3">
-            <p className="whitespace-nowrap text-xs text-[#8899AA]">
+          <div className="ml-auto flex w-full flex-wrap items-center gap-3 lg:w-auto">
+            <p className="text-xs text-[#8899AA] lg:whitespace-nowrap">
               {isLoading
                 ? "Kraunama..."
                 : search.dateFrom && search.dateTo
@@ -482,19 +458,20 @@ export default function AutomobiliaiClient() {
 
         {/* Pagrindinis turinys: žemėlapis (2/3, dominuojantis) + rezultatų sąrašas (1/3) */}
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="relative h-[42vh] shrink-0 lg:h-auto lg:flex-[2]">
+          <div className="relative h-[32vh] min-h-32 shrink-0 lg:h-auto lg:flex-[2]">
             <CarResultsMap
               stats={mapStats}
               activeVietosId={vietosId}
               // Funkcinė setState forma - visada mato NAUJAUSIĄ vietosId, net jei
               // Leaflet event handler closure (CarResultsMap.tsx) būtų pasenusi.
-              onSelectLocation={(id) => setVietosId((prev) => (prev === id ? null : id))}
+              onSelectLocation={(id) => {
+                const next = vietosId === id ? null : id;
+                setVietosId(next);
+                setSearch((current) => ({ ...current, location: LOCATIONS.find((place) => place.vietos_id === next)?.city ?? "" }));
+              }}
               onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
             />
-            {/* Vinjetė - pritemdyti žemėlapio kraštai, kad tikros (nebe invertuotos)
-                plytelių spalvos švelniau "susilietų" su tamsiu puslapio fonu, ne
-                staigiai nukirstų stačiu kampu. pointer-events-none, kad nebūtų
-                užblokuoti markerių paspaudimai/vilkimas po šiuo sluoksniu. */}
+            {/* Vinjetė pritemdo žemėlapio kraštus ir vizualiai sujungia jo sritį su tamsiu puslapio fonu. */}
             <div className="pointer-events-none absolute inset-0 z-[5] shadow-[inset_0_0_60px_30px_rgba(11,18,31,0.55)]" />
           </div>
 
@@ -512,7 +489,7 @@ export default function AutomobiliaiClient() {
             )}
 
             {!error && sorted.map((car) => (
-              <ResultCard key={car.automobilio_id} car={car} isTopPick={topPickIds.has(car.automobilio_id)} />
+              <ResultCard key={car.automobilio_id} car={car} isTopPick={topPickIds.has(car.automobilio_id)} dateFrom={search.dateFrom} dateTo={search.dateTo} />
             ))}
           </div>
         </div>

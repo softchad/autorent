@@ -59,13 +59,14 @@ export function usePublicCars(range?: DateRange) {
         return res.json();
       })
       .then((data: PublicCar[]) => {
+        if (controller.signal.aborted) return;
         setCars(data);
         setError(null);
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError("Nepavyko įkelti automobilių sąrašo.");
+        if (!controller.signal.aborted && e.name !== "AbortError") setError("Nepavyko įkelti automobilių sąrašo.");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
 
     return () => controller.abort();
   }, [dateFrom, dateTo]);
@@ -89,7 +90,7 @@ export function usePublicCar(id: number, range?: DateRange) {
     fetch(`${API}/api/v1/public/cars/${id}${buildDateParams({ dateFrom, dateTo })}`, { signal: controller.signal })
       .then(async (res) => {
         if (res.status === 404) {
-          setNotFound(true);
+          if (!controller.signal.aborted) setNotFound(true);
           return null;
         }
         if (!res.ok) {
@@ -100,12 +101,12 @@ export function usePublicCar(id: number, range?: DateRange) {
         return res.json();
       })
       .then((data: PublicCar | null) => {
-        if (data) setCar(data);
+        if (!controller.signal.aborted && data) setCar(data);
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message ?? "Nepavyko įkelti automobilio duomenų.");
+        if (!controller.signal.aborted && e.name !== "AbortError") setError(e.message ?? "Nepavyko įkelti automobilio duomenų.");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
 
     return () => controller.abort();
   }, [id, dateFrom, dateTo]);
@@ -122,9 +123,9 @@ export function useCarBusyDates(id: number) {
     // Nerodomas "error" - jei užklausa nepavyksta, tiesiog grąžinamas tuščias Set (kalendorius nerodys NIEKO užimto); žemo rizikingumo atvejis, nes tikra laisvumo patikra vis tiek vyksta serveryje rezervacijos kūrimo metu.
     fetch(`${API}/api/v1/public/cars/${id}/busy-dates`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : { busy_dates: [] }))
-      .then((data: { busy_dates: string[] }) => setBusyDates(new Set(data.busy_dates)))
+      .then((data: { busy_dates: string[] }) => { if (!controller.signal.aborted) setBusyDates(new Set(data.busy_dates)); })
       .catch((e) => {
-        if (e.name !== "AbortError") setBusyDates(new Set());
+        if (!controller.signal.aborted && e.name !== "AbortError") setBusyDates(new Set());
       });
 
     return () => controller.abort();
