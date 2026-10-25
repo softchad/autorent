@@ -34,6 +34,7 @@ class CarBase(BaseModel):
     dabartine_vieta_id: int
     pastabos: Optional[str] = None
 
+    # Netinkami automobilio metai atmetami prieš įrašymą į duomenų bazę.
     @field_validator("metai")
     @classmethod
     def validate_metai(cls, v: int) -> int:
@@ -41,6 +42,7 @@ class CarBase(BaseModel):
             raise ValueError("Metai turi būti tarp 1900 ir 2030")
         return v
 
+    # Neigiama ar nulinė nuomos kaina neturi patekti į kainos skaičiavimą.
     @field_validator("kaina_parai")
     @classmethod
     def validate_kaina(cls, v: float) -> float:
@@ -48,6 +50,7 @@ class CarBase(BaseModel):
             raise ValueError("Kaina parai turi būti teigiamas skaičius")
         return v
 
+    # Neigiama rida negali aprašyti tikro automobilio naudojimo.
     @field_validator("rida")
     @classmethod
     def validate_rida(cls, v: int) -> int:
@@ -55,6 +58,7 @@ class CarBase(BaseModel):
             raise ValueError("Rida negali būti neigiama")
         return v
 
+    # Sėdimų vietų skaičius tikrinamas, kad paieškos filtras remtųsi tinkamais duomenimis.
     @field_validator("sedimos_vietos")
     @classmethod
     def validate_sedimos_vietos(cls, v: int) -> int:
@@ -62,6 +66,7 @@ class CarBase(BaseModel):
             raise ValueError("Sėdimų vietų skaičius turi būti tarp 2 ir 9")
         return v
 
+    # Automobilio galia turi atitikti leidžiamas skaitines ribas.
     @field_validator("galia_kw")
     @classmethod
     def validate_galia(cls, v: int) -> int:
@@ -69,6 +74,7 @@ class CarBase(BaseModel):
             raise ValueError("Galia (kW) turi būti teigiamas skaičius")
         return v
 
+    # Pavarų dėžės reikšmė turi priklausyti toms pačioms kategorijoms kaip paieškos filtras.
     @field_validator("pavaru_deze")
     @classmethod
     def validate_pavaru_deze(cls, v: str) -> str:
@@ -76,6 +82,7 @@ class CarBase(BaseModel):
             raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARU_DEZE)}")
         return v
 
+    # Kuro tipas tikrinamas pagal sistemoje naudojamas kategorijas.
     @field_validator("kuro_tipas")
     @classmethod
     def validate_kuro_tipas(cls, v: str) -> str:
@@ -83,6 +90,7 @@ class CarBase(BaseModel):
             raise ValueError(f"Negalimas kuro tipas. Leistini: {', '.join(VALID_KURO_TIPAS)}")
         return v
 
+    # Nežinoma automobilio būsena neturi apeiti prieinamumo taisyklių.
     @field_validator("automobilio_statusas")
     @classmethod
     def validate_statusas(cls, v: str) -> str:
@@ -95,7 +103,7 @@ class CarCreate(CarBase):
     pass
 
 
-# NEgali paveldėti CarBase - joje visi laukai PRIVALOMI, o čia VISI turi būti pasirenkami (dalinis atnaujinimas, žr. exclude_unset=True car.py endpoint'e). Dėl to VISI CarBase validatoriai PAKARTOJAMI žemiau su "v is not None" patikra - jei koks trūksta, bloga reikšmė PRAEITŲ čia, bet vėliau sulaužytų CarOut atsakymo validaciją (realus bug'as, rastas ir pataisytas - žr. testus).
+# CarUpdate laukai pasirenkami daliniam atnaujinimui; CarBase taisyklės taikomos pateiktoms reikšmėms, kad car.py išsaugoti duomenys atitiktų CarOut atsakymo schemą.
 class CarUpdate(BaseModel):
     marke: Optional[str] = None
     modelis: Optional[str] = None
@@ -118,6 +126,7 @@ class CarUpdate(BaseModel):
     dabartine_vieta_id: Optional[int] = None
     pastabos: Optional[str] = None
 
+    # Netinkami automobilio metai atmetami prieš įrašymą į duomenų bazę.
     @field_validator("metai")
     @classmethod
     def validate_metai(cls, v: int) -> int:
@@ -125,6 +134,7 @@ class CarUpdate(BaseModel):
             raise ValueError("Metai turi būti tarp 1900 ir 2030")
         return v
 
+    # Neigiama ar nulinė nuomos kaina neturi patekti į kainos skaičiavimą.
     @field_validator("kaina_parai")
     @classmethod
     def validate_kaina(cls, v: float) -> float:
@@ -132,6 +142,7 @@ class CarUpdate(BaseModel):
             raise ValueError("Kaina parai turi būti teigiamas skaičius")
         return v
 
+    # Neigiama rida negali aprašyti tikro automobilio naudojimo.
     @field_validator("rida")
     @classmethod
     def validate_rida(cls, v: int) -> int:
@@ -139,6 +150,7 @@ class CarUpdate(BaseModel):
             raise ValueError("Rida negali būti neigiama")
         return v
 
+    # Sėdimų vietų skaičius tikrinamas, kad paieškos filtras remtųsi tinkamais duomenimis.
     @field_validator("sedimos_vietos")
     @classmethod
     def validate_sedimos_vietos(cls, v: int) -> int:
@@ -146,6 +158,7 @@ class CarUpdate(BaseModel):
             raise ValueError("Sėdimų vietų skaičius turi būti tarp 2 ir 9")
         return v
 
+    # Automobilio galia turi atitikti leidžiamas skaitines ribas.
     @field_validator("galia_kw")
     @classmethod
     def validate_galia(cls, v: int) -> int:
@@ -153,6 +166,7 @@ class CarUpdate(BaseModel):
             raise ValueError("Galia (kW) turi būti teigiamas skaičius")
         return v
 
+    # Pavarų dėžės reikšmė turi priklausyti toms pačioms kategorijoms kaip paieškos filtras.
     @field_validator("pavaru_deze")
     @classmethod
     def validate_pavaru_deze(cls, v: str) -> str:
@@ -160,6 +174,7 @@ class CarUpdate(BaseModel):
             raise ValueError(f"Negalima pavarų dėžė. Leistinos: {', '.join(VALID_PAVARU_DEZE)}")
         return v
 
+    # Kuro tipas tikrinamas pagal sistemoje naudojamas kategorijas.
     @field_validator("kuro_tipas")
     @classmethod
     def validate_kuro_tipas(cls, v: str) -> str:
@@ -167,6 +182,7 @@ class CarUpdate(BaseModel):
             raise ValueError(f"Negalimas kuro tipas. Leistini: {', '.join(VALID_KURO_TIPAS)}")
         return v
 
+    # Nežinoma automobilio būsena neturi apeiti prieinamumo taisyklių.
     @field_validator("automobilio_statusas")
     @classmethod
     def validate_statusas(cls, v: str) -> str:

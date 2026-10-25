@@ -14,6 +14,7 @@ class ReservationBase(BaseModel):
     rezervacijos_pabaiga: date
     busena: str
 
+    # Leidžiamos tik tos būsenos, pagal kurias sistema sprendžia apie aktyvią nuomą ar rezervaciją.
     @field_validator("busena")
     @classmethod
     def validate_busena(cls, v: str) -> str:
@@ -42,6 +43,7 @@ class ReservationUpdate(BaseModel):
     rezervacijos_pabaiga: Optional[date] = None
     busena: Optional[str] = None
 
+    # Leidžiamos tik tos būsenos, pagal kurias sistema sprendžia apie aktyvią nuomą ar rezervaciją.
     @field_validator("busena")
     @classmethod
     def validate_busena(cls, v: Optional[str]) -> Optional[str]:

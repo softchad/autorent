@@ -145,4 +145,4 @@ def test_create_car_duplicate_numeris_rejected(client, ensure_place_exists, auth
     resp = client.post("/api/v1/cars/", json=duplicate, headers=auth_headers)
     assert resp.status_code == 409
 
-# update_car lygiai tą pačią IntegrityError->409 logiką naudoja PUT kelyje (žr. car.py) - čia NEbandoma automatiniu testu dėl aukščiau paaiškintos transakcijų ribos; dar NEpatikrinta rankiniu būdu prieš tikrą MySQL DB, reikia padaryti prieš gynimą.
+# Automobilio atnaujinimo unikalumo konflikto bandymui reikia atskiros sesijos: car.py grąžina 409 po IntegrityError ir rollback, kuris bendroje modulio transakcijoje paveiktų kitų testų duomenis.

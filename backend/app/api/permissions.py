@@ -25,6 +25,7 @@ def has_perm(user, perm: Perm) -> bool:
 
 # "Dependency factory" - funkcija, kuri GRĄŽINA kitą funkciją (ne tiesiog pati yra dependency); taip galima pasakyti "šitam endpoint'ui reikia KONKREČIOS teisės" per require_perm(Perm.ADMIN), ne rašyti atskirą sargą kiekvienai teisei ranka.
 def require_perm(perm: Perm):
+    # Prieigos patikra vykdoma prieš veiksmą, kad neleistinas prašymas nepakeistų duomenų.
     def dep(user = Depends(get_current_user)):
         if not has_perm(user, perm):
             raise HTTPException(status_code=403, detail="Neturite teisės šiam veiksmui.")
