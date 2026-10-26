@@ -22,7 +22,7 @@ if sys.stdout.encoding.lower() != "utf-8":
 
 ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / "backend" / ".env"
-# TIK seed.sql - jis pats pradeda nuo TRUNCATE TABLE visoms 11 lentelėms, tad
+# TIK seed.sql - jis pats pradeda nuo TRUNCATE TABLE visoms 12 lentelių, tad
 # veikia pakartotinai prieš JAU EGZISTUOJANČIĄ DB. schema.sql/triggers.sql NEI
 # turi DROP/IF NOT EXISTS apsaugos - jie skirti TIK pirmam, tuščios DB sukūrimui
 # (žr. README.md), antrą kartą paleisti sukeltų "table/trigger already exists".
@@ -54,6 +54,8 @@ def run_sql_file(cursor, path: Path, as_trigger_blocks: bool):
             cursor.execute(block)
         print(f"  {path.name}: {len(blocks)} trigeriai")
     else:
+        # Prieš skaidant sakinius pašalinamos komentarų eilutės, kad jų kabliataškiai nevirstų SQL komandomis.
+        content = "\n".join(line for line in content.splitlines() if not line.lstrip().startswith("--"))
         count = 0
         for stmt in content.split(";"):
             stmt = stmt.strip()
