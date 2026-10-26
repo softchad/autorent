@@ -39,6 +39,18 @@ def test_create_client(client, auth_headers):
     client.delete(f"/api/v1/clients/{obj['kliento_id']}", headers=auth_headers)
 
 
+# Kai "registracijos_data" VISAI NEATSIŲSTA (dažniausias atvejis - frontend'as jo niekada nesiunčia, žr. useClientsData.ts "readonly" lauką) - DB/modelio numatytoji reikšmė (žr. models/client.py "default=datetime.utcnow") turi PATI užsipildyti, ne likti NULL (žr. client.py create_client "exclude_unset=True").
+def test_create_client_without_registracijos_data_gets_server_timestamp(client, auth_headers):
+    data = CLIENT_SAMPLE.copy()
+    data.pop("registracijos_data")
+    data["el_pastas"] = "client.noregdata@viko.lt"
+    resp = client.post("/api/v1/clients/", json=data, headers=auth_headers)
+    assert resp.status_code == 200, resp.json()
+    obj = resp.json()
+    assert obj["registracijos_data"] is not None
+    client.delete(f"/api/v1/clients/{obj['kliento_id']}", headers=auth_headers)
+
+
 # el_pastas yra VIENINTELIS laukas, kuris neturi savo field_validator'io ClientBase faile (EmailStr tipas pats validuoja) - šis testas patikrina, kad jo PRALEIDIMAS (ne tik neteisingas formatas) vis tiek atmetamas.
 def test_create_client_missing_required(client, auth_headers):
     data = CLIENT_SAMPLE.copy()
@@ -153,6 +165,35 @@ def test_client_id_persists_after_update(client, client_id, auth_headers):
 
 
 # PASTABA: šis testas TYČIA sudėtas PAČIAME GALE - jo IntegrityError/rollback kelias šio modulio bendroje transakcijoje nutrina VISŲ ANKSTESNIŲ šio failo testų duomenis (žr. analogišką pastabą test_car.py faile); po jo šiame faile daugiau testų NEberašoma.
+# ClientOut turi leisti OAuth kliento neužpildytą telefoną, kad vienas toks įrašas nesugadintų viso /clients/ atsakymo; įvesties schemoms taikomos atskiros telefono taisyklės.
+def test_get_all_clients_tolerates_blank_phone_from_oauth(client, auth_headers, db_session):
+    from app.models.client import Client
+    from datetime import date
+
+    db_session.add(Client(
+        vardas="Google", pavarde="Klientas", el_pastas=f"oauthblank{uuid.uuid4().hex[:8]}@example.com",
+        telefono_nr="", gimimo_data=date(2000, 1, 1), slaptazodis=None,
+    ))
+    db_session.commit()
+
+    resp = client.get("/api/v1/clients/", headers=auth_headers)
+    assert resp.status_code == 200
+
+
+# Tuščias telefonas profilio atnaujinimo užklausoje turi grąžinti 422, nes pateikta reikšmė turi atitikti telefono ilgio taisykles.
+def test_update_profile_rejects_blank_phone(client):
+    register_resp = client.post("/api/v1/customer/register", json={
+        "vardas": "Testas", "pavarde": "Testaitis",
+        "el_pastas": f"blankphone{uuid.uuid4().hex[:8]}@example.com",
+        "telefono_nr": "+37061112233", "gimimo_data": "1995-01-01", "slaptazodis": "Testinis123!",
+    })
+    token = register_resp.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.patch("/api/v1/customer/profile", json={"telefono_nr": ""}, headers=headers)
+    assert resp.status_code == 422
+
+
 def test_create_client_duplicate_email_rejected(client, auth_headers):
     data = CLIENT_SAMPLE.copy()
     data["el_pastas"] = "client.duplicate@viko.lt"
@@ -162,4 +203,4 @@ def test_create_client_duplicate_email_rejected(client, auth_headers):
     second = client.post("/api/v1/clients/", json=data, headers=auth_headers)
     assert second.status_code == 409
 
-# update_client lygiai tą pačią IntegrityError->409 logiką naudoja PUT kelyje (žr. client.py) - čia NEbandoma automatiniu testu dėl aukščiau paaiškintos transakcijų ribos; dar NEpatikrinta rankiniu būdu prieš tikrą MySQL DB, reikia padaryti prieš gynimą.
+# Kliento atnaujinimo unikalumo konflikto bandymui reikia atskiros sesijos: client.py grąžina 409 po IntegrityError ir rollback, kuris bendroje modulio transakcijoje paveiktų kitų testų duomenis.

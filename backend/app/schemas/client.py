@@ -29,6 +29,7 @@ class ClientBase(BaseModel):
             raise ValueError("Vardas ir pavardė turi būti bent 2 simbolių ilgio")
         return v.strip()
 
+    # Telefono formatas tikrinamas, kad kontaktas atitiktų formose naudojamas taisykles.
     @field_validator("telefono_nr")
     @classmethod
     def validate_telefono(cls, v: str) -> str:
@@ -63,6 +64,7 @@ class ClientUpdate(BaseModel):
     gimimo_data: Optional[date] = None
     registracijos_data: Optional[datetime] = None
 
+    # Vardai tikrinami, kad tuščias ar per trumpas tekstas nepatektų į kliento ar darbuotojo įrašą.
     @field_validator("vardas", "pavarde")
     @classmethod
     def validate_names(cls, v: Optional[str]) -> Optional[str]:
@@ -71,10 +73,11 @@ class ClientUpdate(BaseModel):
         # "v.strip() if v else v" - apkarpo tarpus TIK jei reikšmė realiai atsiųsta; None (lauko visai nebuvo užklausoje) paliekamas None, kad exclude_unset=True (client.py endpoint'e) žinotų, jog šis laukas NEBUVO keičiamas.
         return v.strip() if v else v
 
+    # Telefono tikrinimas taikomas ir tuščiai eilutei: None gali reikšti nepateiktą lauką, o pateikta reikšmė turi atitikti ilgio taisykles, kurias naudoja client.py.
     @field_validator("telefono_nr")
     @classmethod
     def validate_telefono(cls, v: Optional[str]) -> Optional[str]:
-        if v and len(v.strip()) < 6:
+        if v is not None and len(v.strip()) < 6:
             raise ValueError("Telefono numeris per trumpas")
         return v
 
@@ -97,6 +100,12 @@ class ClientUpdate(BaseModel):
 class ClientOut(ClientBase):
     kliento_id: int
     links: List[Dict]
+
+    # PERRAŠO (NE paveldi) ClientBase.validate_telefono - "ClientOut" yra IŠVESTIES, ne ĖJIMO, modelis, tad KŪRIMO/ATNAUJINIMO taisyklė ("bent 6 simboliai") čia neturi prasmės. Google OAuth paskyros (žr. auth.py _get_or_create_customer_token) kuriamos su telefono_nr="" (Google telefono numerio tiesiog neduoda) - be šio perrašymo VIENAS toks klientas sulaužytų VISO GET /clients/ sąrašo atsakymą , nes response_model validacija galioja VISAM sąrašui vienu metu.
+    @field_validator("telefono_nr")
+    @classmethod
+    def validate_telefono(cls, v: str) -> str:
+        return v
 
     # from_attributes=True - leidžia šį modelį sukurti IR iš žodyno (kaip client.py endpoint'ai dabar daro), IR tiesiai iš DB objekto (Client eilutės) ateityje, nereikalaujant pakeisti šios schemos.
     class Config:

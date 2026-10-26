@@ -76,7 +76,8 @@ def update_client(
              dependencies=[Depends(require_perm(Perm.EDIT))])
 def create_client(client: schemas_client.ClientCreate, db: Session = Depends(get_db)):
     try:
-        created = Client(**client.dict())
+        # "exclude_unset=True" - ClientCreate.registracijos_data turi numatytąją reikšmę None (žr. schemas/client.py); be šito "client.dict()" VISADA grąžintų "registracijos_data": None EXPLICITINIAI (net kai iškvietėjas jo visai neatsiuntė), o Client modelio "default=datetime.utcnow" veikia TIK kai atributas NIEKADA nepriskirtas - explicitinis None jį PERRAŠYTŲ, tad registracijos_data visada liktų NULL.
+        created = Client(**client.dict(exclude_unset=True))
         db.add(created)
         db.commit()
         db.refresh(created)
