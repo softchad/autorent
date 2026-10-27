@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.openapi.utils import get_openapi
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.rate_limit import limiter
@@ -16,6 +15,8 @@ from utils.config import settings
 
 logger = logging.getLogger("autorent")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# HTTP užklausų URL gali turėti OAuth kodų ar vartotojo adresų, todėl jų nežurnalizuojame INFO lygiu.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 from app.api.endpoints import (
     auth, employee, car, reservation, order, geocode, client, invoice, public,
     customer_auth, customer, customer_loyalty, customer_support, staff_support, discount_code,
@@ -25,7 +26,18 @@ app = FastAPI(title="AutoRent API", version="1.0.0")
 
 # Rate limitas (žr. @limiter.limit naudojimą auth.py/customer_auth.py faile) - apsauga nuo brute-force prisijungimo bandymų ir automatinio sąskaitų kūrimo.
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Slowapi NUMATYTASIS handler'is grąžina {"error": ...}, bet VISA likusi API (žr. HTTPException visur kituose failuose) naudoja {"detail": ...} - frontend'o extractErrorMessage (žr. utils/extractErrorMessage.ts) skaito TIK "detail" lauką, tad be ŠIO handler'io 429 atsakymas liktų NEPARODYTAS vartotojui (nutiltų iki bendro "neteisingas slaptažodis" pranešimo).
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    response = JSONResponse(
+        status_code=429,
+        content={"detail": "Per daug bandymų per trumpą laiką. Palaukite minutę ir bandykite dar kartą."},
+    )
+    return limiter._inject_headers(response, request.state.view_rate_limit)
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Sesija reikalinga OAuth prisijungimui
 app.add_middleware(
@@ -69,6 +81,7 @@ app.include_router(client.router,        prefix="/api/v1", tags=["Client"])
 app.include_router(staff_support.router, prefix="/api/v1", tags=["Staff Support"])
 app.include_router(invoice.router,       prefix="/api/v1", tags=["Invoices"])
 app.include_router(geocode.router,       prefix="/api/v1", tags=["Geo Code"])
+app.include_router(geocode.public_router, prefix="/api/v1", tags=["Public"])
 app.include_router(public.router,        prefix="/api/v1", tags=["Public"])
 app.include_router(customer_auth.router, prefix="/api/v1", tags=["Customer Auth"])
 app.include_router(customer.router,      prefix="/api/v1", tags=["Customer"])

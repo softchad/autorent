@@ -1,7 +1,7 @@
 import pytest
 
 
-# geocode_address realiai kreiptųsi į IŠORINĮ OpenCage servisą internetu - testuose jis visada pakeičiamas (monkeypatch) fiktyvia funkcija, kad testai būtų greiti, stabilūs ir nepriklausytų nuo interneto/API rakto/kvotos.
+# geocode_address realiai kreiptųsi į IŠORINĮ Nominatim servisą internetu - testuose jis visada pakeičiamas (monkeypatch) fiktyvia funkcija, kad testai būtų greiti, stabilūs ir nepriklausytų nuo interneto.
 @pytest.fixture
 def mock_geocode_address(monkeypatch):
     # Grąžina funkciją, kurią testas iškviečia SU NORIMA reikšme (žr. naudojimą žemiau) - fixture PATI negali žinoti, ką konkretus testas norės gauti, tad šis "apgaubimo" sluoksnis leidžia tai nurodyti vėliau.
@@ -50,7 +50,42 @@ def test_geocode_get_method_not_allowed(client, auth_headers):
     assert resp.status_code == 405
 
 
-# Be darbuotojo tokeno niekas negali kviesti šio endpoint'o - apsauga nuo svetimų, kurie bandytų išnaudoti OpenCage kvotą (žr. router'io Depends(get_current_user) endpoints/geocode.py faile).
+# Be darbuotojo tokeno niekas negali kviesti šio endpoint'o - apsauga nuo svetimų, kurie bandytų išnaudoti išorinę adresų paiešką (žr. router'io Depends(get_current_user) endpoints/geocode.py faile).
 def test_geocode_requires_authentication(client):
     resp = client.post("/api/v1/geocode/", json={"adresas": "Gedimino pr. 1, Vilnius"})
     assert resp.status_code == 401
+
+
+def test_public_geocode_success(client, mock_geocode_address):
+    mock_geocode_address((54.6872, 25.2797))
+    resp = client.post("/api/v1/public/geocode", json={"adresas": "Vilnius"})
+    assert resp.status_code == 200
+    assert resp.json() == {"lat": 54.6872, "lng": 25.2797}
+
+
+def test_public_geocode_not_found(client, mock_geocode_address):
+    mock_geocode_address(None)
+    assert client.post("/api/v1/public/geocode", json={"adresas": "Nežinoma"}).status_code == 404
+
+
+def test_public_geocode_validates_address(client):
+    for address in ["", "x" * 301]:
+        assert client.post("/api/v1/public/geocode", json={"adresas": address}).status_code == 422
+
+
+def test_public_geocode_rate_limit(client, mock_geocode_address):
+    from app.rate_limit import limiter
+
+    mock_geocode_address((54.6872, 25.2797))
+    previous = limiter.enabled
+    limiter.reset()
+    limiter.enabled = True
+    try:
+        for _ in range(10):
+            assert client.post("/api/v1/public/geocode", json={"adresas": "Vilnius"}).status_code == 200
+        assert client.post("/api/v1/public/geocode", json={"adresas": "Vilnius"}).status_code == 429
+    finally:
+        limiter.enabled = previous
+        limiter.reset()
+
+

@@ -9,14 +9,17 @@ type SortedLocation = LocationWithCoords & { distanceKm?: number };
 // Ypatinga "pasirinktis" sąrašo gale - geokoduoti laisvą tekstą, ne rinktis esamą padalinį.
 const GEOCODE_ACTION = "__geocode__";
 
-// Laisvo teksto adresą paverčia koordinatėmis per Nominatim (OpenStreetMap, nemokamas, be API rakto) - naudojama, kai vartotojas įveda adresą, kurio nėra tarp 10 padalinių, ir norime rasti JAM artimiausią padalinį.
+// Bendras backend geokodavimo servisas kreipiasi į Nominatim ir riboja abiejų portalų užklausas; pagal gautas koordinates parenkamas artimiausias padalinys.
 async function geocodeOnce(query: string): Promise<{ lat: number; lng: number } | null> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=lt&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${api}/api/v1/public/geocode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ adresas: query }),
+  });
   if (!res.ok) return null;
   const data = await res.json();
-  if (!data.length) return null;
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return { lat: data.lat, lng: data.lng };
 }
 
 // Padalinio pasirinkimo laukas - Combobox su sąrašu, kuris gali būti surikiuotas pagal atstumą (geolokacija arba įvestas adresas), ir galimybe surasti artimiausią padalinį pagal laisvą tekstą, kai ieškomo adreso tarp 10 padalinių nėra.
@@ -37,6 +40,9 @@ export default function LocationSearch({
   const [searchError, setSearchError] = useState<string | null>(null);
   const triedGeolocation = useRef(false);
   // Visada rodo NAUJAUSIĄ "value" - geolokacijos atsakymas žemiau gali ateiti PO kelių sekundžių, o efektas, kuriame jis naudojamas, paleistas TIK vieną kartą (žr. žemiau), tad be šios ref'os jis matytų SENĄ, pamontavimo metu užfiksuotą "value" ir perrašytų vartotojo TUO TARPU jau pačiam pasirinktą padalinį.
+  // Pavėluotas vietos nustatymas naudoja dabartinį pasirinkimo veiksmą, kad negrąžintų senų nuomos datų.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const valueRef = useRef(value);
   useEffect(() => {
     valueRef.current = value;
@@ -63,7 +69,7 @@ export default function LocationSearch({
         const nearest = [...LOCATIONS].sort(
           (a, b) => distanceKm(point.lat, point.lng, a.lat, a.lng) - distanceKm(point.lat, point.lng, b.lat, b.lng)
         )[0];
-        if (nearest) onChange(nearest.city);
+        if (nearest) onChangeRef.current(nearest.city);
       },
       () => {
         // atmesta/nepavyko - paliekam tuščią, vartotojas rinksis pats
@@ -202,6 +208,9 @@ export default function LocationSearch({
               Arčiausiai manės
             </button>
           )}
+          <div className="border-t border-[#1C2B3A] px-4 py-2 text-xs text-[#3D4F63]">
+            Adresų paieška: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a> · Nominatim
+          </div>
         </ComboboxOptions>
       </div>
     </Combobox>
