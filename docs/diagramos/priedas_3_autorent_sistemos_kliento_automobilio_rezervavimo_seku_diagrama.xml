@@ -1,0 +1,266 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="customer-reservation-sequence" name="AUTORENT SISTEMOS KLIENTO AUTOMOBILIO REZERVAVIMO SEKŲ DIAGRAMA">
+    <mxGraphModel page="1" pageWidth="1654" pageHeight="1169" pageScale="1" grid="1" gridSize="10" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="participant-0" value="Klientas" vertex="1" parent="1" style="rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#000000;strokeColor=#555555;fillColor=#EAF2FA;fontStyle=1;">
+          <mxGeometry x="13.5" y="26.0" width="270.0" height="50.05" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-1" value="Klientų portalas&#10;Next.js / React" vertex="1" parent="1" style="rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#000000;strokeColor=#555555;fillColor=#EAF2FA;fontStyle=1;">
+          <mxGeometry x="405.0" y="26.0" width="270.0" height="50.05" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-2" value="REST API&#10;FastAPI" vertex="1" parent="1" style="rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#000000;strokeColor=#555555;fillColor=#EDF5ED;fontStyle=1;">
+          <mxGeometry x="864.0" y="26.0" width="270.0" height="50.05" as="geometry" />
+        </mxCell>
+        <mxCell id="participant-3" value="Duomenų bazė&#10;MySQL" vertex="1" parent="1" style="rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=16;fontColor=#000000;strokeColor=#555555;fillColor=#FFF3E4;fontStyle=1;">
+          <mxGeometry x="1323.0" y="26.0" width="270.0" height="50.05" as="geometry" />
+        </mxCell>
+        <mxCell id="lifeline-0" value="" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=none;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=12;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="148.5" y="76.05000000000001" as="sourcePoint" />
+            <mxPoint x="148.5" y="1017.9000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lifeline-1" value="" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=none;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=12;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540.0" y="76.05000000000001" as="sourcePoint" />
+            <mxPoint x="540.0" y="1017.9000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lifeline-2" value="" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=none;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=12;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="999.0" y="76.05000000000001" as="sourcePoint" />
+            <mxPoint x="999.0" y="1017.9000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lifeline-3" value="" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=none;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=12;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1458.0" y="76.05000000000001" as="sourcePoint" />
+            <mxPoint x="1458.0" y="1017.9000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="alternatives" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=none;strokeColor=#555555;">
+          <mxGeometry x="47.25" y="490.1" width="1545.75" height="486.85" as="geometry" />
+        </mxCell>
+        <mxCell id="alt-label" value="alt" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#ffffff;strokeColor=#555555;fontFamily=Arial;fontSize=14;fontStyle=1;">
+          <mxGeometry x="47.25" y="490.1" width="60.75" height="22.75" as="geometry" />
+        </mxCell>
+        <mxCell id="success-guard" value="[užimtumo konfliktų nėra]" vertex="1" parent="1" style="html=0;whiteSpace=wrap;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=14;fontColor=#000000;fontStyle=1;">
+          <mxGeometry x="121.5" y="496.47" width="877.5" height="22.75" as="geometry" />
+        </mxCell>
+        <mxCell id="operand-divider" value="" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=none;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=12;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="47.25" y="799.5" as="sourcePoint" />
+            <mxPoint x="1593.0" y="799.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="failure-guard" value="[automobilis arba klientas turi užimtumo konfliktą]" vertex="1" parent="1" style="html=0;whiteSpace=wrap;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=14;fontColor=#000000;fontStyle=1;">
+          <mxGeometry x="121.5" y="808.6" width="1417.5" height="22.75" as="geometry" />
+        </mxCell>
+        <mxCell id="portal-request" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EAF2FA;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="535" y="117" width="10" height="373.1" as="geometry" />
+        </mxCell>
+        <mxCell id="portal-success" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EAF2FA;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="535" y="490.1" width="10" height="277.54999999999995" as="geometry" />
+        </mxCell>
+        <mxCell id="portal-failure" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EAF2FA;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="535" y="815" width="10" height="139.20000000000005" as="geometry" />
+        </mxCell>
+        <mxCell id="api-checks" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EDF5ED;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="994" y="162.5" width="10" height="327.6" as="geometry" />
+        </mxCell>
+        <mxCell id="api-success" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EDF5ED;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="994" y="490.1" width="10" height="232.04999999999995" as="geometry" />
+        </mxCell>
+        <mxCell id="api-failure" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#EDF5ED;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="994" y="815" width="10" height="93.70000000000005" as="geometry" />
+        </mxCell>
+        <mxCell id="db-auth" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="230.75" width="10" height="36.39999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="db-locks" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="339.95" width="10" height="36.400000000000034" as="geometry" />
+        </mxCell>
+        <mxCell id="db-conflicts" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="421.85" width="10" height="36.39999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="db-insert" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="553.8" width="10" height="20.200000000000045" as="geometry" />
+        </mxCell>
+        <mxCell id="db-commit" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="599.3" width="10" height="20.700000000000045" as="geometry" />
+        </mxCell>
+        <mxCell id="db-read" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="644.8" width="10" height="36.40000000000009" as="geometry" />
+        </mxCell>
+        <mxCell id="db-rollback" value="" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#FFF3E4;strokeColor=#666666;strokeWidth=1;">
+          <mxGeometry x="1453" y="863.2" width="10" height="21.799999999999955" as="geometry" />
+        </mxCell>
+        <mxCell id="reserve-click" value="1. Paspaudžia „Rezervuoti“" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="148.5" y="117.0" as="sourcePoint" />
+            <mxPoint x="535" y="117.0" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="request" value="2. POST /api/v1/customer/reservations" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="545" y="162.5" as="sourcePoint" />
+            <mxPoint x="994" y="162.5" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="customer-query" value="3. Randa klientą pagal JWT sub" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="230.75" as="sourcePoint" />
+            <mxPoint x="1453" y="230.75" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="customer-result" value="Kliento įrašas ir sesijos versija" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="267.15" as="sourcePoint" />
+            <mxPoint x="1004" y="267.15" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="locks" value="4. Užrakina automobilio ir kliento įrašus" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="339.95" as="sourcePoint" />
+            <mxPoint x="1453" y="339.95" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="locks-result" value="Įrašai (SELECT ... FOR UPDATE)" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="376.35" as="sourcePoint" />
+            <mxPoint x="1004" y="376.35" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conflicts" value="5. Tikrina automobilio ir kliento užimtumą" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="421.85" as="sourcePoint" />
+            <mxPoint x="1453" y="421.85" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conflicts-result" value="Persidengiančių įrašų patikros rezultatas" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="458.25" as="sourcePoint" />
+            <mxPoint x="1004" y="458.25" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="insert" value="6. Įrašo rezervaciją „laukia“ ir paros kainą" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="553.8" as="sourcePoint" />
+            <mxPoint x="1453" y="553.8" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="commit" value="7. COMMIT" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="599.3" as="sourcePoint" />
+            <mxPoint x="1453" y="599.3" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="refresh" value="8. Perskaito išsaugotą rezervaciją" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="644.8" as="sourcePoint" />
+            <mxPoint x="1453" y="644.8" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="record-result" value="Rezervacijos duomenys" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="681.2" as="sourcePoint" />
+            <mxPoint x="1004" y="681.2" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="success" value="9. HTTP 200: rezervacija ir bendra kaina" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="994" y="722.15" as="sourcePoint" />
+            <mxPoint x="545" y="722.15" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="show-success" value="10. Parodo rezervacijos patvirtinimą" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="535" y="767.65" as="sourcePoint" />
+            <mxPoint x="148.5" y="767.65" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rollback" value="5.a.1. ROLLBACK" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1004" y="863.2" as="sourcePoint" />
+            <mxPoint x="1453" y="863.2" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="error" value="5.a.2. HTTP 409: konflikto priežastis" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="994" y="908.7" as="sourcePoint" />
+            <mxPoint x="545" y="908.7" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="show-error" value="5.a.3. Parodo klaidą" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=0;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=16;fontColor=#000000;fontStyle=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="535" y="954.2" as="sourcePoint" />
+            <mxPoint x="148.5" y="954.2" as="targetPoint" />
+            <mxPoint x="0.0" y="-10.92" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="verify-token" value="Patikrina JWT parašą, galiojimą ir tipą" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="999" y="205" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="1065" y="205" />
+              <mxPoint x="1065" y="219" />
+            </Array>
+            <mxPoint x="999" y="219" as="targetPoint" />
+            <mxPoint x="-190" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="verify-session" value="Patikrina sesijos versiją ir datas" edge="1" parent="1" style="edgeStyle=none;html=0;rounded=0;strokeColor=#000000;endArrow=block;endFill=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="999" y="292" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="1065" y="292" />
+              <mxPoint x="1065" y="306" />
+            </Array>
+            <mxPoint x="999" y="306" as="targetPoint" />
+            <mxPoint x="-190" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="insert-result" value="Įrašas įterptas" edge="1" parent="1" style="edgeStyle=none;html=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="574" as="sourcePoint" />
+            <mxPoint x="1004" y="574" as="targetPoint" />
+            <mxPoint x="0" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="commit-result" value="Transakcija patvirtinta" edge="1" parent="1" style="edgeStyle=none;html=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="620" as="sourcePoint" />
+            <mxPoint x="1004" y="620" as="targetPoint" />
+            <mxPoint x="0" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rollback-result" value="Transakcija atšaukta" edge="1" parent="1" style="edgeStyle=none;html=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;labelBackgroundColor=#ffffff;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#000000;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1453" y="885" as="sourcePoint" />
+            <mxPoint x="1004" y="885" as="targetPoint" />
+            <mxPoint x="0" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

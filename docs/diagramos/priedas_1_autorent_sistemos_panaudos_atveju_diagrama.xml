@@ -1,0 +1,273 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="autorent-uml-usecases" name="AUTORENT SISTEMOS PANAUDOS ATVEJŲ DIAGRAMA">
+    <mxGraphModel page="1" pageScale="1" pageWidth="794" pageHeight="1123" grid="1" gridSize="10" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="system" value="AutoRent sistema" vertex="1" parent="1" style="rounded=0;html=0;fillColor=#ffffff;strokeColor=#000000;verticalAlign=top;align=left;spacingLeft=15;spacingTop=12;fontSize=20;fontStyle=1;">
+          <mxGeometry x="135" y="20" width="520" height="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-portal" value="Klientų portalas" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;strokeColor=none;fillColor=none;">
+          <mxGeometry x="160" y="55" width="220" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="staff-portal" value="Darbuotojų portalas" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;strokeColor=none;fillColor=none;">
+          <mxGeometry x="415" y="55" width="220" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="guest" value="Svečias" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="47" y="174" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="customer" value="Klientas" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="47" y="634" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic" value="Mechanikas" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="707" y="259" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="support" value="Klientų&#10;aptarnavimas" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="707" y="704" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="manager" value="Vadybininkas" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="707" y="849" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" value="Administratorius" vertex="1" parent="1" style="shape=umlActor;html=0;verticalLabelPosition=bottom;verticalAlign=top;labelWidth=125;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="707" y="999" width="36" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="register" value="Registruoti kliento paskyrą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="74" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-login" value="Prisijungti prie kliento paskyros" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="129" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="search" value="Ieškoti automobilių" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="184" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="car" value="Peržiūrėti automobilio informaciją" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="239" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="location" value="Rasti artimiausią padalinį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="294" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="map" value="Peržiūrėti pasiūlymus žemėlapyje" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="349" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="book" value="Pateikti rezervaciją" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="419" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="availability" value="Patikrinti užimtumą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="479" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="reservations" value="Peržiūrėti savo rezervacijas" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="534" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="profile" value="Tvarkyti savo profilį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="589" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="loyalty" value="Peržiūrėti lojalumo progresą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="644" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="reward" value="Atsiimti lojalumo atlygį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="699" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="conversation" value="Pradėti aptarnavimo pokalbį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="754" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-message" value="Susirašinėti su darbuotoju" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="160" y="809" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="staff-login" value="Prisijungti prie darbuotojų portalo" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="74" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="dashboard" value="Peržiūrėti valdymo skydelį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="129" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="cars" value="Tvarkyti automobilių duomenis" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="184" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="clients" value="Tvarkyti klientų duomenis" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="239" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="staff-reservations" value="Administruoti rezervacijas" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="294" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="create-order" value="Sukurti nuomos užsakymą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="369" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="orders" value="Keisti nuomos užsakymo duomenis" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="424" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="invoice" value="Išrašyti sąskaitą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="479" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="pdf" value="Atsisiųsti sąskaitos PDF" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="534" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="discount" value="Pritaikyti nuolaidos kodą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="589" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="claim" value="Prisiimti aptarnavimo pokalbį" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="659" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="staff-message" value="Atsakyti klientui" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="714" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="Pridėti vidinę pastabą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="769" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="code" value="Išduoti nuolaidos kodą" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="824" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="resolve" value="Pažymėti pokalbį išspręstu" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="879" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="reassign" value="Perskirti pokalbį darbuotojui" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="934" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="staff" value="Administruoti darbuotojų įrašus" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="989" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="delete" value="Šalinti administruojamus įrašus" vertex="1" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#000000;fontSize=11.5;">
+          <mxGeometry x="415" y="1044" width="220" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-register" edge="1" parent="1" source="guest" target="register" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-customer-login" edge="1" parent="1" source="guest" target="customer-login" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-search" edge="1" parent="1" source="guest" target="search" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-car" edge="1" parent="1" source="guest" target="car" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-location" edge="1" parent="1" source="guest" target="location" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="guest-map" edge="1" parent="1" source="guest" target="map" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-book" edge="1" parent="1" source="customer" target="book" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-reservations" edge="1" parent="1" source="customer" target="reservations" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-profile" edge="1" parent="1" source="customer" target="profile" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-loyalty" edge="1" parent="1" source="customer" target="loyalty" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-reward" edge="1" parent="1" source="customer" target="reward" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-conversation" edge="1" parent="1" source="customer" target="conversation" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="customer-customer-message" edge="1" parent="1" source="customer" target="customer-message" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-staff-login" edge="1" parent="1" source="mechanic" target="staff-login" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-dashboard" edge="1" parent="1" source="mechanic" target="dashboard" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-cars" edge="1" parent="1" source="mechanic" target="cars" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-clients" edge="1" parent="1" source="mechanic" target="clients" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-staff-reservations" edge="1" parent="1" source="mechanic" target="staff-reservations" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-create-order" edge="1" parent="1" source="mechanic" target="create-order" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-orders" edge="1" parent="1" source="mechanic" target="orders" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-invoice" edge="1" parent="1" source="mechanic" target="invoice" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mechanic-pdf" edge="1" parent="1" source="mechanic" target="pdf" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-claim" edge="1" parent="1" source="support" target="claim" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-staff-message" edge="1" parent="1" source="support" target="staff-message" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-note" edge="1" parent="1" source="support" target="note" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-code" edge="1" parent="1" source="support" target="code" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-resolve" edge="1" parent="1" source="support" target="resolve" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="manager-reassign" edge="1" parent="1" source="manager" target="reassign" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="admin-staff" edge="1" parent="1" source="admin" target="staff" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="admin-delete" edge="1" parent="1" source="admin" target="delete" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=none;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="general-customer" edge="1" parent="1" source="customer" target="guest" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=block;endFill=0;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="12" y="665" />
+              <mxPoint x="12" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="general-support" edge="1" parent="1" source="support" target="mechanic" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=block;endFill=0;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="766" y="735" />
+              <mxPoint x="766" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="general-manager" edge="1" parent="1" source="manager" target="support" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=block;endFill=0;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="775" y="880" />
+              <mxPoint x="775" y="735" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="general-admin" edge="1" parent="1" source="admin" target="manager" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=block;endFill=0;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=1.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="784" y="1030" />
+              <mxPoint x="784" y="880" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="include-availability" edge="1" parent="1" source="book" target="availability" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="include-availability-label" value="«include»" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=10;rotation=0;fillColor=#ffffff;strokeColor=none;">
+          <mxGeometry x="286" y="462" width="60" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="extend-discount" edge="1" parent="1" source="discount" target="create-order" style="edgeStyle=none;rounded=0;html=0;strokeColor=#000000;endArrow=open;endFill=0;dashed=1;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="397" y="610" />
+              <mxPoint x="397" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="extend-discount-label" value="«extend»" vertex="1" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontSize=10;rotation=270;fillColor=#ffffff;strokeColor=none;">
+          <mxGeometry x="367" y="492" width="60" height="16" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

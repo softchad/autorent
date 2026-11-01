@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="profesine" name="Profesinės praktikos metu sukurtos sistemos panaudos atvejai">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageWidth="794" pageHeight="1123" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="prof-system" value="„AutoRent“ automobilių nuomos administravimas" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;rounded=0;fontSize=19;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="230" y="25" width="535" height="1070" />
+        </mxCell>
+        <mxCell id="prof-guest" value="Svečias" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=umlActor;fontSize=17;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="72" y="90" width="52" height="88" />
+        </mxCell>
+        <mxCell id="prof-employee" value="Darbuotojas" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=umlActor;fontSize=17;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="72" y="438" width="52" height="88" />
+        </mxCell>
+        <mxCell id="prof-admin" value="Administratorius" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=umlActor;fontSize=17;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="72" y="932" width="52" height="88" />
+        </mxCell>
+        <mxCell id="prof-login" value="Prisijungti prie sistemos" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="100" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-login" source="prof-guest" target="prof-login" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-stats" value="Peržiūrėti veiklos suvestines" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="195" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-stats" source="prof-employee" target="prof-stats" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-cars" value="Peržiūrėti, kurti ir redaguoti automobilius" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="265" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-cars" source="prof-employee" target="prof-cars" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-map" value="Peržiūrėti automobiliams priskirtas vietas žemėlapyje" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="335" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-map" source="prof-employee" target="prof-map" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-clients" value="Peržiūrėti, kurti ir redaguoti klientus" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="405" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-clients" source="prof-employee" target="prof-clients" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-reservations" value="Peržiūrėti, kurti ir redaguoti rezervacijas" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="475" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-reservations" source="prof-employee" target="prof-reservations" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-orders" value="Peržiūrėti, kurti ir redaguoti užsakymus" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="545" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-orders" source="prof-employee" target="prof-orders" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-invoices" value="Išrašyti ir peržiūrėti sąskaitas, atsisiųsti PDF" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="615" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-invoices" source="prof-employee" target="prof-invoices" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-support" value="Peržiūrėti ir atsakyti į pagalbos užklausas" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="685" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-support" source="prof-employee" target="prof-support" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-profile" value="Peržiūrėti savo profilį ir pakeisti slaptažodį" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="755" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-profile" source="prof-employee" target="prof-profile" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-employees" value="Administruoti darbuotojų paskyras" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="905" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-employees" source="prof-admin" target="prof-employees" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-delete" value="Šalinti automobilių, klientų, rezervacijų, užsakymų ir sąskaitų įrašus" style="html=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontFamily=Arial;strokeWidth=1.2;shape=ellipse;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="275" y="995" width="450" height="58" />
+        </mxCell>
+        <mxCell id="prof-association-delete" source="prof-admin" target="prof-delete" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-employee-generalization" source="prof-employee" target="prof-guest" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;endArrow=block;endFill=0;exitX=0.5;exitY=0;entryX=0.5;entryY=1;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="prof-admin-generalization" source="prof-admin" target="prof-employee" edge="1" parent="1" style="html=0;edgeStyle=none;rounded=0;strokeColor=#000000;strokeWidth=1.1;startArrow=none;endArrow=none;endArrow=block;endFill=0;exitX=0.5;exitY=0;entryX=0.5;entryY=1;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,163 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123" viewBox="0 0 794 1123" role="img" aria-labelledby="title description"><title>AUTORENT SISTEMOS PANAUDOS ATVEJŲ DIAGRAMA</title>
+  <title id="title">AutoRent sistemos panaudos atvejai</title>
+  <desc id="description">Aktorių generalizacija vaizduoja sistemoje prieinamų funkcijų įtraukimą, ne pareigybių pavaldumą. Mechanikui prieinamos bendros nuomos administravimo funkcijos; klientų aptarnavimui papildomai pokalbiai; vadybininkui perskyrimas; administratoriui darbuotojų administravimas ir šalinimas. Include susieja rezervavimą su užimtumo patikra. Extend susieja nuolaidą su užsakymo kūrimu.</desc>
+  <rect width="794" height="1123" fill="white" />
+  <defs>
+    <marker id="general" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L9,5 L1,9 Z" fill="white" stroke="black" stroke-width="1" />
+    </marker>
+    <marker id="open" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L9,5 L1,9" fill="none" stroke="black" stroke-width="1" />
+    </marker>
+  </defs>
+  <rect x="135" y="20" width="520" height="1080" fill="white" stroke="black" stroke-width="1.2" />
+  <text x="245" y="50" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-style="normal" font-weight="bold">AutoRent sistema</text>
+  <text x="270" y="68" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-style="normal" font-weight="bold">Klientų portalas</text>
+  <text x="525" y="68" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-style="normal" font-weight="bold">Darbuotojų portalas</text>
+  <path d="M83,205 L160,95" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,205 L160,150" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,205 L160,205" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,205 L160,260" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,205 L160,315" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,205 L160,370" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,440" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,555" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,610" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,665" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,720" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,775" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M83,665 L160,830" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,95" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,150" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,205" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,260" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,315" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,390" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,445" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,500" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,290 L635,555" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,735 L635,680" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,735 L635,735" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,735 L635,790" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,735 L635,845" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,735 L635,900" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,880 L635,955" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,1030 L635,1010" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M707,1030 L635,1065" fill="none" stroke="black" stroke-width="0.85" />
+  <path d="M47,665 L12,665 L12,205 L47,205" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#general)" />
+  <path d="M743,735 L766,735 L766,290 L743,290" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#general)" />
+  <path d="M743,880 L775,880 L775,735 L743,735" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#general)" />
+  <path d="M743,1030 L784,1030 L784,880 L743,880" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#general)" />
+  <path d="M270,461 L270,479" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#open)" stroke-dasharray="4 3" />
+  <g transform="translate(316,470) rotate(0)">
+    <rect x="-29" y="-7" width="58" height="14" fill="white" />
+    <text x="0" y="4" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">«include»</text>
+  </g>
+  <path d="M415,610 L397,610 L397,390 L415,390" fill="none" stroke="black" stroke-width="0.85" marker-end="url(#open)" stroke-dasharray="4 3" />
+  <g transform="translate(397,500) rotate(270)">
+    <rect x="-29" y="-7" width="58" height="14" fill="white" />
+    <text x="0" y="4" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">«extend»</text>
+  </g>
+  <ellipse cx="270" cy="95" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="99.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Registruoti kliento paskyrą</text>
+  <ellipse cx="270" cy="150" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="154.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Prisijungti prie kliento paskyros</text>
+  <ellipse cx="270" cy="205" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="209.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Ieškoti automobilių</text>
+  <ellipse cx="270" cy="260" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="264.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Peržiūrėti automobilio informaciją</text>
+  <ellipse cx="270" cy="315" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="319.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Rasti artimiausią padalinį</text>
+  <ellipse cx="270" cy="370" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="374.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Peržiūrėti pasiūlymus žemėlapyje</text>
+  <ellipse cx="270" cy="440" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="444.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Pateikti rezervaciją</text>
+  <ellipse cx="270" cy="500" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="504.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Patikrinti užimtumą</text>
+  <ellipse cx="270" cy="555" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="559.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Peržiūrėti savo rezervacijas</text>
+  <ellipse cx="270" cy="610" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="614.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Tvarkyti savo profilį</text>
+  <ellipse cx="270" cy="665" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="669.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Peržiūrėti lojalumo progresą</text>
+  <ellipse cx="270" cy="720" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="724.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Atsiimti lojalumo atlygį</text>
+  <ellipse cx="270" cy="775" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="779.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Pradėti aptarnavimo pokalbį</text>
+  <ellipse cx="270" cy="830" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="270" y="834.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Susirašinėti su darbuotoju</text>
+  <ellipse cx="525" cy="95" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="99.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Prisijungti prie darbuotojų portalo</text>
+  <ellipse cx="525" cy="150" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="154.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Peržiūrėti valdymo skydelį</text>
+  <ellipse cx="525" cy="205" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="209.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Tvarkyti automobilių duomenis</text>
+  <ellipse cx="525" cy="260" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="264.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Tvarkyti klientų duomenis</text>
+  <ellipse cx="525" cy="315" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="319.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Administruoti rezervacijas</text>
+  <ellipse cx="525" cy="390" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="394.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Sukurti nuomos užsakymą</text>
+  <ellipse cx="525" cy="445" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="449.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Keisti nuomos užsakymo duomenis</text>
+  <ellipse cx="525" cy="500" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="504.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Išrašyti sąskaitą</text>
+  <ellipse cx="525" cy="555" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="559.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Atsisiųsti sąskaitos PDF</text>
+  <ellipse cx="525" cy="610" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="614.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Pritaikyti nuolaidos kodą</text>
+  <ellipse cx="525" cy="680" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="684.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Prisiimti aptarnavimo pokalbį</text>
+  <ellipse cx="525" cy="735" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="739.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Atsakyti klientui</text>
+  <ellipse cx="525" cy="790" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="794.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Pridėti vidinę pastabą</text>
+  <ellipse cx="525" cy="845" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="849.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Išduoti nuolaidos kodą</text>
+  <ellipse cx="525" cy="900" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="904.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Pažymėti pokalbį išspręstu</text>
+  <ellipse cx="525" cy="955" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="959.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Perskirti pokalbį darbuotojui</text>
+  <ellipse cx="525" cy="1010" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="1014.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Administruoti darbuotojų įrašus</text>
+  <ellipse cx="525" cy="1065" rx="110" ry="21" fill="white" stroke="black" stroke-width="1" />
+  <text x="525" y="1069.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Šalinti administruojamus įrašus</text>
+  <circle cx="65" cy="183" r="9" fill="white" stroke="black" />
+  <line x1="65" y1="192" x2="65" y2="217" stroke="black" />
+  <line x1="47" y1="205" x2="83" y2="205" stroke="black" />
+  <line x1="65" y1="217" x2="47" y2="236" stroke="black" />
+  <line x1="65" y1="217" x2="83" y2="236" stroke="black" />
+  <text x="65" y="252.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Svečias</text>
+  <circle cx="65" cy="643" r="9" fill="white" stroke="black" />
+  <line x1="65" y1="652" x2="65" y2="677" stroke="black" />
+  <line x1="47" y1="665" x2="83" y2="665" stroke="black" />
+  <line x1="65" y1="677" x2="47" y2="696" stroke="black" />
+  <line x1="65" y1="677" x2="83" y2="696" stroke="black" />
+  <text x="65" y="712.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Klientas</text>
+  <circle cx="725" cy="268" r="9" fill="white" stroke="black" />
+  <line x1="725" y1="277" x2="725" y2="302" stroke="black" />
+  <line x1="707" y1="290" x2="743" y2="290" stroke="black" />
+  <line x1="725" y1="302" x2="707" y2="321" stroke="black" />
+  <line x1="725" y1="302" x2="743" y2="321" stroke="black" />
+  <text x="725" y="337.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Mechanikas</text>
+  <circle cx="725" cy="713" r="9" fill="white" stroke="black" />
+  <line x1="725" y1="722" x2="725" y2="747" stroke="black" />
+  <line x1="707" y1="735" x2="743" y2="735" stroke="black" />
+  <line x1="725" y1="747" x2="707" y2="766" stroke="black" />
+  <line x1="725" y1="747" x2="743" y2="766" stroke="black" />
+  <text x="725" y="782.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Klientų</text>
+  <text x="725" y="795.5" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">aptarnavimas</text>
+  <circle cx="725" cy="858" r="9" fill="white" stroke="black" />
+  <line x1="725" y1="867" x2="725" y2="892" stroke="black" />
+  <line x1="707" y1="880" x2="743" y2="880" stroke="black" />
+  <line x1="725" y1="892" x2="707" y2="911" stroke="black" />
+  <line x1="725" y1="892" x2="743" y2="911" stroke="black" />
+  <text x="725" y="927.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Vadybininkas</text>
+  <circle cx="725" cy="1008" r="9" fill="white" stroke="black" />
+  <line x1="725" y1="1017" x2="725" y2="1042" stroke="black" />
+  <line x1="707" y1="1030" x2="743" y2="1030" stroke="black" />
+  <line x1="725" y1="1042" x2="707" y2="1061" stroke="black" />
+  <line x1="725" y1="1042" x2="743" y2="1061" stroke="black" />
+  <text x="725" y="1077.0" fill="black" text-anchor="middle" font-family="Arial, sans-serif" font-size="11.5" font-style="normal" font-weight="normal">Administratorius</text>
+</svg>

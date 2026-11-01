@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="610" viewBox="0 0 1200 610" role="img" aria-labelledby="title"><title>Profesinės praktikos metu sukurtos sistemos komponentų diagrama</title>
+  <title id="title">AutoRent: profesinės praktikos sistemos UML komponentų diagrama</title>
+  <rect width="1200" height="610" fill="white" />
+  <defs>
+    <marker id="dependency-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M1,1 L9,5 L1,9" fill="none" stroke="black" stroke-width="1.2" />
+    </marker>
+  </defs>
+  <text x="600.0" y="37" fill="black" font-family="Arial, sans-serif" font-size="25" text-anchor="middle" font-weight="bold">„AutoRent“ automobilių nuomos administravimas</text>
+  <path d="M30,93 V65 H180 V93 H1170 V335 H30 Z M30,93 H180" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="105.0" y="86" fill="black" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" font-weight="normal">AutoRent</text>
+  <path d="M30,423 V395 H220 V423 H1170 V580 H30 Z M30,423 H220" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="125.0" y="416" fill="black" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" font-weight="normal">Išorinės paslaugos</text>
+  <rect x="65" y="125" width="330" height="165" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="360" y="137" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="353" y="142" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="353" y="156" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="230.0" y="192" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">Darbuotojų portalas</text>
+  <text x="230.0" y="221" fill="black" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" font-weight="normal">Next.js · React · TypeScript</text>
+  <text x="230.0" y="244" fill="black" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" font-weight="normal">Leaflet · react-pdf</text>
+  <rect x="495" y="125" width="285" height="165" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="745" y="137" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="738" y="142" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="738" y="156" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="637.5" y="192" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">API serveris</text>
+  <text x="637.5" y="221" fill="black" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" font-weight="normal">FastAPI · SQLAlchemy</text>
+  <text x="637.5" y="244" fill="black" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" font-weight="normal">Pydantic · JWT</text>
+  <rect x="910" y="125" width="225" height="165" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1100" y="137" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1093" y="142" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1093" y="156" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="1022.5" y="192" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">Duomenų saugykla</text>
+  <text x="1022.5" y="221" fill="black" font-family="Arial, sans-serif" font-size="17" text-anchor="middle" font-weight="normal">MySQL</text>
+  <rect x="65" y="440" width="330" height="115" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="360" y="452" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="353" y="457" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="353" y="471" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="230.0" y="507" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">Žemėlapio duomenų tiekėjas</text>
+  <rect x="495" y="440" width="285" height="115" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="745" y="452" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="738" y="457" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="738" y="471" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="637.5" y="507" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">Google / GitHub</text>
+  <rect x="865" y="440" width="270" height="115" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1100" y="452" width="22" height="28" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1093" y="457" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <rect x="1093" y="471" width="14" height="8" fill="white" stroke="black" stroke-width="1.3" />
+  <text x="1000.0" y="507" fill="black" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">Geokodavimo servisas</text>
+  <path d="M395,207.5 L495,207.5" fill="none" stroke="black" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#dependency-arrow)" />
+  <path d="M780,207.5 L910,207.5" fill="none" stroke="black" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#dependency-arrow)" />
+  <path d="M230,290 L230,440" fill="none" stroke="black" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#dependency-arrow)" />
+  <path d="M637.5,290 L637.5,440" fill="none" stroke="black" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#dependency-arrow)" />
+  <path d="M740,290 L740,365 L1000,365 L1000,440" fill="none" stroke="black" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#dependency-arrow)" />
+  <text x="445.0" y="191" fill="black" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" font-weight="normal">REST API</text>
+  <text x="845.0" y="191" fill="black" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" font-weight="normal">SQL</text>
+  <text x="684.5" y="364" fill="black" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" font-weight="normal">OAuth</text>
+</svg>
