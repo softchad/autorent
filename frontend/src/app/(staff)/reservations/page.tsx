@@ -10,7 +10,7 @@ import StatusBadge from "@/app/components/StatusBadge";
 import CreateEntityButton from "@/app/components/staff/CreateEntityButton";
 import { formatApiError } from "@/utils/formatApiError";
 import type { ReservationUpdate, OrderCreate } from "@/store/autorentApi";
-import { useGetCurrentUserQuery, useCreateOrderMutation } from "@/store/autorentApi";
+import { autorentApi, useGetCurrentUserQuery, useCreateOrderMutation } from "@/store/autorentApi";
 import { FiCheck, FiMapPin } from "react-icons/fi";
 import Image from "next/image";
 import { getCarPhoto } from "@/utils/carPhoto";
@@ -24,6 +24,8 @@ type Rezervacija = NonNullable<
 export default function ReservationsPage() {
   const { data: currentUser } = useGetCurrentUserQuery();
   const [createOrder, { isLoading: converting }] = useCreateOrderMutation();
+  // Kliento nuolaidos kodai gaunami TIK paspaudus "Išnuomoti" (lazy), ne kiekvienai sąrašo eilutei iš anksto.
+  const [fetchDiscountCodes] = autorentApi.endpoints.getClientDiscountCodes.useLazyQuery();
   // Trynimas backend'e reikalauja Perm.ADMIN (žr. reservation.py delete_reservation - "negrįžtamas veiksmas"), ne vien Perm.EDIT kaip redagavimas - be šios patikros bet kuris EDIT teisę turintis darbuotojas matytų trynimo mygtuką, kurį paspaudus serveris atmestų su 403.
   const isAdmin = currentUser?.pareigos === "Administratorius";
 
@@ -77,6 +79,22 @@ export default function ReservationsPage() {
               const car = cars.find((c) => c.automobilio_id === r.automobilio_id);
               if (!currentUser || !car?.lokacija || converting) return;
               if (!window.confirm("Sukurti nuomos užsakymą iš šios rezervacijos?")) return;
+              // Klientas atvykęs gali neprisiminti savo kodo - darbuotojas mato jo nepanaudotus kodus ir pasirenka; "preferCacheValue=false", kad ką tik panaudotas kodas nebūtų pasiūlytas iš seno atsakymo.
+              let nuolaidosKodas: string | undefined;
+              try {
+                const codes = await fetchDiscountCodes({ klientoId: r.kliento_id }, false).unwrap();
+                if (codes.length > 0) {
+                  const list = codes.map((c) => `${c.kodas} – ${c.verte_eur} €`).join("\n");
+                  const answer = window.prompt(
+                    `Kliento nepanaudoti nuolaidos kodai:\n${list}\n\nĮveskite kodą, kurį pritaikyti, arba palikite tuščią.`,
+                    codes.length === 1 ? codes[0].kodas : "",
+                  );
+                  if (answer === null) return;
+                  nuolaidosKodas = answer.trim() || undefined;
+                }
+              } catch {
+                if (!window.confirm("Nepavyko gauti kliento nuolaidos kodų. Tęsti be nuolaidos?")) return;
+              }
               const days = Math.max(1, Math.round((Date.parse(r.rezervacijos_pabaiga) - Date.parse(r.rezervacijos_pradzia)) / 86400000));
               const orderCreate: OrderCreate & { rezervacijos_id: number } = {
                 rezervacijos_id: r.rezervacijos_id,
@@ -86,6 +104,7 @@ export default function ReservationsPage() {
                 paemimo_vietos_id: car.lokacija.vietos_id, grazinimo_vietos_id: car.lokacija.vietos_id,
                 bendra_kaina: days * car.kaina_parai,
                 uzsakymo_busena: "patvirtinta", turi_papildomas_paslaugas: false,
+                nuolaidos_kodas: nuolaidosKodas,
               };
               try {
                 const created = await createOrder({ orderCreate }).unwrap();

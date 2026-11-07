@@ -231,6 +231,14 @@ const injectedRtkApi = api.injectEndpoints({
         url: `/api/v1/clients/${queryArg.klientoId}/orders`,
       }),
     }),
+    getClientDiscountCodes: build.query<
+      GetClientDiscountCodesApiResponse,
+      GetClientDiscountCodesApiArg
+    >({
+      query: (queryArg) => ({
+        url: `/api/v1/clients/${queryArg.klientoId}/discount-codes`,
+      }),
+    }),
     getStaffConversations: build.query<
       GetStaffConversationsApiResponse,
       GetStaffConversationsApiArg
@@ -643,6 +651,11 @@ export type DeleteClientApiArg = {
 export type GetClientOrderApiResponse =
   /** status 200 Successful Response */ OrderOut[];
 export type GetClientOrderApiArg = {
+  klientoId: number;
+};
+export type GetClientDiscountCodesApiResponse =
+  /** status 200 Successful Response */ DiscountCodeOut[];
+export type GetClientDiscountCodesApiArg = {
   klientoId: number;
 };
 export type GetStaffConversationsApiResponse =
@@ -1334,6 +1347,7 @@ export const {
   useUpdateClientMutation,
   useDeleteClientMutation,
   useGetClientOrderQuery,
+  useGetClientDiscountCodesQuery,
   useGetStaffConversationsQuery,
   useGetStaffConversationQuery,
   useClaimStaffConversationMutation,

@@ -8,6 +8,8 @@ from app.api.deps import get_db
 from app.schemas import client as schemas_client
 from app.schemas import order as schemas_order  # reikalinga, nes get_client_orders žemiau grąžina KLIENTO užsakymus (Order formatu)
 from app.models.client import Client
+from app.models.discount_code import DiscountCode
+from app.schemas.discount_code import DiscountCodeOut
 from app.models.order import Order
 from app.models.reservation import Reservation
 from app.services import availability_service  # availability_service.BLOCKING_RESERVATION_STATUSES - naudojama žemiau tikrinti, ar klientas turi AKTYVIŲ rezervacijų prieš leidžiant jį ištrinti (ta pati reikšmė, kaip order.py/reservation.py naudoja booking'o konfliktams, kad niekada neišsiskirtų)
@@ -169,3 +171,14 @@ def get_client_orders(kliento_id: int, db: Session = Depends(get_db)):
         }
         for order in orders
     ]
+
+# Kliento NEPANAUDOTI nuolaidos kodai darbuotojui - kai klientas atvykęs neprisimena savo kodo, darbuotojas jį mato čia ir pritaiko kurdamas užsakymą (žr. reservations/page.tsx "Išnuomoti"). Kodas vis tiek pritaikomas tik TAM pačiam klientui (discount_code_service.find_valid_code), todėl šis sąrašas neleidžia jo perduoti kitam.
+@router.get("/{kliento_id}/discount-codes", response_model=list[DiscountCodeOut],
+            operation_id="getClientDiscountCodes", dependencies=[Depends(require_perm(Perm.VIEW))])
+def get_client_discount_codes(kliento_id: int, db: Session = Depends(get_db)):
+    return (
+        db.query(DiscountCode)
+        .filter(DiscountCode.kliento_id == kliento_id, DiscountCode.panaudojimo_data.is_(None))
+        .order_by(DiscountCode.sukurimo_data.desc())
+        .all()
+    )
