@@ -11,9 +11,14 @@ Automobilių nuomos valdymo sistema su dviem sąsajomis:
 
 | | |
 |---|---|
-| ![Prisijungimas](docs/screenshots/login.png) | ![Dashboard](docs/screenshots/dashboard.png) |
-| ![Rezervacijos](docs/screenshots/reservations.png) | ![Klientai](docs/screenshots/clients.png) |
-| ![Sąskaita PDF](docs/screenshots/invoice.png) | ![Pagalbos užklausos](docs/screenshots/support.png) |
+| **Automobilių katalogas** | **Automobilio informacija ir rezervavimas** |
+| ![Automobilių katalogas](docs/ekrano_nuotraukos/04_automobiliu_katalogas.png) | ![Automobilio informacija ir rezervavimas](docs/ekrano_nuotraukos/05_automobilio_puslapis.png) |
+| **Kliento paskyra ir lojalumo programa** | **Kliento susirašinėjimas su darbuotoju** |
+| ![Kliento paskyra ir lojalumo programa](docs/ekrano_nuotraukos/06_kliento_paskyra.png) | ![Kliento susirašinėjimas su darbuotoju](docs/ekrano_nuotraukos/12_kliento_susirasinejimas.png) |
+| **Darbuotojų informacinis skydelis** | **Rezervacijų valdymas** |
+| ![Darbuotojų informacinis skydelis](docs/ekrano_nuotraukos/14_informacinis_skydelis.png) | ![Rezervacijų valdymas](docs/ekrano_nuotraukos/17_rezervaciju_valdymas.png) |
+| **Sąskaitos PDF** | **Pokalbio tvarkymas darbuotojų portale** |
+| ![Sąskaitos PDF](docs/ekrano_nuotraukos/24_saskaitos_pdf.png) | ![Pokalbio tvarkymas darbuotojų portale](docs/ekrano_nuotraukos/26_darbuotojo_susirasinejimas.png) |
 
 ---
 
@@ -24,7 +29,11 @@ Automobilių nuomos valdymo sistema su dviem sąsajomis:
 | **Backend** | FastAPI · SQLAlchemy · MySQL · Pydantic v2 · slowapi (rate limiting) |
 | **Frontend** | Next.js 15 (App Router) · TypeScript · Redux Toolkit (RTK Query, darbuotojų sąsajai) · Tailwind CSS |
 | **Autentifikacija** | JWT · bcrypt · OAuth 2.0 (Google, GitHub) - atskiri darbuotojo ir kliento tokenai |
-| **Kiti** | Leaflet · react-pdf · OpenCage Geocoding |
+| **Kiti** | Leaflet · react-pdf · Nominatim |
+
+Adresų paieška abiejuose portaluose naudoja Nominatim per backend, be API rakto. Žinomi padaliniai turi iš anksto įrašytas koordinates. Kitų adresų rezultatai saugomi proceso atmintyje, išorinės užklausos siunčiamos ne dažniau kaip kas 1,1 sekundės. Vieša paieška vykdoma tik vartotojui ją pasirinkus, ne kiekvieno simbolio įvedimo metu.
+
+Viešojo [Nominatim naudojimo taisyklės](https://operations.osmfoundation.org/policies/nominatim/) riboja visos programos srautą iki 1 užklausos per sekundę. Dabartinė eilė skirta vienam backend procesui (vienam `uvicorn` paleidimui); keliems procesams ar serveriams reikėtų bendro ribotuvo arba kito tiekėjo. Tiekėjo adresą galima pakeisti per `NOMINATIM_URL`. Nesiųskite konfidencialių adresų ar kitų asmens duomenų į viešą servisą.
 
 ---
 
@@ -60,6 +69,8 @@ Automobilių nuomos valdymo sistema su dviem sąsajomis:
 
 ---
 
+Naujam diegimui naudok dabartinį `database/schema.sql`, kuris jau turi visus reikalingus laukus.
+
 ### 2. Backend
 
 **Pirmą kartą:**
@@ -71,12 +82,12 @@ pip install -r requirements.txt
 
 Sukurk `backend/.env` failą (nukopijuok iš `backend/.env.example` ir užpildyk):
 ```env
-SECRET_KEY=bet_koks_ilgas_raktas
+SECRET_KEY=pakeisk_siuos_zenklus_savo_atsitiktiniu_raktu
 DATABASE_URL=mysql+pymysql://root:tavo_slaptazodis@localhost:3306/autorent
 FRONTEND_URL=http://localhost:3000
 
 # Privalomas - OAuth sesijos cookie pasirašymui (min. 32 simboliai)
-SESSION_SECRET_KEY=bet_koks_ilgas_raktas
+SESSION_SECRET_KEY=pakeisk_siuos_zenklus_kitu_atsitiktiniu_raktu
 
 # Google OAuth - privalomas (žr. GOOGLE_CLIENT_ID/SECRET žemiau), GitHub neprivalomas
 GOOGLE_CLIENT_ID=raktas_is_google_cloud_console
@@ -88,8 +99,6 @@ GITHUB_CLIENT_ID=raktas_is_github_developer_settings
 GITHUB_CLIENT_SECRET=raktas_is_github_developer_settings
 GITHUB_REDIRECT_URL=http://localhost:8000/api/v1/github/callback
 
-# Neprivalomas - be jo žemėlapio adresų paieška tiesiog neveiks
-OPENCAGE_API_KEY=raktas_is_opencage.com
 ```
 
 **Kiekvieną kartą:**
@@ -140,6 +149,10 @@ npm run dev
 | **Klientų aptarnavimas** | Pokalbių eilė, priskyrimas, atsakymai, vidinės pastabos |
 | **Profilis** | Paskyros peržiūra ir keitimas |
 
+Darbuotojo sesija galioja **12 valandų nuo prisijungimo**, kliento – **1 valandą**. Darbuotojo profilyje rodoma tikroji išduoto tokeno galiojimo pabaiga. Pakeista trukmė taikoma naujiems prisijungimams; jau išduoti tokenai automatiškai nepratęsiami.
+
+Darbuotojų lentelės rūšiuojamos paspaudus duomenų stulpelio antraštę: pirmas paspaudimas rikiuoja didėjančiai, kitas – mažėjančiai. Kainos ir atlyginimai lyginami skaitmeniškai, datos chronologiškai, tekstas pagal lietuvišką tvarką. Rūšiavimas taikomas visam įkeltam sąrašui prieš puslapiavimą; tuščios reikšmės lieka gale abiem kryptimis. Antraštes galima valdyti klaviatūra, o veiksmų mygtukų stulpelis nerūšiuojamas.
+
 ### Vieša kliento svetainė (`/`, `/automobiliai`, `/paskyra`, ...)
 
 | Modulis | Aprašymas |
@@ -166,7 +179,9 @@ Klientų aptarnavimo pokalbiai (ne bendras EDIT) matomi tik Administratorius/Vad
 
 ## DB diagrama
 
-[dbdiagram.io](https://dbdiagram.io/d/Autorent-6a1ae349f15b4b0452368d56)
+[DB ryšių diagrama](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.svg) · [Redaguojamas XML](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.xml)
+
+Tiksli lentelių, laukų ir apribojimų struktūra aprašyta [database/schema.sql](database/schema.sql).
 
 ---
 
@@ -218,8 +233,8 @@ autorent/
 ├── database/
 │   ├── schema.sql · seed.sql          DDL ir pradiniai duomenys
 │   ├── triggers.sql                   duomenų vientisumo trigeriai
-│   ├── queries.sql                    analitinės SQL užklausos
-│   └── reset_demo_data.py / .bat      atstato DB į švarią pradinę demo būseną
+│   └── reset_demo_data.py             atstato DB į švarią pradinę demo būseną
 └── docs/
-    └── screenshots/
+    ├── diagramos/
+    └── ekrano_nuotraukos/
 ```
