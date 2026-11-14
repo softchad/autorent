@@ -37,3 +37,6 @@ yarn-error.*
 # Generated native folders
 /ios
 /android
+
+# Vietinis API adresas
+.env
