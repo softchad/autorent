@@ -30,8 +30,8 @@ export const lt = {
     headline: 'Atrask automobilį, kuris tavo kelionę pavers ypatinga.',
     slide: 'Pradėk kelionę',
     slideHint: 'Patraukite mygtuką į dešinę arba aktyvinkite jį, kad pradėtumėte naudotis programėle',
-    skip: 'Praleisti',
-    skipHint: 'Praleisti įžangą ir atidaryti programėlę',
+    skip: 'Tęsti',
+    skipHint: 'Atidaryti programėlę',
   },
   // Paieškos skydelis ir automobilių kortelės.
   search: {
@@ -52,5 +52,25 @@ export const lt = {
   brands: {
     title: 'Gamintojai',
     all: 'Visi',
+  },
+  // Dizaino peržiūros ekranas (tik kūrimo režimu).
+  preview: {
+    title: 'Dizaino peržiūra',
+    open: 'Dizaino peržiūra',
+    note: 'Pavyzdiniai duomenys – tik dizaino peržiūrai',
+    search: 'Paieškos skydelis',
+    cards: 'Automobilių kortelės',
+    sampleBadge: 'Pavyzdys',
+    map: 'Žemėlapio ekrano dalys',
+    sheetBody: 'Čia rodoma išsami automobilio informacija: techniniai duomenys, paėmimo vieta ir nuomos sąlygos.',
+    controls: 'Mygtukai ir laukai',
+    chips: { price_asc: 'Pigiausi', price_desc: 'Brangiausi', newest: 'Naujausi' },
+    badges: { success: 'Patvirtinta', warning: 'Laukia', danger: 'Atšaukta', info: 'Informacija' },
+    field: 'Teksto laukas',
+    fieldHint: 'Pagalbinis tekstas po lauku',
+    states: 'Būsenos',
+    emptyTitle: 'Tuščia būsena',
+    emptyMessage: 'Taip atrodo ekranas, kai nėra ką rodyti.',
+    errorMessage: 'Taip atrodo klaidos pranešimas.',
   },
 } as const;
