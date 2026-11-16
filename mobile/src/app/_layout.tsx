@@ -5,6 +5,7 @@ import { OnboardingScreen } from '@/features/onboarding/OnboardingScreen';
 import { useOnboarding } from '@/features/onboarding/onboardingStorage';
 import { lt } from '@/i18n/lt';
 import { colors, fonts } from '@/theme';
+import { AuthProvider } from '@/auth/AuthContext';
 
 // Šakninis išdėstymas: kiekvienas failas src/app aplanke tampa ekranu (kaip Next.js App Router).
 // (tabs) grupė – trys apatiniai skirtukai; kiti ekranai atsidaro virš jų su „Atgal“ mygtuku.
@@ -21,7 +22,7 @@ export default function RootLayout() {
     return <OnboardingScreen onDone={onboarding.complete} />;
   }
   return (
-    <>
+    <AuthProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -35,6 +36,6 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-    </>
+    </AuthProvider>
   );
 }

@@ -216,4 +216,48 @@ describe('fetchMe', () => {
       'Bearer tokenas',
     );
   });
+
+  it('su perduotu tokenu naudoja jį tik šiai užklausai', async () => {
+    setAuthToken('bendras');
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { kliento_id: 8 }),
+    );
+
+    await expect(fetchMe('konkretus')).resolves.toMatchObject({
+      kliento_id: 8,
+    });
+    await fetchMe();
+
+    const [explicitUrl, explicitInit] = fetchMock.mock.calls[0];
+    const [, sharedInit] = fetchMock.mock.calls[1];
+
+    expect(explicitUrl).toContain('/api/v1/customer/me');
+    expect(explicitInit.method).toBe('GET');
+    expect(explicitInit.headers.Authorization).toBe('Bearer konkretus');
+    // Bendras API kliento tokenas nepakito.
+    expect(sharedInit.headers.Authorization).toBe('Bearer bendras');
+  });
+
+  it('su perduotu tokenu veikia ir be bendro tokeno', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { kliento_id: 8 }),
+    );
+
+    await fetchMe('konkretus');
+    await fetchMe();
+
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer konkretus');
+    expect(fetchMock.mock.calls[1][1].headers).not.toHaveProperty('Authorization');
+  });
+
+  it('su perduotu tokenu 401 perduodamas kaip unauthorized', async () => {
+    setAuthToken('bendras');
+    fetchMock.mockResolvedValue(
+      jsonResponse(401, { detail: 'Invalid token' }),
+    );
+
+    await expect(fetchMe('konkretus')).rejects.toMatchObject({
+      kind: 'unauthorized',
+    });
+  });
 });

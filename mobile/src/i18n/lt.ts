@@ -73,4 +73,7 @@ export const lt = {
     emptyMessage: 'Taip atrodo ekranas, kai nėra ką rodyti.',
     errorMessage: 'Taip atrodo klaidos pranešimas.',
   },
+  auth: {
+    sessionExpired: 'Sesija baigėsi. Prisijunkite iš naujo.',
+  },
 } as const;

@@ -61,7 +61,16 @@ export async function register(
   return readAccessToken(response);
 }
 
-export function fetchMe(): Promise<Customer> {
+// Be argumento naudojamas bendras API kliento tokenas.
+// Su token – tik ši užklausa siunčiama su juo; bendras API kliento tokenas nekeičiamas.
+export function fetchMe(token?: string): Promise<Customer> {
+  if (token !== undefined) {
+    return apiRequest<Customer>(
+      '/customer/me',
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+  }
+
   return apiRequest<Customer>(
     '/customer/me',
     { auth: true },
