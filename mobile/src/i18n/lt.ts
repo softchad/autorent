@@ -94,4 +94,16 @@ export const lt = {
       signInFailed: 'Prisijungti nepavyko. Bandykite dar kartą.',
     },
   },
+  registerErrors: {
+    nameTooShort: 'Įveskite bent 2 simbolius',
+    phoneInvalid: 'Telefono numeris neteisingas (pvz. +37061234567)',
+    birthDateInvalid: 'Įveskite datą formatu MMMM-MM-DD',
+    birthDateFuture: 'Gimimo data negali būti ateityje',
+    birthDateTooEarly: 'Gimimo data negali būti ankstesnė nei 1900-01-01',
+    tooYoung: 'Registruotis gali tik pilnamečiai (18+ metų)',
+    invalidCharacters: 'Laukelyje yra netinkamų simbolių',
+    passwordTooShort: 'Slaptažodis turi būti bent 8 simbolių',
+    passwordTooLong: 'Slaptažodis per ilgas',
+    passwordsDiffer: 'Slaptažodžiai nesutampa',
+  },
 } as const;
