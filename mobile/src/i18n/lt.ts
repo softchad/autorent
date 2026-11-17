@@ -75,5 +75,10 @@ export const lt = {
   },
   auth: {
     sessionExpired: 'Sesija baigėsi. Prisijunkite iš naujo.',
+    errors: {
+      emailRequired: 'Įveskite el. pašto adresą',
+      emailInvalid: 'El. pašto adresas neteisingas',
+      passwordRequired: 'Įveskite slaptažodį',
+    },
   },
 } as const;
