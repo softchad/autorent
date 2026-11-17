@@ -81,4 +81,17 @@ export const lt = {
       passwordRequired: 'Įveskite slaptažodį',
     },
   },
+  login: {
+    title: 'Prisijungimas',
+    intro: 'Prisijunkite, kad galėtumėte rezervuoti automobilį ir matyti savo rezervacijas.',
+    email: 'El. paštas',
+    password: 'Slaptažodis',
+    submit: 'Prisijungti',
+    noAccount: 'Dar neturite paskyros?',
+    goRegister: 'Registruotis',
+    errors: {
+      invalidCredentials: 'Neteisingas el. paštas arba slaptažodis.',
+      signInFailed: 'Prisijungti nepavyko. Bandykite dar kartą.',
+    },
+  },
 } as const;
