@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { ReactNode } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { apiRequest, isAbortError, setAuthToken } from '@/api/client';
 import { Customer } from '@/api/types';
 import { makeToken } from '@/testUtils/makeToken';
@@ -180,8 +181,18 @@ async function renderSignedInAs(token: string, customer: Customer) {
 // Neapdorotą Promise atmetimą Jest 30 pats paverčia testo klaida, todėl atskiros gaudyklės nereikia.
 let consoleError: jest.SpyInstance;
 
+let appStateListeners: ((state: AppStateStatus) => void)[] = [];
+const appStateSpy = jest.spyOn(AppState, 'addEventListener');
+
+async function emitAppState(state: AppStateStatus) {
+  await act(async () => {
+    for (const listener of [...appStateListeners]) listener(state);
+  });
+}
+
 afterAll(() => {
   globalThis.fetch = originalFetch;
+  appStateSpy.mockRestore();
 });
 
 beforeEach(() => {
@@ -199,6 +210,18 @@ beforeEach(() => {
   });
   storage.clearToken.mockImplementation(async () => {
     stored = null;
+  });
+  // resetAllMocks išvalo ir jest-expo AppState mock'ą, todėl klausytojai registruojami iš naujo.
+  // Tai AppState imitacija, ne native fono patikra.
+  appStateListeners = [];
+  appStateSpy.mockImplementation((_type, listener) => {
+    const typed = listener as (state: AppStateStatus) => void;
+    appStateListeners.push(typed);
+    return {
+      remove: () => {
+        appStateListeners = appStateListeners.filter((l) => l !== typed);
+      },
+    } as unknown as ReturnType<typeof AppState.addEventListener>;
   });
   consoleError = jest.spyOn(console, 'error');
 });
@@ -704,5 +727,183 @@ describe('išmontavimas', () => {
     expect(isAbortError((outcome as { error: unknown }).error)).toBe(true);
     expect(storage.saveToken).not.toHaveBeenCalled();
     expect(await apiToken()).toBeNull();
+  });
+});
+
+describe('automatinis sesijos pabaigimas (026)', () => {
+  // Bet kuri užklausa su bendru sesijos tokenu (auth: true).
+  const SESSION_PATH = '/customer/reservations';
+  const sessionRequest = () => settle(apiRequest(SESSION_PATH, { auth: true }) as Promise<void>);
+  const UNAUTHORIZED: Reply = { status: 401, body: { detail: 'Invalid token' } };
+
+  it('sesijos užklausos 401 – atjungia automatiniu keliu: pranešimas, tokenas ištrintas, API tokenas išvalytas', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    override = (req) => (req.path === SESSION_PATH ? UNAUTHORIZED : undefined);
+
+    let outcome!: Settled;
+    await act(async () => {
+      outcome = await sessionRequest();
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect((outcome as { error: unknown }).error).toMatchObject({ kind: 'unauthorized', status: 401 });
+    await waitFor(() => expect(result.current.status).toBe('signedOut'));
+    expect(result.current.notice).toBe('Sesija baigėsi. Prisijunkite iš naujo.');
+    expect(stored).toBeNull();
+    expect(await apiToken()).toBeNull();
+  });
+
+  it('keli vienalaikiai 401 – viena sesijos pabaiga, vienas tokeno trynimas', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    override = (req) => (req.path === SESSION_PATH ? 'hold' : undefined);
+
+    let outcomes!: Promise<Settled[]>;
+    await act(async () => {
+      outcomes = Promise.all([sessionRequest(), sessionRequest(), sessionRequest()]);
+    });
+    await waitFor(() => expect(held).toHaveLength(3));
+    await act(async () => {
+      for (const h of held) h.reply(UNAUTHORIZED);
+    });
+
+    expect((await outcomes).every((o) => !o.ok)).toBe(true);
+    await waitFor(() => expect(result.current.status).toBe('signedOut'));
+    expect(storage.clearToken).toHaveBeenCalledTimes(1);
+    expect(result.current.notice).toBe('Sesija baigėsi. Prisijunkite iš naujo.');
+  });
+
+  it('A sesijos 401, atėjęs perėjus į B, B neatjungia', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    override = (req) => (req.path === SESSION_PATH ? 'hold' : undefined);
+
+    let outcome!: Promise<Settled>;
+    await act(async () => {
+      outcome = sessionRequest();
+    });
+    await waitFor(() => expect(held).toHaveLength(1));
+    expect(held[0].req.auth).toBe(TOKEN_A);
+    await act(() => result.current.signIn('ona@example.com', PASSWORD));
+
+    await release(0, UNAUTHORIZED);
+
+    expect((await outcome).ok).toBe(false);
+    expect(result.current.status).toBe('signedIn');
+    expect(result.current.customer).toEqual(CUSTOMER_B);
+    expect(result.current.notice).toBeNull();
+    expect(storage.clearToken).not.toHaveBeenCalled();
+    expect(stored).toBe(TOKEN_B);
+    expect(await apiToken()).toBe(TOKEN_B);
+  });
+
+  it('ta pati tokeno eilutė naujoje sesijoje: senos sesijos 401 jos neatjungia', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    override = (req) => (req.path === SESSION_PATH ? 'hold' : undefined);
+
+    let outcome!: Promise<Settled>;
+    await act(async () => {
+      outcome = sessionRequest();
+    });
+    await waitFor(() => expect(held).toHaveLength(1));
+
+    // Atsijungta ir vėl prisijungta; serveris grąžina tą patį tokeno tekstą.
+    await act(() => result.current.signOut());
+    await act(() => result.current.signIn('jonas@example.com', PASSWORD));
+    expect(await apiToken()).toBe(TOKEN_A);
+    storage.clearToken.mockClear();
+
+    await release(0, UNAUTHORIZED);
+
+    expect((await outcome).ok).toBe(false);
+    expect(result.current.status).toBe('signedIn');
+    expect(result.current.customer).toEqual(CUSTOMER_A);
+    expect(storage.clearToken).not.toHaveBeenCalled();
+    expect(stored).toBe(TOKEN_A);
+  });
+
+  it('viešo login 401 (neteisingas slaptažodis) esamos paskyros neatjungia', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+
+    expect(await rejectionOf(() => result.current.signIn('jonas@example.com', 'blogas'))).toMatchObject({
+      kind: 'unauthorized',
+    });
+
+    expect(result.current.status).toBe('signedIn');
+    expect(result.current.notice).toBeNull();
+    expect(storage.clearToken).not.toHaveBeenCalled();
+    expect(await apiToken()).toBe(TOKEN_A);
+  });
+
+  it('išmontavus pavėluotas sesijos 401 nieko netrina ir neįspėja', async () => {
+    const { unmount } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    override = (req) => (req.path === SESSION_PATH ? 'hold' : undefined);
+
+    let outcome!: Promise<Settled>;
+    await act(async () => {
+      outcome = sessionRequest();
+    });
+    await waitFor(() => expect(held).toHaveLength(1));
+
+    await unmount();
+    await release(0, UNAUTHORIZED);
+
+    expect((await outcome).ok).toBe(false);
+    expect(storage.clearToken).not.toHaveBeenCalled();
+    expect(stored).toBe(TOKEN_A);
+  });
+
+  it('galiojimo laikmatis baigia sesiją automatiniu keliu; trynimo klaida neapdorota nelieka', async () => {
+    // exp sekundėmis: iki saugos atsargos lieka (0; 1] s.
+    const soon = tokenFor('7', 31);
+    override = (req) =>
+      req.path === '/customer/me' && req.auth === soon ? { status: 200, body: CUSTOMER_A } : undefined;
+    storage.clearToken.mockRejectedValue(new Error('Trynimo klaida'));
+    const { result } = await renderSignedInAs(soon, CUSTOMER_A);
+
+    await waitFor(() => expect(result.current.status).toBe('signedOut'), { timeout: 3000 });
+    expect(result.current.notice).toBe('Sesija baigėsi. Prisijunkite iš naujo.');
+    expect(await apiToken()).toBeNull();
+    expect(storage.clearToken).toHaveBeenCalledTimes(1);
+
+    // Grįžimas į active po pabaigos – antro atjungimo nėra.
+    await emitAppState('active');
+    expect(storage.clearToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('grįžus į active po galiojimo pabaigos – vienas atjungimas; nauja sesija su tuo pačiu tokenu stebima iš naujo', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    const realNow = Date.now();
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(realNow + 2 * 3600_000);
+
+    await emitAppState('active');
+    await emitAppState('active');
+    nowSpy.mockRestore();
+
+    expect(result.current.status).toBe('signedOut');
+    expect(result.current.notice).toBe('Sesija baigėsi. Prisijunkite iš naujo.');
+    expect(storage.clearToken).toHaveBeenCalledTimes(1);
+    expect(stored).toBeNull();
+
+    // Ta pati tokeno eilutė (realiu laiku dar galioja) – nauja sesija, iškart neatjungiama.
+    await act(() => result.current.signIn('jonas@example.com', PASSWORD));
+    await emitAppState('active');
+    expect(result.current.status).toBe('signedIn');
+    expect(result.current.notice).toBeNull();
+    expect(storage.clearToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('nepavykęs rankinis signOut nesikeičia: atmetamas, sesija aktyvi, galiojimas vis dar stebimas', async () => {
+    const { result } = await renderSignedInAs(TOKEN_A, CUSTOMER_A);
+    storage.clearToken.mockRejectedValueOnce(new Error('Trynimo klaida'));
+
+    expect(await rejectionOf(() => result.current.signOut())).toMatchObject({ message: 'Trynimo klaida' });
+    expect(result.current.status).toBe('signedIn');
+
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 2 * 3600_000);
+    await emitAppState('active');
+    nowSpy.mockRestore();
+
+    expect(result.current.status).toBe('signedOut');
+    expect(result.current.notice).toBe('Sesija baigėsi. Prisijunkite iš naujo.');
+    expect(stored).toBeNull();
   });
 });

@@ -9,11 +9,12 @@ import {
   useState,
 } from 'react';
 import * as authApi from '@/api/auth';
-import { setAuthToken } from '@/api/client';
+import { setAuthToken, setUnauthorizedListener } from '@/api/client';
 import { ApiError } from '@/api/errors';
 import { Customer, RegisterPayload } from '@/api/types';
 import { lt } from '@/i18n/lt';
 import { isTokenExpired } from './jwt';
+import { useSessionExpiry, WatchedSession } from './sessionExpiry';
 import { clearToken, loadToken, saveToken } from './tokenStorage';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -64,9 +65,14 @@ function isUnauthorized(error: unknown): boolean {
  * - Prisijungiant profilis tikrinamas su nauju tokenu tik toje užklausoje (fetchMe(token)).
  *   Bendras API kliento tokenas keičiamas tik įsipareigojant sesiją, todėl kitos užklausos
  *   iki tol naudoja ankstesnės sesijos tokeną.
+ * - Automatinis atjungimas (tokeno galiojimo laikmatis ar API 401 sesijos užklausai) eina tik per
+ *   expireSession(session): jis neatmetamas ir pasenusiai sesijai nieko nedaro, todėl keli
+ *   vienalaikiai signalai baigia sesiją vieną kartą.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', customer: null, notice: null });
+  // Įsipareigotos sesijos tokenas ir jos sessionRef reikšmė galiojimo stebėjimui (kontekstu neperduodama).
+  const [watchedSession, setWatchedSession] = useState<WatchedSession | null>(null);
 
   const mountedRef = useRef(true);
   const sessionRef = useRef(0);
@@ -79,9 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (mountedRef.current) setState(next);
   }, []);
 
+  // Kviečiama tik po sessionRef padidinimo, todėl id atitinka naują sesiją.
   const commitToken = useCallback((token: string | null) => {
     committedTokenRef.current = token;
     setAuthToken(token);
+    if (mountedRef.current) {
+      setWatchedSession(token === null ? null : { token, id: sessionRef.current });
+    }
   }, []);
 
   const inStorageQueue = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
@@ -138,11 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       customer = await authApi.fetchMe();
     } catch (error) {
-      if (sessionRef.current !== session) return;
       if (isUnauthorized(error)) {
+        // API klausytojas šią sesiją jau galėjo baigti; pasenusiai sesijai expireSession nieko nedaro.
+        // Laukiama saugyklos eilės, kad grįžus iš refreshCustomer trynimas būtų užbaigtas.
         await expireSession(session);
+        await storageQueueRef.current;
         return;
       }
+      if (sessionRef.current !== session) return;
       throw error;
     }
 
@@ -198,6 +211,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (payload: RegisterPayload) => startSession(() => authApi.register(payload)),
     [startSession],
   );
+
+  // API 401: klientas praneša tik apie užklausą, išsiųstą su dabartinės versijos bendru tokenu.
+  // Viešos (login/register) ir kandidatinės fetchMe(token) užklausos čia nepatenka.
+  // Registruojama prieš sesijos atkūrimą; cleanup nepašalina vėliau užregistruoto klausytojo.
+  useEffect(
+    () =>
+      setUnauthorizedListener((auth) => {
+        if (committedTokenRef.current !== auth.token) return undefined;
+        return expireSession(sessionRef.current);
+      }),
+    [expireSession],
+  );
+
+  // Tokeno galiojimo pabaiga: tas pats automatinis kelias; pasenusios sesijos id nieko nebaigia.
+  const handleExpired = useCallback(
+    (sessionId: number) => {
+      void expireSession(sessionId).catch(() => undefined);
+    },
+    [expireSession],
+  );
+  useSessionExpiry(watchedSession, handleExpired);
 
   // Atidarius programėlę: atkuriame sesiją iš saugyklos, jei tokenas dar galioja.
   useEffect(() => {
