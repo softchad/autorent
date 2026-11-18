@@ -19,12 +19,17 @@ export default function LoginScreen() {
     }
   }
 
-  // Registracijos maršruto dar nėra, todėl onGoRegister neperduodamas ir nuoroda nerodoma.
+  // replace, ne push: perjungiant prisijungimą ir registraciją istorija neauga, o po sėkmės
+  // router.back() grąžina į ekraną, iš kurio srautas pradėtas. Perduodamas tik griztiAtgal.
+  function goRegister() {
+    router.replace({ pathname: '/registracija', params: params.griztiAtgal === '1' ? { griztiAtgal: '1' } : {} });
+  }
+
   return (
     <Screen grid testID="screen-login">
       <Stack.Screen options={{ title: lt.login.title }} />
       <Image source={brandImages.logoMark} style={styles.logo} resizeMode="contain" accessibilityLabel={lt.common.appName} />
-      <LoginForm onSuccess={handleSuccess} />
+      <LoginForm onSuccess={handleSuccess} onGoRegister={goRegister} />
     </Screen>
   );
 }
