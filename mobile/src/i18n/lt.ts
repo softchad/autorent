@@ -129,4 +129,10 @@ export const lt = {
     passwordTooLong: 'Slaptažodis per ilgas',
     passwordsDiffer: 'Slaptažodžiai nesutampa',
   },
+  requireAuth: {
+    title: 'Reikia prisijungti',
+    message: 'Prisijunkite, kad matytumėte šį ekraną.',
+    login: 'Prisijungti',
+    register: 'Registruotis',
+  },
 } as const;
