@@ -104,9 +104,9 @@ describe('validateRegistration', () => {
   });
 
   it('vardo ilgis skaičiuojamas kodo taškais, kaip backend len(strip())', () => {
-    expect(validateRegistration({ ...VALID, vardas: '😀' }, TODAY).vardas).toBe('Įveskite bent 2 simbolius');
+    expect(validateRegistration({ ...VALID, vardas: '\u{1F600}' }, TODAY).vardas).toBe('Įveskite bent 2 simbolius');
     expect(validateRegistration({ ...VALID, vardas: ' 𝒜 ' }, TODAY).vardas).toBe('Įveskite bent 2 simbolius');
-    expect(validateRegistration({ ...VALID, vardas: '😀😀' }, TODAY).vardas).toBeUndefined();
+    expect(validateRegistration({ ...VALID, vardas: '\u{1F600}\u{1F600}' }, TODAY).vardas).toBeUndefined();
     expect(validateRegistration({ ...VALID, vardas: 'Ąž' }, TODAY).vardas).toBeUndefined();
     // e + jungiamasis ženklas: 2 kodo taškai ir JS, ir Python.
     expect(validateRegistration({ ...VALID, pavarde: 'é' }, TODAY).pavarde).toBeUndefined();
@@ -227,8 +227,8 @@ describe('validateRegistration: slaptažodis', () => {
   });
 
   it('minimalus ilgis skaičiuojamas kodo taškais: 4 emoji yra 4 simboliai, ne 8', () => {
-    expect(passwordError('😀😀😀😀')).toBe('Slaptažodis turi būti bent 8 simbolių');
-    expect(passwordError('😀'.repeat(8))).toBeUndefined();
+    expect(passwordError('\u{1F600}\u{1F600}\u{1F600}\u{1F600}')).toBe('Slaptažodis turi būti bent 8 simbolių');
+    expect(passwordError('\u{1F600}'.repeat(8))).toBeUndefined();
     expect(passwordError('ąčęėįšų')).toBe('Slaptažodis turi būti bent 8 simbolių');
     expect(passwordError('ąčęėįšųū')).toBeUndefined();
   });
@@ -243,8 +243,8 @@ describe('validateRegistration: slaptažodis', () => {
     ['a'.repeat(73), 'Slaptažodis per ilgas'],
     ['ž'.repeat(36), undefined],
     ['ž'.repeat(37), 'Slaptažodis per ilgas'],
-    ['😀'.repeat(18), undefined],
-    ['😀'.repeat(18) + 'a', 'Slaptažodis per ilgas'],
+    ['\u{1F600}'.repeat(18), undefined],
+    ['\u{1F600}'.repeat(18) + 'a', 'Slaptažodis per ilgas'],
     ['€'.repeat(24), undefined],
     ['€'.repeat(24) + 'a', 'Slaptažodis per ilgas'],
   ])('72 UTF-8 baitų riba (%#)', (slaptazodis, expected) => {
@@ -271,8 +271,8 @@ describe('utf8ByteLength / codePointLength / hasLoneSurrogate', () => {
     ['ASCII', 'abc', 3, 3],
     ['lietuviškos raidės', 'ąčęėįšųūž', 18, 9],
     ['euro ženklas', '€', 3, 1],
-    ['emoji', '😀', 4, 1],
-    ['ZWJ šeima', '👨‍👩‍👧', 18, 5],
+    ['emoji', '\u{1F600}', 4, 1],
+    ['ZWJ šeima', '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}', 18, 5],
   ])('%s', (_name, text, bytes, codePoints) => {
     expect(utf8ByteLength(text)).toBe(bytes);
     expect(codePointLength(text)).toBe(codePoints);

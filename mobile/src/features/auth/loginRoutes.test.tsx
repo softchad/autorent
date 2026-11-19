@@ -19,15 +19,27 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useRouter: () => mockRouter,
   useLocalSearchParams: () => mockParams,
+  // Fokusas imituojamas vieną kartą sumontavus ekraną.
+  useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/auth/AuthContext');
 
 const mockedUseAuth = jest.mocked(useAuth);
 const signIn = jest.fn<Promise<void>, [string, string]>();
 const signUp = jest.fn<Promise<void>, [unknown]>();
+const signOut = jest.fn<Promise<void>, []>();
+const refreshCustomer = jest.fn<Promise<void>, []>();
 
 function mockAuth(status: 'loading' | 'signedOut' | 'signedIn') {
-  mockedUseAuth.mockReturnValue({ status, signIn, signUp, notice: null } as unknown as ReturnType<typeof useAuth>);
+  mockedUseAuth.mockReturnValue({
+    status,
+    signIn,
+    signUp,
+    signOut,
+    refreshCustomer,
+    customer: null,
+    notice: null,
+  } as unknown as ReturnType<typeof useAuth>);
 }
 
 beforeEach(() => {
@@ -35,6 +47,8 @@ beforeEach(() => {
   mockParams = {};
   signIn.mockResolvedValue(undefined);
   signUp.mockResolvedValue(undefined);
+  signOut.mockResolvedValue(undefined);
+  refreshCustomer.mockResolvedValue(undefined);
   mockAuth('signedOut');
   // Užfiksuojama tik data (registracijos amžiaus patikrai); laikmačiai lieka tikri.
   jest.useFakeTimers({
@@ -203,11 +217,18 @@ describe('registracijos ekranas', () => {
 });
 
 describe('paskyros skirtukas', () => {
-  it('neprisijungusiam rodo „Prisijungti“, kuri atidaro /prisijungimas', async () => {
+  it('neprisijungusiam „Prisijungti“ atidaro /prisijungimas su griztiAtgal', async () => {
     await render(<AccountTab />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Prisijungti' }));
-    expect(mockRouter.push).toHaveBeenCalledWith('/prisijungimas');
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/prisijungimas', params: { griztiAtgal: '1' } });
+  });
+
+  it('neprisijungusiam „Registruotis“ atidaro /registracija su griztiAtgal', async () => {
+    await render(<AccountTab />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Registruotis' }));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/registracija', params: { griztiAtgal: '1' } });
   });
 
   it.each(['signedIn', 'loading'] as const)('būsenoje %s nuorodos nerodo', async (status) => {

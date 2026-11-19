@@ -165,7 +165,7 @@ describe('RegisterForm: validacija ir sėkmė', () => {
 
   it('išlaiko 024 Unicode ir baitų validaciją', async () => {
     await renderForm();
-    await fill({ ...VALID, vardas: '😀', slaptazodis: 'Slaptas\uD800123', slaptazodis2: 'Slaptas\uD800123' });
+    await fill({ ...VALID, vardas: '\u{1F600}', slaptazodis: 'Slaptas\uD800123', slaptazodis2: 'Slaptas\uD800123' });
     await submit();
     expect(signUp).not.toHaveBeenCalled();
     expect(screen.getByText('Įveskite bent 2 simbolius')).toBeTruthy();
