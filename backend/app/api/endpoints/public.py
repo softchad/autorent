@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload  # joinedload - SQLAlchemy nurody
 
 from app.api.deps import get_db
 from app.models.car import Car
+from app.models.location import Location
 from app.schemas.location import LocationOut
 from app.services import clock
 from app.services.availability_service import get_busy_car_ids, get_busy_ranges_for_car, NOT_BOOKABLE_STATUSES  # bendra laisvumo logika - ta pati, kurią naudoja IR customer.py kliento rezervacijos kūrimas, kad abi vietos neišsiskirtų, kas yra "laisvas" automobilis
@@ -167,4 +168,17 @@ class ServerTimeOut(BaseModel):
 def get_server_time():
     return ServerTimeOut(
         server_time=clock.utc_now().isoformat().replace("+00:00", "Z")
+    )
+
+
+# Padaliniai, kuriuose šiuo metu yra bent vienas automobilis – programėlės filtrui ir žemėlapiui.
+# Grąžinami tik vieši laukai (pavadinimas, adresas, miestas); darbuotojų endpointas /cars/locations/all lieka nepakeistas.
+@router.get("/locations", response_model=List[LocationOut], operation_id="getPublicLocations")
+def get_public_locations(db: Session = Depends(get_db)):
+    return (
+        db.query(Location)
+        .join(Car, Car.dabartine_vieta_id == Location.vietos_id)
+        .distinct()
+        .order_by(Location.miestas.asc(), Location.pavadinimas.asc())
+        .all()
     )
