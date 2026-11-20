@@ -61,3 +61,33 @@ export type SupportMessage = {
 export type SupportConversationDetail = SupportConversation & {
   zinutes: SupportMessage[];
 };
+
+export type Location = {
+  vietos_id: number;
+  pavadinimas: string;
+  adresas: string;
+  miestas: string;
+};
+
+// Viešas automobilio aprašas: serveris negrąžina VIN, valstybinio numerio ir vidinių pastabų.
+export type PublicCar = {
+  automobilio_id: number;
+  marke: string;
+  modelis: string;
+  metai: number;
+  spalva: string;
+  kebulo_tipas: string;
+  pavaru_deze: string;
+  variklio_turis: number;
+  galia_kw: number;
+  kuro_tipas: string;
+  rida: number;
+  sedimos_vietos: number;
+  klimato_kontrole: boolean;
+  navigacija: boolean;
+  kaina_parai: number;
+  automobilio_statusas: string;
+  lokacija: Location | null;
+  // Užpildoma tik kai užklausoje nurodytos datos.
+  laisvas_pasirinktu_laikotarpiu: boolean | null;
+};
