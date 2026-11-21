@@ -1,14 +1,18 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { fetchCar } from '@/api/cars';
+import { fetchRentalInfo } from '@/api/terms';
 import { toUserMessage } from '@/api/errors';
-import { IconButton } from '@/components/Button';
+import { RentalInfo } from '@/api/types';
+import { Button, IconButton } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ErrorView, LoadingView } from '@/components/StateViews';
 import { CarDetailView, periodBadge } from '@/features/catalogue/CarDetailView';
-import { useAsync } from '@/hooks/useAsync';
+import { TermsSections } from '@/features/terms/TermsSections';
+import { AsyncResult, useAsync } from '@/hooks/useAsync';
 import { lt } from '@/i18n/lt';
+import { colors, spacing, typography } from '@/theme';
 import { isBefore, isValidIsoDate } from '@/utils/isoDate';
 
 type Period = { date_from: string; date_to: string };
@@ -46,9 +50,33 @@ function BackOnly({ onBack, children }: { onBack: () => void; children?: ReactNo
   );
 }
 
+// Sąlygų būsena lapo apačioje: krovimas, klaida su pakartojimu arba skyriai. Automobilio informacija rodoma bet kuriuo atveju.
+function RentalTerms({ info }: { info: AsyncResult<RentalInfo> }) {
+  if (info.data) {
+    return <TermsSections sections={info.data.skyriai} />;
+  }
+  if (info.status === 'error') {
+    return (
+      <View style={styles.termsState}>
+        <Text style={styles.termsError} accessibilityRole="alert" testID="terms-error">
+          {lt.carDetail.termsFailed}
+        </Text>
+        <Button label={lt.common.retry} onPress={info.reload} variant="secondary" testID="terms-retry" />
+      </View>
+    );
+  }
+  return (
+    <Text style={[typography.caption, styles.termsState]} testID="terms-loading">
+      {lt.carDetail.termsLoading}
+    </Text>
+  );
+}
+
 function CarDetailContent({ carId, period, onBack }: { carId: number; period?: Period; onBack: () => void }) {
   // Su datomis serveris pasako, ar automobilis laisvas kataloge pasirinktu laikotarpiu.
   const car = useAsync((signal) => fetchCar(carId, period, signal), [carId, period?.date_from, period?.date_to]);
+  // Sąlygų tekstai nepriklauso nuo automobilio, todėl kraunami atskirai.
+  const rentalInfo = useAsync((signal) => fetchRentalInfo(signal), []);
 
   return (
     <Screen scroll={false} padded={!car.data} topInset={!car.data} testID="screen-car-detail">
@@ -56,7 +84,9 @@ function CarDetailContent({ carId, period, onBack }: { carId: number; period?: P
       <Stack.Screen options={{ headerShown: false }} />
       {car.data ? (
         // Rezervavimo ekrano dar nėra, todėl rezervavimo juosta nerodoma.
-        <CarDetailView car={car.data} statusBadge={periodBadge(car.data)} onBack={onBack} />
+        <CarDetailView car={car.data} statusBadge={periodBadge(car.data)} onBack={onBack}>
+          <RentalTerms info={rentalInfo} />
+        </CarDetailView>
       ) : (
         <BackOnly onBack={onBack}>
           {car.status === 'loading' ? <LoadingView /> : null}
@@ -89,4 +119,6 @@ export default function CarDetailScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  termsState: { gap: spacing.sm, alignItems: 'flex-start', marginBottom: spacing.md },
+  termsError: { ...typography.bodyStrong, color: colors.danger },
 });

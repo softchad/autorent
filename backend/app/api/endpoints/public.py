@@ -11,6 +11,7 @@ from app.models.car import Car
 from app.models.location import Location
 from app.schemas.location import LocationOut
 from app.services import clock
+from app.services import rental_terms
 from app.services.availability_service import get_busy_car_ids, get_busy_ranges_for_car, NOT_BOOKABLE_STATUSES  # bendra laisvumo logika - ta pati, kurią naudoja IR customer.py kliento rezervacijos kūrimas, kad abi vietos neišsiskirtų, kas yra "laisvas" automobilis
 
 router = APIRouter(prefix="/public", tags=["Public"])
@@ -182,3 +183,20 @@ def get_public_locations(db: Session = Depends(get_db)):
         .order_by(Location.miestas.asc(), Location.pavadinimas.asc())
         .all()
     )
+
+
+class TermsSectionOut(BaseModel):
+    kodas: str
+    pavadinimas: str
+    punktai: List[str]
+
+
+class RentalInfoOut(BaseModel):
+    draudimo_isskaita_eur: int
+    skyriai: List[TermsSectionOut]
+
+
+# Draudimo ir kelionių į užsienį sąlygos – rodomos automobilio ekrane prieš rezervuojant.
+@router.get("/rental-info", response_model=RentalInfoOut, operation_id="getRentalInfo")
+def get_rental_info():
+    return rental_terms.get_rental_info()

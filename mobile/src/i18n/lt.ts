@@ -280,6 +280,8 @@ export const lt = {
     notBookableService: 'Šis automobilis šiuo metu servise, todėl jo išsinuomoti negalima.',
     notBookableRepair: 'Šis automobilis šiuo metu remontuojamas, todėl jo išsinuomoti negalima.',
     notFound: 'Automobilis nerastas: netinkamas automobilio numeris nuorodoje.',
+    termsLoading: 'Kraunamos draudimo ir kelionių į užsienį sąlygos…',
+    termsFailed: 'Draudimo ir kelionių į užsienį sąlygų užkrauti nepavyko.',
     liters: (value: number) => `${value.toFixed(1)} l`,
     km: (value: number) => `${value.toLocaleString('lt-LT')} km`,
     kw: (value: number) => `${value} kW`,

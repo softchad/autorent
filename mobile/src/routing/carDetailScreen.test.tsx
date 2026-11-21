@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as carsApi from '@/api/cars';
-import { PublicCar } from '@/api/types';
+import * as termsApi from '@/api/terms';
+import { PublicCar, RentalInfo } from '@/api/types';
 import { makeCar } from '@/testUtils/fixtures';
 import CarDetailScreen from '../app/automobilis/[id]';
 
@@ -17,8 +18,22 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
 }));
 jest.mock('@/api/cars');
+jest.mock('@/api/terms');
 
 const fetchCar = jest.mocked(carsApi.fetchCar);
+const fetchRentalInfo = jest.mocked(termsApi.fetchRentalInfo);
+
+const RENTAL_INFO: RentalInfo = {
+  draudimo_isskaita_eur: 500,
+  skyriai: [
+    { kodas: 'draudimas', pavadinimas: 'Draudimas', punktai: ['KASKO išskaita – 500 €.'] },
+    { kodas: 'uzsienis', pavadinimas: 'Kelionės į užsienį', punktai: ['Reikia išankstinio sutikimo.'] },
+  ],
+};
+
+// Visos užklausos imituojamos; tikras fetch kvietimas būtų testo klaida.
+const originalFetch = globalThis.fetch;
+const networkFetch = jest.fn();
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -35,7 +50,19 @@ beforeEach(() => {
   Object.values(mockRouter).forEach((fn) => fn.mockReset());
   mockRouter.canGoBack.mockReturnValue(true);
   fetchCar.mockReset().mockResolvedValue(makeCar());
+  fetchRentalInfo.mockReset().mockResolvedValue(RENTAL_INFO);
+  networkFetch.mockReset().mockRejectedValue(new Error('tinklas testuose nenaudojamas'));
+  globalThis.fetch = networkFetch as unknown as typeof fetch;
 });
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  expect(networkFetch).not.toHaveBeenCalled();
+});
+
+async function expandSheet() {
+  await fireEvent.press(screen.getByRole('button', { name: 'Išskleisti automobilio informaciją' }));
+}
 
 async function renderWith(params: Params) {
   mockParams = params;
@@ -164,5 +191,60 @@ describe('automobilio ekranas – grįžimas ir rezervavimas', () => {
     expect(screen.queryByTestId('choose-dates')).toBeNull();
     expect(screen.queryByRole('button', { name: /Rezervuoti dabar/ })).toBeNull();
     expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+});
+
+describe('automobilio ekranas – draudimo ir kelionių sąlygos', () => {
+  it('kraunant sąlygas rodomas krovimas, o užkrovus – visi skyriai išskleistame lape', async () => {
+    const terms = deferred<RentalInfo>();
+    fetchRentalInfo.mockReturnValueOnce(terms.promise);
+    await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
+    await expandSheet();
+    expect(screen.getByTestId('terms-loading')).toHaveTextContent('Kraunamos draudimo ir kelionių į užsienį sąlygos…');
+
+    terms.resolve(RENTAL_INFO);
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Draudimas' })).toBeTruthy());
+    expect(screen.getByRole('header', { name: 'Kelionės į užsienį' })).toBeTruthy();
+    expect(screen.getByText('KASKO išskaita – 500 €.')).toBeTruthy();
+    expect(screen.getByText('Reikia išankstinio sutikimo.')).toBeTruthy();
+    expect(screen.queryByTestId('terms-loading')).toBeNull();
+    expect(fetchRentalInfo).toHaveBeenCalledWith(expect.any(AbortSignal));
+  });
+
+  it('sąlygų klaida rodoma su pakartojimu, o automobilio informacija lieka', async () => {
+    fetchRentalInfo.mockRejectedValueOnce(new Error('ryšys')).mockResolvedValueOnce(RENTAL_INFO);
+    await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
+    await expandSheet();
+    await waitFor(() => expect(screen.getByTestId('terms-error')).toBeTruthy());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Draudimo ir kelionių į užsienį sąlygų užkrauti nepavyko.');
+    // Automobilis neužblokuotas: antraštė, techniniai duomenys ir paėmimo vieta matomi.
+    expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy();
+    expect(screen.getByTestId('car-specs')).toBeTruthy();
+    expect(screen.getByText('Vilnius Centras')).toBeTruthy();
+    expect(screen.queryByTestId('error-view')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('terms-retry'));
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Draudimas' })).toBeTruthy());
+    expect(screen.queryByTestId('terms-error')).toBeNull();
+    expect(fetchRentalInfo).toHaveBeenCalledTimes(2);
+    expect(fetchCar).toHaveBeenCalledTimes(1);
+  });
+
+  it('pakeitus automobilio numerį sąlygos neperkraunamos', async () => {
+    const view = await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
+
+    fetchCar.mockResolvedValue(makeCar({ automobilio_id: 13, marke: 'Audi', modelis: 'A4' }));
+    mockParams = { id: '13' };
+    await view.rerender(<CarDetailScreen />);
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Audi A4' })).toBeTruthy());
+    await expandSheet();
+
+    expect(screen.getByRole('header', { name: 'Draudimas' })).toBeTruthy();
+    expect(fetchCar).toHaveBeenCalledTimes(2);
+    expect(fetchRentalInfo).toHaveBeenCalledTimes(1);
   });
 });

@@ -91,3 +91,14 @@ export type PublicCar = {
   // Užpildoma tik kai užklausoje nurodytos datos.
   laisvas_pasirinktu_laikotarpiu: boolean | null;
 };
+
+export type TermsSection = {
+  kodas: string;
+  pavadinimas: string;
+  punktai: string[];
+};
+
+export type RentalInfo = {
+  draudimo_isskaita_eur: number;
+  skyriai: TermsSection[];
+};
