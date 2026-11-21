@@ -1,13 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { fetchCars, fetchLocations } from '@/api/cars';
 import { Screen } from '@/components/Screen';
 import { CatalogueView } from '@/features/catalogue/CatalogueView';
 import { FilterSheet } from '@/features/catalogue/FilterSheet';
 import { CatalogueFilters, distinctValues, EMPTY_FILTERS } from '@/features/catalogue/filters';
 import { useAsync } from '@/hooks/useAsync';
-import { lt } from '@/i18n/lt';
 
 export default function CarsTab() {
   const router = useRouter();
@@ -18,9 +16,9 @@ export default function CarsTab() {
   const locations = useAsync((signal) => fetchLocations(signal), []);
   const allCars = useAsync((signal) => fetchCars({ only_available: false }, signal), []);
 
-  // Automobilio informacijos ekrano dar nėra, todėl vietoje navigacijos rodomas pranešimas.
-  function showDetailsUnavailable() {
-    Alert.alert(lt.catalogue.detailsUnavailableTitle, lt.catalogue.detailsUnavailable, [{ text: lt.common.close }]);
+  function openCar(carId: number) {
+    const period = filters.date_from && filters.date_to ? { nuo: filters.date_from, iki: filters.date_to } : {};
+    router.push({ pathname: '/automobilis/[id]', params: { id: String(carId), ...period } });
   }
 
   return (
@@ -28,8 +26,7 @@ export default function CarsTab() {
       <CatalogueView
         filters={filters}
         onChangeFilters={setFilters}
-        onOpenCar={showDetailsUnavailable}
-        carHint={lt.catalogue.detailsUnavailableHint}
+        onOpenCar={(car) => openCar(car.automobilio_id)}
         locations={locations.data ?? []}
         locationsStatus={locations.status}
         onRetryLocations={locations.reload}

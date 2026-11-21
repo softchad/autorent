@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { Alert } from 'react-native';
 import * as carsApi from '@/api/cars';
 import { useAuth } from '@/auth/AuthContext';
+import { deviceToday, monthOf, shiftMonthRef } from '@/features/catalogue/dateRange';
 import { makeCar } from '@/testUtils/fixtures';
+import { toIsoDate } from '@/utils/isoDate';
 import AccountTab from '../app/(tabs)/paskyra';
 import CarsTab from '../app/(tabs)/index';
 import DesignPreviewScreen from '../app/perziura';
@@ -167,23 +169,43 @@ describe('automobilių skirtukas', () => {
     }
   });
 
-  it('paspaudus kortelę nenaviguoja į neegzistuojantį ekraną, o parodo pranešimą', async () => {
+  it('paspaudus kortelę atidaromas esamas automobilio ekranas su jo numeriu, pranešimas nebekviečiamas', async () => {
     jest.mocked(carsApi.fetchCars).mockResolvedValue([makeCar({ automobilio_id: 12 })]);
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await render(<CarsTab />);
     await waitFor(() => expect(screen.getByTestId('car-card-12')).toBeTruthy());
 
-    expect(screen.getByTestId('car-card-12').props.accessibilityHint).toBe(
-      'Parodo pranešimą, kad automobilio informacijos ekranas dar nepasiekiamas',
-    );
+    expect(screen.getByTestId('car-card-12').props.accessibilityHint).toBe('Atidaryti automobilio informaciją');
     await fireEvent.press(screen.getByTestId('car-card-12'));
 
-    expect(alert).toHaveBeenCalledWith('Automobilio informacija', 'Automobilio informacijos ekranas dar nepasiekiamas.', [
-      { text: 'Uždaryti' },
-    ]);
-    expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(fs.existsSync(path.join(APP_DIR, 'automobilis'))).toBe(false);
+    expect(mockRouter.push).toHaveBeenCalledTimes(1);
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/automobilis/[id]', params: { id: '12' } });
+    expect(alert).not.toHaveBeenCalled();
+    // Maršrutas, į kurį naviguojama, egzistuoja.
+    expect(fs.existsSync(path.join(APP_DIR, 'automobilis', '[id].tsx'))).toBe(true);
     alert.mockRestore();
+  });
+
+  it('pasirinktas laikotarpis perduodamas automobilio ekranui', async () => {
+    jest.mocked(carsApi.fetchCars).mockResolvedValue([makeCar({ automobilio_id: 12 })]);
+    await render(<CarsTab />);
+    await waitFor(() => expect(screen.getByTestId('car-card-12')).toBeTruthy());
+
+    // Laikotarpis pasirenkamas kalendoriuje ir pritaikomas „Ieškoti“, kaip tikrame ekrane.
+    const next = shiftMonthRef(monthOf(deviceToday()), 1);
+    const from = toIsoDate(next.year, next.month, 3);
+    const to = toIsoDate(next.year, next.month, 6);
+    await fireEvent.press(screen.getByTestId('search-from'));
+    await fireEvent.press(screen.getByTestId('dates-next'));
+    await fireEvent.press(screen.getByTestId(`date-${from}`));
+    await fireEvent.press(screen.getByTestId(`date-${to}`));
+    await fireEvent.press(screen.getByTestId('dates-confirm'));
+    await fireEvent.press(screen.getByTestId('search-submit'));
+    await waitFor(() => expect(carsApi.fetchCars).toHaveBeenCalledWith(expect.objectContaining({ date_from: from, date_to: to }), expect.anything()));
+    await waitFor(() => expect(screen.getByTestId('car-card-12')).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId('car-card-12'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/automobilis/[id]', params: { id: '12', nuo: from, iki: to } });
   });
 
   it('filtrų langas: atidaromas, pasirinkimas pritaikomas, langas užsidaro ir siunčiama nauja užklausa', async () => {
