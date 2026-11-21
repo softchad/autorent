@@ -198,4 +198,12 @@ export const lt = {
       rejected: 'Serveris nepriėmė duomenų. Patikrinkite laukus ir bandykite dar kartą.',
     },
   },
+  car: {
+    perDay: 'už parą',
+    seats: 'vietos',
+    kw: 'kW',
+    openHint: 'Atidaryti automobilio informaciją',
+    freeForPeriod: 'Laisvas pasirinktomis dienomis',
+    busyForPeriod: 'Užimtas pasirinktomis dienomis',
+  },
 } as const;
