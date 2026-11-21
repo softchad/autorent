@@ -186,6 +186,45 @@ describe('automobilių skirtukas', () => {
     alert.mockRestore();
   });
 
+  it('filtrų langas: atidaromas, pasirinkimas pritaikomas, langas užsidaro ir siunčiama nauja užklausa', async () => {
+    jest.mocked(carsApi.fetchCars).mockResolvedValue([makeCar({ automobilio_id: 12 })]);
+    await render(<CarsTab />);
+    await waitFor(() => expect(screen.getByTestId('car-card-12')).toBeTruthy());
+    const catalogueCalls = () => jest.mocked(carsApi.fetchCars).mock.calls.filter(([query]) => query.only_available !== false);
+    expect(catalogueCalls()).toHaveLength(1);
+
+    await fireEvent.press(screen.getByTestId('open-filters'));
+    expect(screen.getByTestId('filter-sheet')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('filter-kuro_tipas-elektra'));
+    await fireEvent.press(screen.getByTestId('filter-max_kaina-60'));
+    expect(catalogueCalls()).toHaveLength(1);
+
+    await fireEvent.press(screen.getByTestId('filters-apply'));
+
+    expect(screen.queryByTestId('filter-sheet')).toBeNull();
+    await waitFor(() => expect(catalogueCalls()).toHaveLength(2));
+    expect(catalogueCalls()[1][0]).toMatchObject({ kuro_tipas: 'elektra', max_kaina: 60, marke: null, vietos_id: null });
+    expect(screen.getByRole('button', { name: 'Filtrai (2)' })).toBeTruthy();
+  });
+
+  it('filtrų langas gauna padalinių ir katalogo pasirinkimų klaidas su pakartojimu', async () => {
+    jest.mocked(carsApi.fetchLocations).mockRejectedValueOnce(new Error('ryšys')).mockResolvedValue([]);
+    jest.mocked(carsApi.fetchCars).mockImplementation((query) =>
+      query.only_available === false ? Promise.reject(new Error('ryšys')) : Promise.resolve([]),
+    );
+    await render(<CarsTab />);
+    await waitFor(() => expect(screen.getByTestId('brands-error')).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId('open-filters'));
+    expect(screen.getByTestId('filter-locations-error')).toBeTruthy();
+    expect(screen.getByTestId('filter-brands-error')).toBeTruthy();
+    expect(screen.getByTestId('filter-bodies-error')).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId('filter-locations-retry'));
+    await waitFor(() => expect(screen.getByTestId('filter-locations-empty')).toBeTruthy());
+    expect(carsApi.fetchLocations).toHaveBeenCalledTimes(2);
+  });
+
   it('padalinių ir markių užkrovimo klaida nerodoma kaip tuščias sąrašas', async () => {
     jest.mocked(carsApi.fetchLocations).mockRejectedValue(new Error('ryšys'));
     jest.mocked(carsApi.fetchCars).mockImplementation((query) =>

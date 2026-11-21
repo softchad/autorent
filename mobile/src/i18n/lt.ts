@@ -242,4 +242,23 @@ export const lt = {
     loading: 'Kraunami padaliniai…',
     failed: 'Padalinių sąrašo užkrauti nepavyko.',
   },
+  filterSheet: {
+    title: 'Filtrai',
+    location: 'Padalinys',
+    fuel: 'Kuro tipas',
+    gearbox: 'Pavarų dėžė',
+    seats: 'Sėdimų vietų (ne mažiau)',
+    maxPrice: 'Kaina už parą (iki)',
+    brand: 'Markė',
+    body: 'Kėbulo tipas',
+    apply: 'Rodyti automobilius',
+    clear: 'Išvalyti',
+    upTo: (price: number) => `iki ${price} €`,
+    seatsFrom: (seats: number) => `${seats}+`,
+    noOptions: 'Pasirinkimų nėra.',
+    locationsFailed: 'Padalinių užkrauti nepavyko.',
+    optionsFailed: 'Pasirinkimų užkrauti nepavyko.',
+    // Pasirinktas padalinys, kurio nebėra sąraše: žinomas tik jo numeris.
+    locationById: (id: number) => `Pasirinktas padalinys Nr. ${id}`,
+  },
 } as const;
