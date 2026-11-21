@@ -286,4 +286,29 @@ export const lt = {
     km: (value: number) => `${value.toLocaleString('lt-LT')} km`,
     kw: (value: number) => `${value} kW`,
   },
+  map: {
+    loading: 'Ieškoma vietos žemėlapyje…',
+    unavailable: 'Žemėlapio parodyti nepavyko. Paėmimo vietos adresas nurodytas automobilio informacijoje.',
+    webUnavailable: 'Šioje versijoje žemėlapis nerodomas. Paėmimo vietos adresas:',
+    geocodeFailed: 'Paėmimo vietos žemėlapyje rasti nepavyko.',
+    attribution: (source: string) => `Žemėlapio duomenys: ${source}`,
+    osmAttribution: '© OpenStreetMap contributors',
+  },
+  // Maršrutas iki paėmimo vietos.
+  route: {
+    title: 'Parodykime kelią iki tavo automobilio.',
+    explanation: 'Paspaudus „Rodyti maršrutą“, nustatysime tavo buvimo vietą ir parodysime ją žemėlapyje. Vieta neišsaugoma.',
+    explanationWithService:
+      'Paspaudus „Rodyti maršrutą“, nustatysime tavo buvimo vietą. Maršrutui apskaičiuoti tavo ir atsiėmimo vietos koordinatės bus išsiųstos maršrutų paslaugai. Vieta neišsaugoma.',
+    webFallback: 'Maršrutą iki automobilio atsiėmimo vietos gali atidaryti navigacijoje.',
+    openFailed: 'Navigacijos atidaryti nepavyko. Paėmimo vietos adresas nurodytas aukščiau.',
+    show: 'Rodyti maršrutą',
+    asking: 'Nustatoma jūsų buvimo vieta…',
+    openExternal: 'Atidaryti navigacijoje',
+    shown: (distance: string, duration: string) => `Maršrutas automobiliu: ${distance}, apie ${duration}`,
+    unavailable: 'Jūsų vieta parodyta žemėlapyje, bet maršruto gauti nepavyko. Atidarykite navigaciją.',
+    notConfigured: 'Jūsų vieta parodyta žemėlapyje. Maršrutui nubraižyti atidarykite navigaciją.',
+    denied: 'Buvimo vietos leidimas nesuteiktas. Maršrutą galite atidaryti navigacijos programoje.',
+    failed: 'Buvimo vietos nustatyti nepavyko. Bandykite dar kartą arba atidarykite navigaciją.',
+  },
 } as const;

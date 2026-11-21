@@ -1,5 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import * as ExpoLocation from 'expo-location';
 import * as carsApi from '@/api/cars';
+import { ApiError } from '@/api/errors';
+import * as geocodeApi from '@/api/geocode';
+import * as routingApi from '@/api/routing';
 import * as termsApi from '@/api/terms';
 import { PublicCar, RentalInfo } from '@/api/types';
 import { makeCar } from '@/testUtils/fixtures';
@@ -19,9 +23,24 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/api/cars');
 jest.mock('@/api/terms');
+jest.mock('@/api/geocode');
+jest.mock('@/api/routing');
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(),
+  getForegroundPermissionsAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(),
+  Accuracy: { Balanced: 3 },
+}));
+jest.mock('react-native-webview', () => {
+  const { View } = jest.requireActual('react-native');
+  return { WebView: (props: object) => <View {...props} /> };
+});
 
 const fetchCar = jest.mocked(carsApi.fetchCar);
 const fetchRentalInfo = jest.mocked(termsApi.fetchRentalInfo);
+const geocodeAddress = jest.mocked(geocodeApi.geocodeAddress);
+const fetchRoute = jest.mocked(routingApi.fetchRoute);
+const PICKUP_POINT = { lat: 54.6862, lng: 25.2859 };
 
 const RENTAL_INFO: RentalInfo = {
   draudimo_isskaita_eur: 500,
@@ -51,6 +70,11 @@ beforeEach(() => {
   mockRouter.canGoBack.mockReturnValue(true);
   fetchCar.mockReset().mockResolvedValue(makeCar());
   fetchRentalInfo.mockReset().mockResolvedValue(RENTAL_INFO);
+  geocodeAddress.mockReset().mockResolvedValue(PICKUP_POINT);
+  fetchRoute.mockReset().mockResolvedValue(null);
+  jest.mocked(ExpoLocation.getForegroundPermissionsAsync).mockReset().mockResolvedValue({ granted: true } as ExpoLocation.LocationPermissionResponse);
+  jest.mocked(ExpoLocation.requestForegroundPermissionsAsync).mockReset().mockResolvedValue({ granted: true } as ExpoLocation.LocationPermissionResponse);
+  jest.mocked(ExpoLocation.getCurrentPositionAsync).mockReset();
   networkFetch.mockReset().mockRejectedValue(new Error('tinklas testuose nenaudojamas'));
   globalThis.fetch = networkFetch as unknown as typeof fetch;
 });
@@ -246,5 +270,64 @@ describe('automobilio ekranas – draudimo ir kelionių sąlygos', () => {
     expect(screen.getByRole('header', { name: 'Draudimas' })).toBeTruthy();
     expect(fetchCar).toHaveBeenCalledTimes(2);
     expect(fetchRentalInfo).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('automobilio ekranas – paėmimo vietos žemėlapis', () => {
+  const USER = { lat: 54.7, lng: 25.3 };
+  const ROUTE = { points: [USER, PICKUP_POINT], distanceMeters: 2400, durationSeconds: 420 };
+  const KAUNAS = { vietos_id: 2, pavadinimas: 'Kaunas', adresas: 'Laisvės al. 1, Kaunas', miestas: 'Kaunas' };
+
+  function mapData() {
+    return JSON.parse(/var data = (.*);/.exec(screen.getByTestId('location-map').props.source.html)![1]);
+  }
+
+  it('rodo žemėlapį, adresą ir prieinamą autorystę, o anksčiau suteiktas leidimas GPS nepaleidžia', async () => {
+    await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByTestId('location-map')).toBeTruthy());
+    await expandSheet();
+
+    expect(screen.getByText('Gedimino pr. 1, Vilnius')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Žemėlapio duomenys: © OpenStreetMap contributors' })).toBeTruthy();
+    expect(geocodeAddress).toHaveBeenCalledWith('Gedimino pr. 1, Vilnius', expect.any(AbortSignal));
+    expect(ExpoLocation.getForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(ExpoLocation.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(ExpoLocation.getCurrentPositionAsync).not.toHaveBeenCalled();
+    expect(fetchRoute).not.toHaveBeenCalled();
+  });
+
+  it('geokodavimo klaida nepaslepia automobilio ir leidžia bandyti dar kartą', async () => {
+    geocodeAddress.mockRejectedValueOnce(new ApiError('server', 503));
+    await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByTestId('map-unavailable')).toBeTruthy());
+    await expandSheet();
+
+    expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy();
+    expect(screen.getByTestId('car-specs')).toBeTruthy();
+    expect(screen.getByText('Gedimino pr. 1, Vilnius')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('geocode-retry'));
+    await waitFor(() => expect(screen.getByTestId('location-map')).toBeTruthy());
+    expect(geocodeAddress).toHaveBeenCalledTimes(2);
+  });
+
+  it('pakeitus automobilį su kita paėmimo vieta ankstesnis maršrutas ir kliento vieta nerodomi', async () => {
+    jest.mocked(ExpoLocation.getCurrentPositionAsync).mockResolvedValue({ coords: { latitude: USER.lat, longitude: USER.lng } } as ExpoLocation.LocationObject);
+    fetchRoute.mockResolvedValue(ROUTE);
+    const view = await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByTestId('location-map')).toBeTruthy());
+    await expandSheet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Rodyti maršrutą' }));
+    await waitFor(() => expect(mapData().route).toHaveLength(2));
+    expect(mapData().user).toEqual(USER);
+
+    geocodeAddress.mockResolvedValue({ lat: 54.8972, lng: 23.8861 });
+    fetchCar.mockResolvedValue(makeCar({ automobilio_id: 13, marke: 'Audi', modelis: 'A4', lokacija: KAUNAS }));
+    mockParams = { id: '13' };
+    await view.rerender(<CarDetailScreen />);
+    await waitFor(() => expect(mapData().point.title).toBe('Kaunas'));
+
+    expect(mapData().route).toEqual([]);
+    expect(mapData().user).toBeNull();
+    expect(fetchRoute).toHaveBeenCalledTimes(1);
   });
 });

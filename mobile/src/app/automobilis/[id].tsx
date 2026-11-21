@@ -10,6 +10,9 @@ import { Screen } from '@/components/Screen';
 import { ErrorView, LoadingView } from '@/components/StateViews';
 import { CarDetailView, periodBadge } from '@/features/catalogue/CarDetailView';
 import { TermsSections } from '@/features/terms/TermsSections';
+import { LocationMap, MAP_SUPPORTED, MapAttribution } from '@/features/map/LocationMap';
+import { RoutePanel } from '@/features/map/RoutePanel';
+import { usePickupRoute } from '@/features/map/usePickupRoute';
 import { AsyncResult, useAsync } from '@/hooks/useAsync';
 import { lt } from '@/i18n/lt';
 import { colors, spacing, typography } from '@/theme';
@@ -77,6 +80,8 @@ function CarDetailContent({ carId, period, onBack }: { carId: number; period?: P
   const car = useAsync((signal) => fetchCar(carId, period, signal), [carId, period?.date_from, period?.date_to]);
   // Sąlygų tekstai nepriklauso nuo automobilio, todėl kraunami atskirai.
   const rentalInfo = useAsync((signal) => fetchRentalInfo(signal), []);
+  const location = car.data?.lokacija ?? null;
+  const pickup = usePickupRoute(location);
 
   return (
     <Screen scroll={false} padded={!car.data} topInset={!car.data} testID="screen-car-detail">
@@ -84,7 +89,28 @@ function CarDetailContent({ carId, period, onBack }: { carId: number; period?: P
       <Stack.Screen options={{ headerShown: false }} />
       {car.data ? (
         // Rezervavimo ekrano dar nėra, todėl rezervavimo juosta nerodoma.
-        <CarDetailView car={car.data} statusBadge={periodBadge(car.data)} onBack={onBack}>
+        <CarDetailView
+          car={car.data}
+          statusBadge={periodBadge(car.data)}
+          onBack={onBack}
+          backdrop={
+            location ? (
+              <LocationMap
+                location={location}
+                point={pickup.point}
+                loading={pickup.loading}
+                userPoint={pickup.userPoint}
+                route={pickup.route?.points}
+              />
+            ) : undefined
+          }
+          pickupExtras={
+            <>
+              {pickup.point ? <MapAttribution /> : null}
+              <RoutePanel route={pickup} mapSupported={MAP_SUPPORTED} />
+            </>
+          }
+        >
           <RentalTerms info={rentalInfo} />
         </CarDetailView>
       ) : (

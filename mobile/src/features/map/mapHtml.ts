@@ -86,10 +86,13 @@ function validRoute(route: LatLng[] | null | undefined): LatLng[] {
 }
 
 // Pasirinktinės plytelės naudojamos tik su tinkamu adresu ir netuščia autoryste; kitaip – numatytosios OSM plytelės su jų autoryste.
+export function usesCustomTiles(options: Pick<MapOptions, 'tilesUrl' | 'attribution'>): boolean {
+  return Boolean(options.tilesUrl && options.tilesUrl !== DEFAULT_TILES_URL && isValidTilesUrl(options.tilesUrl) && options.attribution?.trim());
+}
+
 function tileSource(options: MapOptions): { tilesUrl: string; attribution: string } {
-  const customAttribution = options.attribution?.trim();
-  if (options.tilesUrl && options.tilesUrl !== DEFAULT_TILES_URL && isValidTilesUrl(options.tilesUrl) && customAttribution) {
-    return { tilesUrl: options.tilesUrl, attribution: escapeHtml(customAttribution) };
+  if (usesCustomTiles(options)) {
+    return { tilesUrl: options.tilesUrl!, attribution: escapeHtml(options.attribution!.trim()) };
   }
   return { tilesUrl: DEFAULT_TILES_URL, attribution: DEFAULT_ATTRIBUTION };
 }

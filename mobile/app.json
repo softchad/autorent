@@ -14,7 +14,10 @@
       "backgroundColor": "#0B121F"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Buvimo vieta nustatoma tik paspaudus „Rodyti maršrutą“, kad parodytume ją žemėlapyje ir maršrutą iki automobilio atsiėmimo vietos. Jei maršrutų paslauga įjungta, jai siunčiamos tavo ir atsiėmimo vietos koordinatės."
+      }
     },
     "android": {
       "package": "lt.autorent.mobile",
@@ -29,7 +32,15 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Buvimo vieta nustatoma tik paspaudus „Rodyti maršrutą“, kad parodytume ją žemėlapyje ir maršrutą iki automobilio atsiėmimo vietos. Jei maršrutų paslauga įjungta, jai siunčiamos tavo ir atsiėmimo vietos koordinatės.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ]
     ]
   }
 }

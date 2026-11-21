@@ -40,3 +40,16 @@ export const API_URL = resolveApiUrl(
 );
 
 export const API_PREFIX = '/api/v1';
+
+// Neprivalomi viešų paslaugų adresai. Priimami tik https adresai; netinkamas ar tuščias reiškia „nesukonfigūruota“.
+export function resolveOptionalHttpsUrl(rawUrl: string | undefined): string | null {
+  const url = (rawUrl ?? '').trim().replace(/\/+$/, '');
+  return url.startsWith('https://') ? url : null;
+}
+
+// Maršrutų paslauga (OSRM formato API). Be jos maršrutas nebraižomas – siūloma atidaryti išorinę navigaciją.
+export const ROUTING_URL = resolveOptionalHttpsUrl(process.env.EXPO_PUBLIC_ROUTING_URL);
+// Kitos žemėlapio plytelės vietoje numatytųjų (žr. features/map/mapHtml.ts). Naudojamos tik kartu su netuščia autoryste.
+export const MAP_TILES_URL = resolveOptionalHttpsUrl(process.env.EXPO_PUBLIC_MAP_TILES_URL) ?? undefined;
+// Pasirinktinių plytelių autorystė; rodoma kaip paprastas tekstas.
+export const MAP_TILES_ATTRIBUTION = (process.env.EXPO_PUBLIC_MAP_TILES_ATTRIBUTION ?? '').trim() || undefined;
