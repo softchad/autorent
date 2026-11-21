@@ -8,6 +8,8 @@ import { formatMoney } from '@/utils/format';
 type Props = {
   car: PublicCar;
   onPress: () => void;
+  // Ką daro paspaudimas; numatytai – atidaro automobilio informaciją.
+  accessibilityHint?: string;
 };
 
 // Trumpas aprašas vienoje eilutėje: „automatinė · hibridas · 5 vietos · 103 kW“.
@@ -35,7 +37,7 @@ function availabilityBadge(car: PublicCar) {
 }
 
 // Katalogo kortelė: serverio duomenys sudedami į bendrą didelę automobilio kortelę.
-export function CarCard({ car, onPress }: Props) {
+export function CarCard({ car, onPress, accessibilityHint = lt.car.openHint }: Props) {
   const title = `${car.marke} ${car.modelis}`;
   const price = formatMoney(car.kaina_parai);
   const place = car.lokacija ? car.lokacija.miestas : '';
@@ -62,7 +64,7 @@ export function CarCard({ car, onPress }: Props) {
       badge={availabilityBadge(car)}
       onPress={onPress}
       accessibilityLabel={accessibilityLabel}
-      accessibilityHint={lt.car.openHint}
+      accessibilityHint={accessibilityHint}
       testID={`car-card-${car.automobilio_id}`}
     />
   );
