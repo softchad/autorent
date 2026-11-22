@@ -10,6 +10,7 @@ from .support_conversation import SupportConversation
 from .support_message import SupportMessage, SupportNote
 from .loyalty_reward import LoyaltyReward
 from .discount_code import DiscountCode
+from .hold import Hold
 
 __all__ = [
     "Client",
@@ -24,4 +25,5 @@ __all__ = [
     "SupportNote",
     "LoyaltyReward",
     "DiscountCode",
+    "Hold",
 ]
