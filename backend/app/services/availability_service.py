@@ -7,6 +7,22 @@ from app.models.car import Car
 from app.models.client import Client
 from app.models.order import Order
 from app.models.reservation import Reservation
+from app.models.hold import HOLD_ACTIVE, Hold
+from app.services import clock
+
+
+# Aktyvūs (nepasibaigę) laikymai, kurie kertasi su [date_from, date_to). Laikymas blokuoja automobilį taip pat kaip rezervacija.
+# ignore_kliento_id – paties kliento laikymas jam pačiam netrukdo užbaigti rezervacijos.
+def _active_holds(db: Session, date_from: date, date_to: date, ignore_kliento_id: int | None = None):
+    query = db.query(Hold).filter(
+        Hold.busena == HOLD_ACTIVE,
+        Hold.galioja_iki > clock.utc_now_naive(),
+        Hold.pradzia < date_to,
+        Hold.pabaiga > date_from,
+    )
+    if ignore_kliento_id is not None:
+        query = query.filter(Hold.kliento_id != ignore_kliento_id)
+    return query
 
 # Rezervacijos/užsakymo būsenos, kurios realiai blokuoja automobilį pasirinktu laikotarpiu - atšaukta rezervacija ir neaktyvus/užbaigtas užsakymas automobilio nebeblokuoja. "laukiama" PRIKLAUSO čia (kaip "laukia" rezervacijoms žemiau) - laukiantis patvirtinimo užsakymas VIS TIEK rezervuoja tas dienas, kitaip du "laukiama" užsakymai tam pačiam automobiliui/datoms abu praeitų konflikto patikrą.
 BLOCKING_RESERVATION_STATUSES = ["patvirtinta", "laukia"]
@@ -54,7 +70,8 @@ def get_busy_car_ids(db: Session, date_from: date, date_to: date) -> set[int]:
         )
         .all()
     }
-    return busy_from_reservations | busy_from_orders
+    busy_from_holds = {hold.automobilio_id for hold in _active_holds(db, date_from, date_to).all()}
+    return busy_from_reservations | busy_from_orders | busy_from_holds
 
 
 # Grąžina [pradžia, pabaiga) intervalus, kada KONKRETUS automobilis užimtas, apsiribojant [window_from, window_to) langu - naudojama kalendoriuje vizualiai pažymėti užimtas dienas, kad klientas rinktųsi datas nebe aklai.
@@ -86,7 +103,11 @@ def get_busy_ranges_for_car(
         (o[0], o[1] if o[1] > o[0] else o[0] + timedelta(days=1))
         for o in orders
     ]
-    return [(r[0], r[1]) for r in reservations] + order_ranges
+    hold_ranges = [
+        (hold.pradzia, hold.pabaiga)
+        for hold in _active_holds(db, window_from, window_to).filter(Hold.automobilio_id == automobilio_id).all()
+    ]
+    return [(r[0], r[1]) for r in reservations] + order_ranges + hold_ranges
 
 
 # "SELECT ... FOR UPDATE" - užrakina automobilio eilutę, kad konkurentai dėl TO PATIES automobilio booking'o negalėtų abu vienu metu pamatyti "laisva" (be šito persidengimo patikra turėtų check-then-insert lenktynių spragą). Kviesti PRIEŠ conflict patikrą, toje pačioje transakcijoje.
@@ -140,8 +161,12 @@ def car_has_conflict(
     date_to: date,
     exclude_reservation_id: int | None = None,
     exclude_order_id: int | None = None,
+    ignore_holds_of: int | None = None,
 ) -> bool:
     date_from, date_to = _effective_window(date_from, date_to)
+    held_by_other = _active_holds(db, date_from, date_to, ignore_holds_of).filter(Hold.automobilio_id == automobilio_id)
+    if held_by_other.with_for_update().first() is not None:
+        return True
     reservation_query = db.query(Reservation).filter(
         Reservation.automobilio_id == automobilio_id,
         Reservation.busena.in_(BLOCKING_RESERVATION_STATUSES),

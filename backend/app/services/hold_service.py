@@ -89,13 +89,14 @@ def _cancel_other_holds_for_car(db: Session, kliento_id: int, automobilio_id: in
 
 
 def _check_car_is_free(db: Session, customer: Client, automobilio_id: int, date_from: date, date_to: date, now: datetime) -> None:
-    if availability_service.car_has_conflict(db, automobilio_id, date_from, date_to):
-        raise HoldError(409, "uzimta", "Automobilis jau užimtas pasirinktu laikotarpiu")
     others = overlapping_active_holds(db, automobilio_id, date_from, date_to, now).filter(
         Hold.kliento_id != customer.kliento_id
     )
     if others.with_for_update().first() is not None:
         raise HoldError(409, "laikoma", "Šį automobilį šiuo metu rezervuoja kitas klientas. Pabandykite po kelių minučių.")
+    # car_has_conflict dabar pati mato laikymus, todėl pirma tikriname juos (aiškesnis pranešimas), tada rezervacijas ir užsakymus.
+    if availability_service.car_has_conflict(db, automobilio_id, date_from, date_to, ignore_holds_of=customer.kliento_id):
+        raise HoldError(409, "uzimta", "Automobilis jau užimtas pasirinktu laikotarpiu")
     if availability_service.client_has_conflict(db, customer.kliento_id, date_from, date_to):
         raise HoldError(409, "kliento_konfliktas", "Jau turite kitą rezervaciją/užsakymą šiomis dienomis")
 

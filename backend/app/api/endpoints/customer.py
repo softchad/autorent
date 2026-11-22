@@ -38,7 +38,9 @@ def create_reservation(
     availability_service.lock_client_row(db, current_customer.kliento_id)
 
     # Tas pats laisvumo skaičiavimas, kurį klientas jau matė automobilio puslapio kalendoriuje - čia patvirtinamas IŠ NAUJO serveryje, nes nuo tada kitas klientas galėjo spėti užimti tas pačias datas.
-    if availability_service.car_has_conflict(db, car.automobilio_id, payload.date_from, payload.date_to):
+    if availability_service.car_has_conflict(
+        db, car.automobilio_id, payload.date_from, payload.date_to, ignore_holds_of=current_customer.kliento_id
+    ):
         raise HTTPException(status_code=409, detail="Automobilis jau užimtas pasirinktu laikotarpiu")
 
     # Tas pats, kas darbuotojų order.py/reservation.py - klientas negali vienu metu rezervuoti/nuomotis DVIEJŲ automobilių, nepriklausomai nuo to, per kurį kelią (savitarna čia, ar darbuotojas) antrasis booking'as buvo sukurtas.
