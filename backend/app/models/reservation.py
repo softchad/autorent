@@ -1,9 +1,13 @@
 # SQLAlchemy modelis - Python klasė, kuri atitinka "Rezervavimas" DB lentelę (žr. database/schema.sql); IŠANKSTINĖ rezervacija prieš patvirtinant realų užsakymą (tai yra order.py).
-from sqlalchemy import Column, Integer, Date, String, ForeignKey, Numeric
+from sqlalchemy import CheckConstraint, Column, Integer, Date, String, ForeignKey, Numeric
 from app.db.base import Base
 
 class Reservation(Base):
     __tablename__ = "Rezervavimas"
+    # Tas pats apribojimas kaip schema.sql, kad testinė schema neleistų valandos, kurią MySQL atmestų.
+    __table_args__ = (
+        CheckConstraint("paemimo_valanda IS NULL OR paemimo_valanda BETWEEN 12 AND 18", name="chk_paemimo_valanda"),
+    )
 
     rezervacijos_id = Column(Integer, primary_key=True, index=True)
     # "nullable=False" VISUR žemiau - schema.sql reikalauja KIEKVIENO šio lauko (NOT NULL), tad modelis turi atkartoti TĄ PAČIĄ taisyklę, kitaip SQLite testai tyliai leistų tai, kas tikroje MySQL DB lūžtų.
@@ -15,3 +19,5 @@ class Reservation(Base):
     busena = Column(String(100), nullable=False)
     # UŽFIKSUOTA automobilio parų kaina REZERVACIJOS SUKŪRIMO metu, kad VĖLESNIS flotilės kainos pakeitimas NEpaveiktų jau rodytos/patvirtintos kainos (žr. customer.py _to_out). "nullable=True" - SENOS (prieš šį pakeitimą sukurtos) rezervacijos šio stulpelio neturės; _to_out tokiu atveju atkrenta prie DABARTINĖS automobilio kainos (senas elgesys), ne lūžta.
     kaina_parai = Column(Numeric(10, 2), nullable=True)
+    # Kliento pasirinkta paėmimo valanda (12–18); NULL – svetainėje sukurta rezervacija.
+    paemimo_valanda = Column(Integer, nullable=True)

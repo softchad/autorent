@@ -123,3 +123,19 @@ def freeze_time(monkeypatch, moment):
 
     monkeypatch.setattr(clock, "utc_now", lambda: moment)
     monkeypatch.setattr(clock, "utc_now_naive", lambda: moment.replace(tzinfo=None))
+
+
+# Testų DB kuriama iš modelių (be migracijų), todėl paslaugų katalogą įrašome čia – tos pačios reikšmės kaip migracijoje.
+def ensure_extras(db_session) -> dict:
+    from app.models.extra import Extra
+
+    catalog = [
+        ("pilna_apsauga", "Pilna apsauga", 12),
+        ("papildomas_vairuotojas", "Papildomas vairuotojas", 5),
+        ("vaikiska_kedute", "Vaikiška kėdutė", 4),
+    ]
+    for kodas, pavadinimas, kaina in catalog:
+        if not db_session.query(Extra).filter_by(kodas=kodas).first():
+            db_session.add(Extra(kodas=kodas, pavadinimas=pavadinimas, aprasymas=pavadinimas, kaina_parai=kaina, aktyvi=True))
+    db_session.commit()
+    return {row.kodas: row for row in db_session.query(Extra).all()}
