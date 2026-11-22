@@ -2,8 +2,8 @@
 from datetime import date as date_type, timedelta  # "date" pervardinta į "date_type" - grynai aiškumo dėlei, kad skaitant matytųsi, jog tai PATS TIPAS (naudojamas tipų nuorodose), ne kintamasis su reikšme
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel  # reikalingas, nes PublicCarOut apibrėžtas ČIA PAT, žemiau, ne atskirame schemas/ faile (žr. klasę žemiau, kodėl)
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field  # reikalingas, nes PublicCarOut apibrėžtas ČIA PAT, žemiau, ne atskirame schemas/ faile (žr. klasę žemiau, kodėl)
 from sqlalchemy.orm import Session, joinedload  # joinedload - SQLAlchemy nurodymas iškart VIENU SQL kreipiniu "pasiimti" ir susietą lokaciją (Car.lokacija), kad nereikėtų atskiro papildomo kreipinio KIEKVIENAM automobiliui sąraše
 
 from app.api.deps import get_db
@@ -11,6 +11,8 @@ from app.models.car import Car
 from app.models.location import Location
 from app.schemas.location import LocationOut
 from app.services import clock
+from app.rate_limit import limiter
+from app.services import pricing_service
 from app.services import calendar_service
 from app.services import booking_rules
 from app.services import rental_terms
@@ -259,4 +261,81 @@ def get_public_car_calendar(automobilio_id: int, metai: int, menuo: int, db: Ses
         menuo=menuo,
         siandien=today,
         dienos=calendar_service.build_month(metai, menuo, ranges, today),
+    )
+
+
+class ExtraOut(BaseModel):
+    kodas: str
+    pavadinimas: str
+    aprasymas: str
+    kaina_parai: float
+
+    class Config:
+        from_attributes = True
+
+
+class QuoteRequest(BaseModel):
+    automobilio_id: int
+    date_from: date_type
+    date_to: date_type
+    # Ribotas sąrašo ilgis – apsauga nuo per didelių užklausų.
+    paslaugos: List[str] = Field(default_factory=list, max_length=10)
+
+
+class QuoteLineOut(BaseModel):
+    kodas: str
+    pavadinimas: str
+    kaina_parai: float
+    suma: float
+
+
+class QuoteOut(BaseModel):
+    automobilio_id: int
+    date_from: date_type
+    date_to: date_type
+    paru_skaicius: int
+    kaina_parai: float
+    nuomos_suma: float
+    paslaugos: List[QuoteLineOut]
+    paslaugu_suma: float
+    viso: float
+    # Ar automobilis šiuo metu laisvas tam laikotarpiui (kaina rodoma ir užimtam – kartu su alternatyvomis).
+    laisvas: bool
+
+
+@router.get("/extras", response_model=List[ExtraOut], operation_id="getPublicExtras")
+def get_public_extras(db: Session = Depends(get_db)):
+    return pricing_service.list_active_extras(db)
+
+
+# Kainos pasiūlymas. Viešas ir be kliento duomenų: visi klientai tam pačiam užsakymui mato tą pačią kainą.
+@router.post("/quote", response_model=QuoteOut, operation_id="getPublicQuote")
+@limiter.limit("60/minute")
+def get_public_quote(payload: QuoteRequest, request: Request, db: Session = Depends(get_db)):
+    car = db.query(Car).filter(Car.automobilio_id == payload.automobilio_id).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Automobilis nerastas")
+    try:
+        quote = pricing_service.quote_for_car(db, car, payload.date_from, payload.date_to, payload.paslaugos)
+    except pricing_service.PricingError as error:
+        raise HTTPException(status_code=error.status, detail=error.message)
+
+    is_free = (
+        car.automobilio_statusas not in NOT_BOOKABLE_STATUSES
+        and car.automobilio_id not in get_busy_car_ids(db, payload.date_from, payload.date_to)
+    )
+    return QuoteOut(
+        automobilio_id=car.automobilio_id,
+        date_from=payload.date_from,
+        date_to=payload.date_to,
+        paru_skaicius=quote.paru_skaicius,
+        kaina_parai=float(quote.kaina_parai),
+        nuomos_suma=float(quote.nuomos_suma),
+        paslaugos=[
+            QuoteLineOut(kodas=line.kodas, pavadinimas=line.pavadinimas, kaina_parai=float(line.kaina_parai), suma=float(line.suma))
+            for line in quote.paslaugos
+        ],
+        paslaugu_suma=float(quote.paslaugu_suma),
+        viso=float(quote.viso),
+        laisvas=is_free,
     )
