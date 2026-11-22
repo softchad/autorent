@@ -5,6 +5,8 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+TRUNCATE TABLE `Rezervaciju_Laikymai`;
+
 TRUNCATE TABLE `Pokalbio_Pastabos`;
 TRUNCATE TABLE `Pokalbio_Zinutes`;
 TRUNCATE TABLE `Pokalbiai`;

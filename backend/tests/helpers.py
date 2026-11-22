@@ -81,3 +81,45 @@ def register_customer(client, email: str | None = None) -> dict:
 
 def days_from_today(days: int) -> str:
     return (date.today() + timedelta(days=days)).isoformat()
+
+
+# Tiesioginis įrašų kūrimas DB serviso lygio testams (be HTTP).
+def db_client(db_session):
+    from app.models.client import Client
+
+    row = Client(
+        vardas="Servisas",
+        pavarde="Testas",
+        el_pastas=f"srv{uuid4().hex[:10]}@example.com",
+        telefono_nr="+37060000000",
+        gimimo_data=date(1990, 1, 1),
+    )
+    db_session.add(row)
+    db_session.commit()
+    return row
+
+
+def db_car(db_session, **overrides):
+    from app.models.car import Car
+
+    ensure_location(db_session, 1)
+    values = dict(
+        marke="Toyota", modelis="Corolla", metai=2022, numeris=f"S{uuid4().hex[:5].upper()}",
+        vin_kodas=uuid4().hex[:17].upper(), spalva="Pilka", kebulo_tipas="Sedanas", pavaru_deze="automatinė",
+        variklio_turis=1.8, galia_kw=103, kuro_tipas="hibridas", rida=20000, sedimos_vietos=5,
+        klimato_kontrole=True, navigacija=True, kaina_parai=50, automobilio_statusas="laisvas",
+        technikines_galiojimas=date(2030, 12, 31), dabartine_vieta_id=1,
+    )
+    values.update(overrides)
+    row = Car(**values)
+    db_session.add(row)
+    db_session.commit()
+    return row
+
+
+# Fiksuoja „dabar“ visam naujam kodui (laikymai, taisyklės, atšaukimas).
+def freeze_time(monkeypatch, moment):
+    from app.services import clock
+
+    monkeypatch.setattr(clock, "utc_now", lambda: moment)
+    monkeypatch.setattr(clock, "utc_now_naive", lambda: moment.replace(tzinfo=None))
