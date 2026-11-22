@@ -11,6 +11,7 @@ from app.models.car import Car
 from app.models.location import Location
 from app.schemas.location import LocationOut
 from app.services import clock
+from app.services import calendar_service
 from app.services import booking_rules
 from app.services import rental_terms
 from app.services.availability_service import get_busy_car_ids, get_busy_ranges_for_car, NOT_BOOKABLE_STATUSES  # bendra laisvumo logika - ta pati, kurią naudoja IR customer.py kliento rezervacijos kūrimas, kad abi vietos neišsiskirtų, kas yra "laisvas" automobilis
@@ -216,3 +217,46 @@ class BookingRulesOut(BaseModel):
 @router.get("/booking-rules", response_model=BookingRulesOut, operation_id="getBookingRules")
 def get_booking_rules():
     return booking_rules.get_rules()
+
+
+class CalendarDayOut(BaseModel):
+    data: date_type
+    busena: str
+    galima_pradeti: bool
+    galima_baigti: bool
+
+
+class CarCalendarOut(BaseModel):
+    automobilio_id: int
+    metai: int
+    menuo: int
+    siandien: date_type
+    dienos: List[CalendarDayOut]
+
+
+# Vieno mėnesio dienų būsenos. Užimtumas imamas iš tos pačios funkcijos kaip ir rezervuojant (rezervacijos, užsakymai, laikymai).
+@router.get("/cars/{automobilio_id}/calendar", response_model=CarCalendarOut, operation_id="getPublicCarCalendar")
+def get_public_car_calendar(automobilio_id: int, metai: int, menuo: int, db: Session = Depends(get_db)):
+    today = booking_rules.today_vilnius()
+    # Ribos neleidžia prašyti beprasmių ar labai tolimų mėnesių.
+    if not 1 <= menuo <= 12 or not today.year <= metai <= today.year + 2:
+        raise HTTPException(status_code=400, detail="Netinkamas mėnuo")
+    car = db.query(Car.automobilio_statusas).filter(Car.automobilio_id == automobilio_id).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Automobilis nerastas")
+
+    first, last = calendar_service.month_bounds(metai, menuo)
+    # Langas viena diena platesnis: pirmos mėnesio dienos būsena priklauso nuo ankstesnės nakties.
+    window_from, window_to = first - timedelta(days=1), last + timedelta(days=1)
+    if car.automobilio_statusas in NOT_BOOKABLE_STATUSES:
+        # Servise ar remonte automobilis neišnuomojamas jokiomis datomis – visas langas rodomas kaip užimtas.
+        ranges = [(window_from, window_to)]
+    else:
+        ranges = get_busy_ranges_for_car(db, automobilio_id, window_from, window_to)
+    return CarCalendarOut(
+        automobilio_id=automobilio_id,
+        metai=metai,
+        menuo=menuo,
+        siandien=today,
+        dienos=calendar_service.build_month(metai, menuo, ranges, today),
+    )
