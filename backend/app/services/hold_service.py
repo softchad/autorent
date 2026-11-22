@@ -57,13 +57,24 @@ def count_active_for_customer(db: Session, kliento_id: int, now: datetime) -> in
     )
 
 
+# Šios trys užklausos skaito su FOR UPDATE: MySQL REPEATABLE READ paprastas SELECT matytų momentinę kopiją nuo autentifikacijos
+# skaitymo ir galėtų nepastebėti lygiagrečios to paties kliento užklausos laikymo (žr. availability_service komentarą).
+def _count_active_for_other_cars(db: Session, kliento_id: int, automobilio_id: int, now: datetime) -> int:
+    query = db.query(Hold).filter(
+        Hold.kliento_id == kliento_id,
+        Hold.automobilio_id != automobilio_id,
+        Hold.busena == HOLD_ACTIVE,
+        Hold.galioja_iki > now,
+    )
+    return len(query.with_for_update().all())
+
+
 def _count_recent_for_car(db: Session, kliento_id: int, automobilio_id: int, now: datetime) -> int:
     hour_ago = now - timedelta(hours=1)
-    return (
-        db.query(Hold)
-        .filter(Hold.kliento_id == kliento_id, Hold.automobilio_id == automobilio_id, Hold.sukurta > hour_ago)
-        .count()
+    query = db.query(Hold).filter(
+        Hold.kliento_id == kliento_id, Hold.automobilio_id == automobilio_id, Hold.sukurta > hour_ago
     )
+    return len(query.with_for_update().all())
 
 
 def _find_same_active_hold(db: Session, kliento_id: int, automobilio_id: int, date_from: date, date_to: date, now: datetime):
@@ -77,6 +88,7 @@ def _find_same_active_hold(db: Session, kliento_id: int, automobilio_id: int, da
             Hold.busena == HOLD_ACTIVE,
             Hold.galioja_iki > now,
         )
+        .with_for_update()
         .first()
     )
 
@@ -137,13 +149,15 @@ def _create_hold(db: Session, customer: Client, automobilio_id: int, date_from: 
     if _count_recent_for_car(db, customer.kliento_id, automobilio_id, now) >= MAX_HOLDS_PER_CAR_PER_HOUR:
         raise HoldError(429, "per_daznai", "Šį automobilį laikėte per daug kartų. Pabandykite vėliau.")
 
-    _cancel_other_holds_for_car(db, customer.kliento_id, automobilio_id)
-    if count_active_for_customer(db, customer.kliento_id, now) >= MAX_ACTIVE_HOLDS_PER_CUSTOMER:
+    # į limitą neskaičiuojamas šio automobilio laikymas, nes naujasis jį pakeis.
+    if _count_active_for_other_cars(db, customer.kliento_id, automobilio_id, now) >= MAX_ACTIVE_HOLDS_PER_CUSTOMER:
         raise HoldError(
             429, "limitas", f"Vienu metu galite laikyti ne daugiau kaip {MAX_ACTIVE_HOLDS_PER_CUSTOMER} automobilius."
         )
 
     _check_car_is_free(db, customer, automobilio_id, date_from, date_to, now)
+    # senas laikymas nutraukiamas tik praėjus visoms patikroms – nepavykęs prašymas nieko nepakeičia.
+    _cancel_other_holds_for_car(db, customer.kliento_id, automobilio_id)
 
     hold = Hold(
         kliento_id=customer.kliento_id,

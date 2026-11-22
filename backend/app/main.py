@@ -20,6 +20,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 from app.api.endpoints import (
     auth, employee, car, reservation, order, geocode, client, invoice, public,
     customer_auth, customer, customer_loyalty, customer_support, staff_support, discount_code,
+    customer_holds,
 )
 
 app = FastAPI(title="AutoRent API", version="1.0.0")
@@ -88,6 +89,7 @@ app.include_router(customer.router,      prefix="/api/v1", tags=["Customer"])
 app.include_router(customer_loyalty.router, prefix="/api/v1", tags=["Customer Loyalty"])
 app.include_router(discount_code.router, prefix="/api/v1", tags=["Customer Loyalty"])
 app.include_router(customer_support.router, prefix="/api/v1", tags=["Customer Support"])
+app.include_router(customer_holds.router, prefix="/api/v1")
 
 # Log'inam klaidą PRIEŠ grąžinant bendrą pranešimą - kitaip ji niekur serveryje neužfiksuota.
 @app.exception_handler(Exception)
