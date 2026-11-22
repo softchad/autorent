@@ -11,6 +11,7 @@ from app.models.car import Car
 from app.models.location import Location
 from app.schemas.location import LocationOut
 from app.services import clock
+from app.services import booking_rules
 from app.services import rental_terms
 from app.services.availability_service import get_busy_car_ids, get_busy_ranges_for_car, NOT_BOOKABLE_STATUSES  # bendra laisvumo logika - ta pati, kurią naudoja IR customer.py kliento rezervacijos kūrimas, kad abi vietos neišsiskirtų, kas yra "laisvas" automobilis
 
@@ -200,3 +201,18 @@ class RentalInfoOut(BaseModel):
 @router.get("/rental-info", response_model=RentalInfoOut, operation_id="getRentalInfo")
 def get_rental_info():
     return rental_terms.get_rental_info()
+
+
+class BookingRulesOut(BaseModel):
+    siandien: date_type
+    min_paru: int
+    max_paru: int
+    grazinimas_iki_val: int
+    paemimas_nuo_val: int
+    paemimas_iki_val: int
+
+
+# Programėlė šias taisykles naudoja tik išankstiniam tikrinimui; galutinai jas taiko serveris.
+@router.get("/booking-rules", response_model=BookingRulesOut, operation_id="getBookingRules")
+def get_booking_rules():
+    return booking_rules.get_rules()
