@@ -1,4 +1,4 @@
-"""Kliento laikymų endpointai mobiliajai programėlei. Visa logika – hold_service."""
+"""Kliento laikymų endpointai mobiliajai programėlei. Laikymai – hold_service, patvirtinimas rezervacija – reservation_service."""
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
@@ -53,3 +53,35 @@ def release_hold(
 ):
     hold_service.release_hold(db, _get_own_hold(db, laikymo_id, current_customer))
     return Response(status_code=204)
+
+
+from fastapi import Header
+
+from app.api.endpoints.customer import _to_out
+from app.schemas.customer_reservation import CustomerReservationOut, HoldConfirmRequest
+from app.services import reservation_service
+
+
+# Laikymas paverčiamas rezervacija. Idempotency-Key antraštė užtikrina, kad pakartotas prašymas
+# (dvigubas paspaudimas, pakartojimas nutrūkus ryšiui) nesukurtų antros rezervacijos.
+@router.post("/{laikymo_id}/confirm", response_model=CustomerReservationOut, operation_id="confirmCustomerHold")
+@limiter.limit("10/minute")
+def confirm_hold(
+    laikymo_id: int,
+    payload: HoldConfirmRequest,
+    request: Request,
+    response: Response,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    db: Session = Depends(get_db),
+    current_customer: Client = Depends(get_current_customer),
+):
+    try:
+        reservation, car, replayed = reservation_service.confirm_hold(
+            db, current_customer, laikymo_id, idempotency_key or "",
+            payload.paslaugos, payload.paemimo_valanda, payload.salygu_versija, payload.sutinku_su_salygomis, payload.tiketina_kaina,
+        )
+    except reservation_service.ReservationError as error:
+        raise HTTPException(status_code=error.status, detail=error.message)
+    # 201 – sukurta nauja rezervacija, 200 – grąžinta anksčiau sukurta (pakartotas prašymas).
+    response.status_code = 200 if replayed else 201
+    return _to_out(db, reservation, car)

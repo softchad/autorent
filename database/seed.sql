@@ -12,6 +12,8 @@ TRUNCATE TABLE `Pokalbio_Zinutes`;
 TRUNCATE TABLE `Pokalbiai`;
 TRUNCATE TABLE `Lojalumo_Atlygiai`;
 TRUNCATE TABLE `Nuolaidos_Kodai`;
+TRUNCATE TABLE `Idempotencijos_Raktai`;
+TRUNCATE TABLE `Rezervacijos_Paslaugos`;
 TRUNCATE TABLE `Rezervavimas`;
 TRUNCATE TABLE `Saskaitos`;
 TRUNCATE TABLE `Uzsakymai`;

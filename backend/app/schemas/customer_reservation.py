@@ -1,6 +1,8 @@
 # Kliento (ne darbuotojo) rezervacijų schemos - kliento_id NIEKADA nepriimamas iš užklausos (nėra šiame faile apskritai), jis visada nustatomas iš prisijungimo tokeno endpoint'e, kad klientas negalėtų sukurti rezervacijos kito kliento vardu.
 from datetime import date
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.services import booking_rules
 
 
 # Klientas pasirenka TIK automobilį ir datas - likusi info (kliento_id, marke/modelis, kaina) užpildoma serverio pusėje.
@@ -13,7 +15,7 @@ class CustomerReservationCreate(BaseModel):
     @field_validator("date_from")
     @classmethod
     def validate_date_from_not_past(cls, v: date) -> date:
-        if v < date.today():
+        if v < booking_rules.today_vilnius():
             raise ValueError("Rezervacijos data negali būti praeityje")
         return v
 
@@ -30,3 +32,26 @@ class CustomerReservationOut(BaseModel):
     dienu_skaicius: int
     kaina_parai: float
     viso_kaina: float
+    # Nauji laukai (svetainės rezervacijoms – tuščios reikšmės, todėl esamas svetainės kodas nepaveiktas).
+    paemimo_valanda: int | None = None
+    salygu_versija: str | None = None
+    paslaugos: list["ReservationExtraOut"] = []
+
+
+class ReservationExtraOut(BaseModel):
+    kodas: str
+    pavadinimas: str
+    kaina_parai: float
+    suma: float
+
+
+# Programėlės patvirtinimo prašymas. Datos ir automobilis imami iš laikymo, klientas – iš tokeno.
+class HoldConfirmRequest(BaseModel):
+    paslaugos: list[str] = Field(default_factory=list, max_length=10)
+    paemimo_valanda: int
+    salygu_versija: str = Field(max_length=20)
+    sutinku_su_salygomis: bool
+    tiketina_kaina: float | None = Field(default=None, ge=0, le=100000000, allow_inf_nan=False)
+
+
+CustomerReservationOut.model_rebuild()
