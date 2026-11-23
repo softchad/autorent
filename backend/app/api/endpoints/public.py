@@ -339,3 +339,14 @@ def get_public_quote(payload: QuoteRequest, request: Request, db: Session = Depe
         viso=float(quote.viso),
         laisvas=is_free,
     )
+
+
+class TermsOut(BaseModel):
+    versija: str
+    skyriai: List[TermsSectionOut]
+
+
+# Dabartinės nuomos sąlygos su versija; programėlė versiją grąžina serveriui patvirtindama rezervaciją.
+@router.get("/terms", response_model=TermsOut, operation_id="getPublicTerms")
+def get_public_terms():
+    return rental_terms.get_terms()

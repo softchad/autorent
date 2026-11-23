@@ -34,3 +34,63 @@ def get_rental_info() -> dict:
         "draudimo_isskaita_eur": INSURANCE_EXCESS_EUR,
         "skyriai": [SECTION_INSURANCE, SECTION_CROSS_BORDER],
     }
+
+
+from app.services import booking_rules
+
+# Versija apima visą get_terms() turinį, įskaitant draudimo ir užsienio skyrius bei booking_rules valandas.
+TERMS_VERSION = "2026-11-01"
+
+# Atšaukimo taisyklės skaičiai sąlygų tekstui.
+FREE_CANCELLATION_HOURS = 48
+LATE_CANCELLATION_FEE_DAYS = 1
+
+
+def _section_price() -> dict:
+    return {
+        "kodas": "kaina",
+        "pavadinimas": "Kaina",
+        "punktai": [
+            "Nuomos kaina skaičiuojama taip: nuomos parų skaičius × paros kaina, pridėjus pasirinktas papildomas paslaugas.",
+            "Kaina užfiksuojama rezervacijos patvirtinimo metu ir vėliau nesikeičia.",
+            "Kaina nepriklauso nuo pilietybės ar gyvenamosios šalies.",
+        ],
+    }
+
+
+def _section_pickup() -> dict:
+    return {
+        "kodas": "paemimas",
+        "pavadinimas": "Paėmimas ir grąžinimas",
+        "punktai": [
+            f"Automobilis paimamas pirmą nuomos dieną nuo {booking_rules.PICKUP_FROM_HOUR}:00 iki {booking_rules.PICKUP_TO_HOUR}:00 jūsų pasirinktu laiku.",
+            f"Automobilis grąžinamas paskutinę nuomos dieną iki {booking_rules.RETURN_BY_HOUR}:00 tame pačiame padalinyje.",
+            "Atsiimant reikia galiojančio vairuotojo pažymėjimo ir asmens dokumento.",
+        ],
+    }
+
+
+def _section_cancellation() -> dict:
+    return {
+        "kodas": "atsaukimas",
+        "pavadinimas": "Atšaukimas",
+        "punktai": [
+            f"Rezervaciją galite atšaukti nemokamai, jei iki paėmimo laiko liko ne mažiau kaip {FREE_CANCELLATION_HOURS} val.",
+            f"Atšaukiant vėliau taikomas {LATE_CANCELLATION_FEE_DAYS} paros nuomos kainos mokestis.",
+            "Prasidėjus nuomos laikui rezervacijos atšaukti programėlėje nebegalima – kreipkitės į padalinį.",
+        ],
+    }
+
+
+# Visos sąlygos, kurias klientas peržiūri ir priima prieš patvirtindamas rezervaciją.
+def get_terms() -> dict:
+    return {
+        "versija": TERMS_VERSION,
+        "skyriai": [
+            _section_price(),
+            _section_cancellation(),
+            _section_pickup(),
+            SECTION_INSURANCE,
+            SECTION_CROSS_BORDER,
+        ],
+    }
