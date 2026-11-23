@@ -368,4 +368,9 @@ booking: {
     notFree: 'Pasirinktu laikotarpiu automobilis užimtas.',
     loginToContinue: 'Prisijunkite, kad galėtumėte rezervuoti.',
   },
+holdTimer: {
+    remaining: (minutes: number, seconds: number) => `Liko ${minutes} min. ${seconds} sek.`,
+    expired: 'Laikas baigėsi',
+    caption: 'Automobilis laikomas jums',
+  },
 } as const;
