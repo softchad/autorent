@@ -1,5 +1,6 @@
 # SQLAlchemy modelis - Python klasė, kuri atitinka "Rezervavimas" DB lentelę (žr. database/schema.sql); IŠANKSTINĖ rezervacija prieš patvirtinant realų užsakymą (tai yra order.py).
 from sqlalchemy import CheckConstraint, Column, Integer, Date, String, ForeignKey, Numeric
+from sqlalchemy import DateTime
 from app.db.base import Base
 
 class Reservation(Base):
@@ -7,6 +8,10 @@ class Reservation(Base):
     # Tas pats apribojimas kaip schema.sql, kad testinė schema neleistų valandos, kurią MySQL atmestų.
     __table_args__ = (
         CheckConstraint("paemimo_valanda IS NULL OR paemimo_valanda BETWEEN 12 AND 18", name="chk_paemimo_valanda"),
+        CheckConstraint(
+            "(salygu_versija IS NULL) = (salygos_priimtos IS NULL)",
+            name="chk_salygu_priemimas",
+        ),
     )
 
     rezervacijos_id = Column(Integer, primary_key=True, index=True)
@@ -21,3 +26,6 @@ class Reservation(Base):
     kaina_parai = Column(Numeric(10, 2), nullable=True)
     # Kliento pasirinkta paėmimo valanda (12–18); NULL – svetainėje sukurta rezervacija.
     paemimo_valanda = Column(Integer, nullable=True)
+    # Kokią sąlygų versiją ir kada (UTC) klientas priėmė; NULL – ne programėlėje sukurta rezervacija.
+    salygu_versija = Column(String(20), nullable=True)
+    salygos_priimtos = Column(DateTime, nullable=True)

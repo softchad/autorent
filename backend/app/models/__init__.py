@@ -12,6 +12,7 @@ from .loyalty_reward import LoyaltyReward
 from .discount_code import DiscountCode
 from .hold import Hold
 from .extra import Extra, ReservationExtra
+from .idempotency_key import IdempotencyKey
 
 __all__ = [
     "Client",
@@ -29,4 +30,5 @@ __all__ = [
     "Hold",
     "Extra",
     "ReservationExtra",
+    "IdempotencyKey",
 ]
