@@ -344,4 +344,14 @@ export const lt = {
       not_loaded: 'Peržiūrėkite visus laikotarpio mėnesius ir bandykite dar kartą.',
     },
   },
+price: {
+    title: 'Kaina',
+    rental: (days: string, rate: string) => `Nuoma: ${days} × ${rate}`,
+    extra: (name: string, days: string, rate: string) => `${name}: ${days} × ${rate}`,
+    total: 'Iš viso',
+    calculating: 'Skaičiuojama kaina…',
+    choosePeriod: 'Pasirinkite laikotarpį, kad pamatytumėte kainą.',
+    increased: (amount: string) => `Kaina padidėjo ${amount}`,
+    decreased: (amount: string) => `Kaina sumažėjo ${amount}`,
+  },
 } as const;
