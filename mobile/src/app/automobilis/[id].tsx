@@ -82,17 +82,24 @@ function CarDetailContent({ carId, period, onBack }: { carId: number; period?: P
   const rentalInfo = useAsync((signal) => fetchRentalInfo(signal), []);
   const location = car.data?.lokacija ?? null;
   const pickup = usePickupRoute(location);
+  const router = useRouter();
+  // Kataloge pasirinktas laikotarpis perduodamas rezervavimo ekranui.
+  const openBooking = () =>
+    router.push({
+      pathname: '/rezervuoti/[id]',
+      params: { id: String(carId), ...(period ? { nuo: period.date_from, iki: period.date_to } : {}) },
+    });
 
   return (
     <Screen scroll={false} padded={!car.data} topInset={!car.data} testID="screen-car-detail">
       {/* Ekranas be navigacijos antraštės: fonas užima visą ekraną, „Atgal“ mygtukas yra virš jo. */}
       <Stack.Screen options={{ headerShown: false }} />
       {car.data ? (
-        // Rezervavimo ekrano dar nėra, todėl rezervavimo juosta nerodoma.
         <CarDetailView
           car={car.data}
           statusBadge={periodBadge(car.data)}
           onBack={onBack}
+          onReserve={openBooking}
           backdrop={
             location ? (
               <LocationMap

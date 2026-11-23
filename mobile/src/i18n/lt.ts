@@ -354,4 +354,18 @@ price: {
     increased: (amount: string) => `Kaina padidėjo ${amount}`,
     decreased: (amount: string) => `Kaina sumažėjo ${amount}`,
   },
+booking: {
+    title: 'Rezervacija',
+    period: 'Nuomos laikotarpis',
+    selected: (range: string, days: string) => `Pasirinkta: ${range} (${days})`,
+    pickupHour: 'Paėmimo laikas',
+    pickupHint: (returnHour: number) => `Automobilį grąžinti reikia iki ${returnHour}:00 paskutinę nuomos dieną.`,
+    hour: (hour: number) => `${hour}:00`,
+    extras: 'Papildomos paslaugos',
+    extraPrice: (price: string) => `${price} už parą`,
+    continue: 'Tęsti',
+    loginHint: 'Atidaro prisijungimą; po jo grįšite į šį ekraną su tais pačiais pasirinkimais.',
+    notFree: 'Pasirinktu laikotarpiu automobilis užimtas.',
+    loginToContinue: 'Prisijunkite, kad galėtumėte rezervuoti.',
+  },
 } as const;

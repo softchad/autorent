@@ -209,12 +209,22 @@ describe('automobilio ekranas – grįžimas ir rezervavimas', () => {
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
   });
 
-  it('rezervavimo ekrano dar nėra, todėl rezervavimo juostos nėra ir niekur nenaviguojama', async () => {
+  it('rezervavimo juosta atidaro rezervavimo ekraną su automobiliu ir katalogo datomis', async () => {
     await renderWith({ id: '12', nuo: '2026-11-28', iki: '2026-12-02' });
     await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
-    expect(screen.queryByTestId('choose-dates')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Rezervuoti dabar/ })).toBeNull();
-    expect(mockRouter.push).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('choose-dates'));
+    expect(mockRouter.push).toHaveBeenCalledTimes(1);
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/rezervuoti/[id]',
+      params: { id: '12', nuo: '2026-11-28', iki: '2026-12-02' },
+    });
+  });
+
+  it('be tinkamo katalogo laikotarpio rezervavimo ekranui perduodamas tik automobilis', async () => {
+    await renderWith({ id: '12', nuo: ['2026-11-28', '2026-11-29'], iki: '2026-12-02' });
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
+    await fireEvent.press(screen.getByTestId('choose-dates'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/rezervuoti/[id]', params: { id: '12' } });
   });
 });
 
