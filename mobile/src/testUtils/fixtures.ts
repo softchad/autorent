@@ -70,6 +70,11 @@ export function makeReservation(overrides: Partial<CustomerReservation> = {}): C
     paemimo_valanda: 14,
     salygu_versija: '2026-11-24',
     paslaugos: [{ kodas: 'pilna_apsauga', pavadinimas: 'Pilna apsauga', kaina_parai: 12, suma: 48 }],
+    etapas: 'laukia_patvirtinimo',
+    veiksmai: ['atsaukti', 'perziureti', 'rasyti_pagalbai'],
+    atsaukimas: { nemokamai: true, mokestis: 0, nemokamai_iki: '2026-11-29T12:00:00Z' },
+    atsaukimo_tipas: null,
+    atsaukimo_mokestis: null,
     ...overrides,
   };
 }

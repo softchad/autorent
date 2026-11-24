@@ -124,9 +124,33 @@ export type CustomerReservation = {
   paemimo_valanda: number | null;
   salygu_versija: string | null;
   paslaugos: ReservationExtraLine[];
+  etapas: ReservationStage;
+  // Veiksmai, kuriuos serveris leidžia šiame etape (taisyklių lentelė serveryje).
+  veiksmai: ReservationAction[];
+  // Ką reikštų atšaukimas dabar; null – atšaukti negalima.
+  atsaukimas: CancellationPreview | null;
+  atsaukimo_tipas: 'klientas' | 'darbuotojas' | 'isnuomota' | null;
+  atsaukimo_mokestis: number | null;
 };
 
 export type Terms = {
   versija: string;
   skyriai: TermsSection[];
+};
+
+export type ReservationStage =
+  | 'laukia_patvirtinimo'
+  | 'patvirtinta'
+  | 'nuomos_laikas'
+  | 'pasibaigusi'
+  | 'nepatvirtinta_laiku'
+  | 'isnuomota'
+  | 'atsaukta';
+
+export type ReservationAction = 'perziureti' | 'atsaukti' | 'rasyti_pagalbai';
+
+export type CancellationPreview = {
+  nemokamai: boolean;
+  mokestis: number;
+  nemokamai_iki: string;
 };
