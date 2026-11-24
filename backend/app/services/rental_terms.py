@@ -40,9 +40,9 @@ def get_rental_info() -> dict:
 
 
 # Versija apima visą get_terms() turinį, įskaitant draudimo ir užsienio skyrius bei booking_rules valandas.
-TERMS_VERSION = "2026-11-01"
+TERMS_VERSION = "2026-11-24"
 
-# Atšaukimo taisyklės skaičiai sąlygų tekstui.
+# Planuojamos atšaukimo taisyklės skaičiai. Sąlygų tekste jie nenaudojami, kol atšaukimas neįgyvendintas.
 FREE_CANCELLATION_HOURS = 48
 LATE_CANCELLATION_FEE_DAYS = 1
 
@@ -76,9 +76,7 @@ def _section_cancellation() -> dict:
         "kodas": "atsaukimas",
         "pavadinimas": "Atšaukimas",
         "punktai": [
-            f"Rezervaciją galite atšaukti nemokamai, jei iki paėmimo laiko liko ne mažiau kaip {FREE_CANCELLATION_HOURS} val.",
-            f"Atšaukiant vėliau taikomas {LATE_CANCELLATION_FEE_DAYS} paros nuomos kainos mokestis.",
-            "Prasidėjus nuomos laikui rezervacijos atšaukti programėlėje nebegalima – kreipkitės į padalinį.",
+            "Dėl rezervacijos atšaukimo kreipkitės į padalinį.",
         ],
     }
 

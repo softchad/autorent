@@ -26,10 +26,11 @@ def test_terms_cover_everything_customer_must_see_before_confirming(client):
     assert codes == ["kaina", "atsaukimas", "paemimas", "draudimas", "uzsienis"]
 
 
-def test_cancellation_text_matches_policy_numbers(client):
+def test_cancellation_text_refers_to_branch_without_unimplemented_rules(client):
     text = _text(_terms(client), "atsaukimas")
-    assert f"{rental_terms.FREE_CANCELLATION_HOURS} val." in text
-    assert f"{rental_terms.LATE_CANCELLATION_FEE_DAYS} paros" in text
+    assert "kreipkitės į padalinį" in text
+    assert f"{rental_terms.FREE_CANCELLATION_HOURS} val." not in text
+    assert "mokestis" not in text
 
 
 def test_pickup_text_matches_booking_rules(client):

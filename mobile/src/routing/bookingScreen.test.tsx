@@ -4,6 +4,7 @@ import * as bookingApi from '@/api/booking';
 import * as carsApi from '@/api/cars';
 import { PublicCar } from '@/api/types';
 import { AuthStatus, useAuth } from '@/auth/AuthContext';
+import { draftFromParams } from '@/features/booking/bookingDraft';
 import { CalendarDay } from '@/features/booking/calendarLogic';
 import { makeCar } from '@/testUtils/fixtures';
 import { addDays } from '@/utils/isoDate';
@@ -187,16 +188,39 @@ describe('rezervavimo ekranas – tęsimas', () => {
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
-  it('prisijungusiam klientui į neegzistuojantį patvirtinimo ekraną nenaviguojama', async () => {
+  it('prisijungęs klientas su paruoštu pasirinkimu atidaro patvirtinimą su juodraščio parametrais', async () => {
     setAuth('signedIn');
     await renderWith({ id: '12', ...PERIOD });
     await waitForPrice('90,00 €');
-    await settleEffects();
-    expect(continueButton().props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(screen.getByRole('checkbox', { name: /Pilna apsauga/ }));
+    await waitForPrice('114,00 €');
+    await waitForContinueEnabled();
+    expect(continueButton()).toHaveTextContent(/^Tęsti/);
+    await fireEvent.press(continueButton());
+    expect(mockRouter.push).toHaveBeenCalledTimes(1);
+    const [target] = mockRouter.push.mock.calls[0];
+    expect(target).toEqual({
+      pathname: '/patvirtinimas',
+      params: { carId: '12', from: '2026-12-01', to: '2026-12-03', pickupHour: expect.stringMatching(/^1[2-8]$/), extras: 'pilna_apsauga' },
+    });
+    expect(draftFromParams(target.params)).not.toBeNull();
+  });
+
+  it('prisijungusiam klientui pakeitus automobilį ankstesnis juodraštis į patvirtinimą nepatenka', async () => {
+    setAuth('signedIn');
+    const view = await renderWith({ id: '12', ...PERIOD });
+    await waitForPrice('90,00 €');
+    await waitForContinueEnabled();
+
+    api.fetchQuote.mockImplementation(() => new Promise(() => undefined));
+    mockContinueEnabled.length = 0;
+    mockParams = { id: '13', ...PERIOD };
+    await view.rerender(<BookingScreen />);
+    await waitFor(() => expect(screen.getByTestId('booking-continue')).toBeTruthy());
+
+    expect(mockContinueEnabled).not.toContain(true);
     await fireEvent.press(continueButton());
     expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(mockRouter.navigate).not.toHaveBeenCalled();
-    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 });
 

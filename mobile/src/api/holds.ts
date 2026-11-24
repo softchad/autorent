@@ -37,3 +37,31 @@ export function fetchHold(holdId: number, signal?: AbortSignal): Promise<Hold> {
 export function releaseHold(holdId: number): Promise<null> {
   return apiRequest<null>(`/customer/holds/${holdId}`, { method: 'DELETE', auth: true });
 }
+
+import { CustomerReservation } from './types';
+
+export type ConfirmInput = {
+  holdId: number;
+  // Tas pats raktas siunčiamas kartojant prašymą – serveris tada grąžina tą pačią rezervaciją.
+  idempotencyKey: string;
+  extras: string[];
+  pickupHour: number;
+  termsVersion: string;
+  expectedTotal?: number;
+};
+
+export function confirmHold(input: ConfirmInput): Promise<CustomerReservation> {
+  return apiRequest<CustomerReservation>(`/customer/holds/${input.holdId}/confirm`, {
+    method: 'POST',
+    auth: true,
+    headers: { 'Idempotency-Key': input.idempotencyKey },
+    body: {
+      paslaugos: input.extras,
+      paemimo_valanda: input.pickupHour,
+      salygu_versija: input.termsVersion,
+      sutinku_su_salygomis: true,
+      tiketina_kaina: input.expectedTotal,
+    },
+    timeoutMs: 15000,
+  });
+}

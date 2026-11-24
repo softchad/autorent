@@ -179,9 +179,12 @@ def get_hold_for_customer(db: Session, laikymo_id: int, kliento_id: int) -> Hold
     return db.query(Hold).filter(Hold.laikymo_id == laikymo_id, Hold.kliento_id == kliento_id).first()
 
 
+# Vienas sąlyginis UPDATE: sąlyga tikrinama pagal naujausią įrašytą būseną, ne pagal anksčiau perskaitytą objektą,
+# todėl vienu metu patvirtintas (panaudotas) laikymas neperrašomas. Pakartotas DELETE nieko nekeičia.
 def release_hold(db: Session, hold: Hold) -> Hold:
-    if hold.busena == HOLD_ACTIVE:
-        hold.busena = HOLD_CANCELLED
-        db.commit()
-        db.refresh(hold)
+    db.query(Hold).filter(Hold.laikymo_id == hold.laikymo_id, Hold.busena == HOLD_ACTIVE).update(
+        {Hold.busena: HOLD_CANCELLED}, synchronize_session=False
+    )
+    db.commit()
+    db.refresh(hold)
     return hold

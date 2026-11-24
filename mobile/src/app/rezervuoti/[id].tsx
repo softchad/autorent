@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { fetchBookingRules, fetchExtras } from '@/api/booking';
 import { fetchCar } from '@/api/cars';
@@ -8,7 +8,7 @@ import { useAuthNavigation } from '@/auth/useAuthNavigation';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ErrorView, LoadingView } from '@/components/StateViews';
-import { BookingDraft, selectionFromSearch } from '@/features/booking/bookingDraft';
+import { BookingDraft, draftToParams, selectionFromSearch } from '@/features/booking/bookingDraft';
 import { BookingView } from '@/features/booking/BookingView';
 import { useAsync } from '@/hooks/useAsync';
 import { lt } from '@/i18n/lt';
@@ -33,6 +33,7 @@ function textParam(value: RouteParam): string | undefined {
 function BookingContent({ carId, nuo, iki }: { carId: number; nuo?: string; iki?: string }) {
   const { status } = useAuth();
   const { goLogin } = useAuthNavigation();
+  const router = useRouter();
 
   // Trys nepriklausomos užklausos; ekranas rodomas, kai visos pavyko.
   const data = useAsync(
@@ -61,15 +62,19 @@ function BookingContent({ carId, nuo, iki }: { carId: number; nuo?: string; iki?
     setReady(isReady);
   }, []);
 
-  // Patvirtinimo ekrano dar nėra: tęsti gali tik neprisijungęs klientas – atidaromas prisijungimas,
-  // po kurio grįžtama į šį ekraną su tais pačiais pasirinkimais.
-  const canLogin = status === 'signedOut' && ready && draft !== null && draft.carId === carId;
+  // Tęsti galima tik su šio automobilio paruoštu juodraščiu ir žinant prisijungimo būseną.
+  // Neprisijungęs klientas po prisijungimo grįžta į šį ekraną su tais pačiais pasirinkimais.
+  const canContinue = status !== 'loading' && ready && draft !== null && draft.carId === carId;
 
   function handleContinue() {
-    if (!canLogin) {
+    if (!canContinue || draft === null) {
       return;
     }
-    goLogin();
+    if (status === 'signedOut') {
+      goLogin();
+      return;
+    }
+    router.push({ pathname: '/patvirtinimas', params: draftToParams(draft) });
   }
 
   const footer = data.data ? (
@@ -77,7 +82,7 @@ function BookingContent({ carId, nuo, iki }: { carId: number; nuo?: string; iki?
       label={status === 'signedOut' ? lt.booking.loginToContinue : lt.booking.continue}
       accessibilityHint={status === 'signedOut' ? lt.booking.loginHint : undefined}
       onPress={handleContinue}
-      disabled={!canLogin}
+      disabled={!canContinue}
       variant="accent"
       icon="arrow-forward"
       testID="booking-continue"

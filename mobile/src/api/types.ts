@@ -102,3 +102,31 @@ export type RentalInfo = {
   draudimo_isskaita_eur: number;
   skyriai: TermsSection[];
 };
+
+export type ReservationExtraLine = {
+  kodas: string;
+  pavadinimas: string;
+  kaina_parai: number;
+  suma: number;
+};
+
+export type CustomerReservation = {
+  rezervacijos_id: number;
+  automobilio_id: number;
+  marke: string;
+  modelis: string;
+  rezervacijos_pradzia: string;
+  rezervacijos_pabaiga: string;
+  busena: string;
+  dienu_skaicius: number;
+  kaina_parai: number;
+  viso_kaina: number;
+  paemimo_valanda: number | null;
+  salygu_versija: string | null;
+  paslaugos: ReservationExtraLine[];
+};
+
+export type Terms = {
+  versija: string;
+  skyriai: TermsSection[];
+};

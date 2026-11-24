@@ -352,3 +352,44 @@ def test_same_day_past_pickup_hour_is_rejected(client, db_session, auth_headers,
     rejected = _confirm(client, customer, response.json()["laikymo_id"], paemimo_valanda=12)
     assert rejected.status_code == 400, rejected.text
     assert _count_reservations(db_session, customer) == 0
+
+
+# Nuoseklus SQLite testas: atskira sesija laikymą perskaito dar aktyvų (DELETE pradėtas prieš patvirtinimą),
+# o atlaisvina jau po patvirtinimo. Tai tikrina sąlyginį UPDATE, bet neįrodo MySQL lygiagretumo.
+def test_stale_release_does_not_overwrite_used_hold(client, db_session, auth_headers):
+    customer, car_id = register_customer(client), make_car(client, auth_headers)
+    hold_id, key = _hold(client, customer, car_id), str(uuid4())
+    other = Session(db_session.get_bind())
+    try:
+        stale = other.get(Hold, hold_id)
+        assert stale.busena == "aktyvus"
+        confirmed = _confirm(client, customer, hold_id, key)
+        assert confirmed.status_code == 201, confirmed.text
+        hold_service.release_hold(other, stale)
+        assert stale.busena == "panaudotas"
+    finally:
+        other.close()
+
+    reservation_id = confirmed.json()["rezervacijos_id"]
+    db_session.expire_all()
+    hold = db_session.get(Hold, hold_id)
+    assert (hold.busena, hold.rezervacijos_id) == ("panaudotas", reservation_id)
+    assert db_session.get(Reservation, reservation_id).busena == "laukia"
+    assert [row.kaina_parai for row in db_session.query(ReservationExtra).filter_by(rezervacijos_id=reservation_id)] == [12]
+    replay = _confirm(client, customer, hold_id, key)
+    assert replay.status_code == 200, replay.text
+    assert replay.json() == confirmed.json()
+
+
+def test_release_after_confirmation_keeps_used_hold(client, db_session, auth_headers):
+    customer, car_id = register_customer(client), make_car(client, auth_headers)
+    hold_id = _hold(client, customer, car_id)
+    assert _confirm(client, customer, hold_id).status_code == 201
+
+    for _ in range(2):
+        resp = client.delete(f"{API}/customer/holds/{hold_id}", headers=customer["headers"])
+        assert resp.status_code == 204, resp.text
+
+    db_session.expire_all()
+    assert db_session.get(Hold, hold_id).busena == "panaudotas"
+    assert _count_reservations(db_session, customer) == 1

@@ -5,3 +5,9 @@ import { RentalInfo } from './types';
 export function fetchRentalInfo(signal?: AbortSignal): Promise<RentalInfo> {
   return apiRequest<RentalInfo>('/public/rental-info', { signal });
 }
+
+import { Terms } from './types';
+
+export function fetchTerms(signal?: AbortSignal): Promise<Terms> {
+  return apiRequest<Terms>('/public/terms', { signal });
+}
