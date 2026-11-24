@@ -1,5 +1,5 @@
 # Kliento (ne darbuotojo) rezervacijų schemos - kliento_id NIEKADA nepriimamas iš užklausos (nėra šiame faile apskritai), jis visada nustatomas iš prisijungimo tokeno endpoint'e, kad klientas negalėtų sukurti rezervacijos kito kliento vardu.
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel, Field, field_validator
 
 from app.services import booking_rules
@@ -36,6 +36,13 @@ class CustomerReservationOut(BaseModel):
     paemimo_valanda: int | None = None
     salygu_versija: str | None = None
     paslaugos: list["ReservationExtraOut"] = []
+    # Etapas ir leidžiami veiksmai – iš reservation_lifecycle taisyklių lentelės.
+    etapas: str = ""
+    veiksmai: list[str] = []
+    # Ką reikštų atšaukimas dabar; None – atšaukti negalima.
+    atsaukimas: "CancellationPreviewOut | None" = None
+    atsaukimo_tipas: str | None = None
+    atsaukimo_mokestis: float | None = None
 
 
 class ReservationExtraOut(BaseModel):
@@ -52,6 +59,17 @@ class HoldConfirmRequest(BaseModel):
     salygu_versija: str = Field(max_length=20)
     sutinku_su_salygomis: bool
     tiketina_kaina: float | None = Field(default=None, ge=0, le=100000000, allow_inf_nan=False)
+
+
+class CancellationPreviewOut(BaseModel):
+    nemokamai: bool
+    mokestis: float
+    nemokamai_iki: datetime
+
+
+# Klientas atsiunčia mokestį, kurį matė ekrane; jei tuo metu jis jau kitoks – atšaukimas nevykdomas.
+class CancelRequest(BaseModel):
+    tiketinas_mokestis: float = Field(ge=0, le=100000)
 
 
 CustomerReservationOut.model_rebuild()

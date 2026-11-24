@@ -1,9 +1,13 @@
 """Atšaukimo pasekmė: nemokamai ar su mokesčiu. Gryna logika – skaičiai imami iš nuomos sąlygų (rental_terms)."""
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from app.services import booking_rules, rental_terms
+
+# Sąlygų versijos, kurių priimtame tekste yra 48 val. taisyklė ir vėlyvo atšaukimo mokestis.
+# Kol tokios versijos nėra, mokestis netaikomas: vėlyvas atšaukimas vyksta per padalinį.
+FEE_TERMS_VERSIONS: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -30,7 +34,7 @@ def evaluate(
 ) -> CancellationOutcome:
     pickup = booking_rules.pickup_moment_utc(pickup_date, pickup_hour)
     hours_left = (pickup - now_utc).total_seconds() / 3600
-    free_until = pickup - _hours(rental_terms.FREE_CANCELLATION_HOURS)
+    free_until = pickup - timedelta(hours=rental_terms.FREE_CANCELLATION_HOURS)
 
     if hours_left <= 0:
         return CancellationOutcome(False, False, Decimal("0.00"), hours_left, free_until)
@@ -39,9 +43,3 @@ def evaluate(
 
     fee = min(Decimal(daily_rate) * rental_terms.LATE_CANCELLATION_FEE_DAYS, Decimal(total))
     return CancellationOutcome(True, False, fee.quantize(Decimal("0.01")), hours_left, free_until)
-
-
-def _hours(count: int):
-    from datetime import timedelta
-
-    return timedelta(hours=count)

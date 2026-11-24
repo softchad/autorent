@@ -13,6 +13,8 @@ from utils.hateoas import generate_links  # naudojama create/update žemiau (pri
 from app.api.deps import get_current_user
 from app.api.permissions import require_perm, Perm
 
+from app.services import clock
+
 router = APIRouter(
     prefix="/reservations",
     tags=["Reservations"],
@@ -167,8 +169,17 @@ def update_reservation(rezervacijos_id: int, updated: schemas.ReservationUpdate,
 
     if automobilio_id != existing.automobilio_id:
         existing.kaina_parai = car.kaina_parai
+    was_cancelled = existing.busena == "atšaukta"
     for field, value in changes.items():
         setattr(existing, field, value)
+    if existing.busena != "atšaukta":
+        # Darbuotojas grąžino rezervaciją į aktyvią būseną – ankstesnio atšaukimo duomenys nebegalioja.
+        existing.atsaukimo_tipas = None
+        existing.atsaukta = None
+        existing.atsaukimo_mokestis = None
+    elif not was_cancelled:
+        existing.atsaukimo_tipas = "darbuotojas"
+        existing.atsaukta = clock.utc_now_naive()
 
     db.commit()
     db.refresh(existing)
