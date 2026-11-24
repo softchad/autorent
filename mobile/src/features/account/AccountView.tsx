@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SupportConversation } from '@/api/types';
 import { useAuth } from '@/auth/AuthContext';
@@ -11,7 +11,7 @@ import { lt } from '@/i18n/lt';
 import { colors, radius, spacing, typography } from '@/theme';
 import { formatDateLong } from '@/utils/format';
 
-export type AccountTab = 'profile' | 'inbox';
+export type AccountTab = 'profile' | 'inbox' | 'reservations';
 
 // Pirmosios vardo ir pavardės raidės apskritime vietoje nuotraukos (nuotraukų programėlė nerenka).
 export function initials(firstName: string, lastName: string): string {
@@ -33,6 +33,7 @@ type Props = {
   onNewConversation?: () => void;
   // Pasikeitus skaičiui pašto dėžutė atnaujinama.
   inboxRefreshKey?: number;
+  reservations?: ReactNode;
   // Tik kūrimo režimu: nuoroda į dizaino peržiūrą.
   onOpenPreview?: () => void;
 };
@@ -106,6 +107,7 @@ export function AccountView(props: Props = {}) {
   const tabs: { key: AccountTab; label: string }[] = [
     { key: 'profile', label: lt.account.tabs.profile },
     ...(hasInbox ? [{ key: 'inbox' as const, label: lt.account.tabs.inbox }] : []),
+    ...(props.reservations ? [{ key: 'reservations' as const, label: lt.account.tabs.reservations }] : []),
   ];
 
   let profileContent;
@@ -177,6 +179,7 @@ export function AccountView(props: Props = {}) {
       {tab === 'inbox' && props.onOpenConversation && props.onNewConversation ? (
         <InboxView onOpen={props.onOpenConversation} onNew={props.onNewConversation} refreshKey={props.inboxRefreshKey} />
       ) : null}
+      {tab === 'reservations' ? <View style={styles.fill}>{props.reservations}</View> : null}
     </View>
   );
 }

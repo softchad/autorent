@@ -142,6 +142,7 @@ export const lt = {
     tabs: {
       profile: 'Profilis',
       inbox: 'Pašto dėžutė',
+      reservations: 'Rezervacijos',
     },
     signedOutMessage: 'Prisijunkite, kad matytumėte savo paskyrą.',
     profileTitle: 'Mano duomenys',
@@ -399,5 +400,25 @@ confirm: {
     openReservation: 'Peržiūrėti rezervaciją',
     number: (id: number) => `Rezervacija Nr. ${id}`,
     showAll: 'Mano rezervacijos',
+  },
+  reservations: {
+    title: 'Mano rezervacijos',
+    signedOutMessage: 'Prisijunkite, kad matytumėte savo rezervacijas.',
+    current: 'Esamos',
+    past: 'Buvusios',
+    emptyTitle: 'Rezervacijų dar nėra',
+    emptyMessage: 'Išsirinkite automobilį ir rezervuokite jį keliais paspaudimais.',
+    browse: 'Ieškoti automobilio',
+    openHint: 'Atidaryti rezervacijos informaciją',
+    number: (id: number) => `Rezervacija Nr. ${id}`,
+    stage: {
+      laukia_patvirtinimo: 'Laukia patvirtinimo',
+      patvirtinta: 'Patvirtinta',
+      nuomos_laikas: 'Nuomos laikas',
+      pasibaigusi: 'Pasibaigusi',
+      nepatvirtinta_laiku: 'Nepatvirtinta',
+      isnuomota: 'Išnuomota',
+      atsaukta: 'Atšaukta',
+    },
   },
 } as const;

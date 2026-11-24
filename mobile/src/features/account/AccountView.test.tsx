@@ -1,3 +1,4 @@
+import { Text } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as supportApi from '@/api/support';
 import { Customer, SupportConversation } from '@/api/types';
@@ -264,3 +265,10 @@ describe('paskyros skirtukas – kliento tapatybė', () => {
     expect(screen.queryByTestId('error-view')).toBeNull();
   });
 });
+
+  it('skirtukas „Rezervacijos“ rodo ekrano perduotą sąrašą', async () => {
+    mockAuth(CUSTOMER);
+    await render(<AccountView reservations={<Text>Rezervacijų sąrašas</Text>} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Rezervacijos' }));
+    expect(screen.getByText('Rezervacijų sąrašas')).toBeTruthy();
+  });

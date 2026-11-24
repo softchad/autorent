@@ -1,3 +1,4 @@
+import { ReservationsView } from '@/features/reservations/ReservationsView';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useAccountKey } from '@/auth/accountKey';
@@ -31,6 +32,12 @@ export default function AccountTab() {
           }
           onNewConversation={() => router.push('/pokalbis/naujas')}
           onOpenPreview={() => router.push('/perziura')}
+          reservations={
+            <ReservationsView
+              refreshKey={refreshKey}
+              onBrowse={() => router.navigate('/')}
+            />
+          }
         />
       </RequireAuth>
     </Screen>
