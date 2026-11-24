@@ -1,0 +1,37 @@
+name: Ruff
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ruff-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ruff:
+    name: Ruff backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install Ruff
+        run: python -m pip install --disable-pip-version-check ruff==0.17.6
+      - name: Check backend
+        run: ruff check .
+      - name: Check import ordering
+        run: ruff check app/api/endpoints/customer_holds.py app/services/rental_terms.py --extend-select I

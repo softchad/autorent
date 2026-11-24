@@ -1,12 +1,14 @@
 """Kliento laikymų endpointai mobiliajai programėlei. Laikymai – hold_service, patvirtinimas rezervacija – reservation_service."""
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_customer, get_db
+from app.api.endpoints.customer import _to_out
 from app.models.client import Client
 from app.rate_limit import limiter
+from app.schemas.customer_reservation import CustomerReservationOut, HoldConfirmRequest
 from app.schemas.hold import HoldCreate, HoldOut, to_hold_out
-from app.services import clock, hold_service
+from app.services import clock, hold_service, reservation_service
 
 router = APIRouter(prefix="/customer/holds", tags=["Customer Holds"])
 
@@ -55,11 +57,6 @@ def release_hold(
     return Response(status_code=204)
 
 
-from fastapi import Header
-
-from app.api.endpoints.customer import _to_out
-from app.schemas.customer_reservation import CustomerReservationOut, HoldConfirmRequest
-from app.services import reservation_service
 
 
 # Laikymas paverčiamas rezervacija. Idempotency-Key antraštė užtikrina, kad pakartotas prašymas

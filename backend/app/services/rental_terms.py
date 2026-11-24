@@ -1,5 +1,7 @@
 """Nuomos sąlygų tekstai, kuriuos per /public/rental-info rodo mobilioji programėlė."""
 
+from app.services import booking_rules
+
 # Bazinio draudimo išskaita (suma, kurią žalos atveju dengia klientas), eurais.
 INSURANCE_EXCESS_EUR = 500
 
@@ -36,7 +38,6 @@ def get_rental_info() -> dict:
     }
 
 
-from app.services import booking_rules
 
 # Versija apima visą get_terms() turinį, įskaitant draudimo ir užsienio skyrius bei booking_rules valandas.
 TERMS_VERSION = "2026-11-01"

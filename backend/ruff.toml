@@ -1,0 +1,11 @@
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = ["E402", "E9", "F63", "F7", "F82"]
+
+[lint.per-file-ignores]
+# Environment loading precedes application imports.
+"app/main.py" = ["E402"]
+# SQLite engine setup precedes application imports.
+"tests/conftest.py" = ["E402"]
