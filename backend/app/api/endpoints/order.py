@@ -14,6 +14,8 @@ from app.services import availability_service, discount_code_service  # availabi
 from app.api.deps import get_current_user
 from app.api.permissions import require_perm, Perm
 
+from app.services import clock
+
 router = APIRouter(
     prefix="/orders",
     tags=["Orders"],
@@ -117,6 +119,8 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
     if converting_reservation:
         # "atšaukta" ČIA reiškia "pakeista realiu užsakymu", NE "klientas atšaukė" - rezervacija ir užsakymas yra DVI atskiros lentelės/eilutės, ir be šio žingsnio KONVERTUOTA rezervacija toliau blokuotų busimus booking'us kaip "kitas", nesusijęs įrašas . COMMIT'inama VIENA transakcija KARTU su naujo užsakymo įrašymu - jei Order įrašymas nepavyktų, rezervacijos būsena NEpasikeistų.
         converting_reservation.busena = "atšaukta"
+        converting_reservation.atsaukimo_tipas = "isnuomota"
+        converting_reservation.atsaukta = clock.utc_now_naive()
         db.add(converting_reservation)
     db.commit()
     db.refresh(created)
