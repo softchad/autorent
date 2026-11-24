@@ -12,6 +12,12 @@ class Reservation(Base):
             "(salygu_versija IS NULL) = (salygos_priimtos IS NULL)",
             name="chk_salygu_priemimas",
         ),
+        CheckConstraint(
+            "atsaukimo_tipas IS NULL OR atsaukimo_tipas IN ('klientas', 'darbuotojas', 'isnuomota')",
+            name="chk_atsaukimo_tipas",
+        ),
+        CheckConstraint("atsaukimo_mokestis IS NULL OR atsaukimo_mokestis >= 0", name="chk_atsaukimo_mokestis"),
+        CheckConstraint("atsaukimo_tipas IS NULL OR busena = 'atšaukta'", name="chk_atsaukimo_tipas_busena"),
     )
 
     rezervacijos_id = Column(Integer, primary_key=True, index=True)
@@ -29,3 +35,7 @@ class Reservation(Base):
     # Kokią sąlygų versiją ir kada (UTC) klientas priėmė; NULL – ne programėlėje sukurta rezervacija.
     salygu_versija = Column(String(20), nullable=True)
     salygos_priimtos = Column(DateTime, nullable=True)
+    # 'klientas' | 'darbuotojas' | 'isnuomota' (paversta užsakymu); NULL – neatšaukta arba sena rezervacija.
+    atsaukimo_tipas = Column(String(20), nullable=True)
+    atsaukta = Column(DateTime, nullable=True)
+    atsaukimo_mokestis = Column(Numeric(10, 2), nullable=True)
