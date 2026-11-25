@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
   belt: { marginTop: spacing.xl },
   toolbar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0E1525',
   },
   count: { ...typography.caption, paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.md },
-  sortSelect: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
+  sortSelect: { flexGrow: 1, flexBasis: 160, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
   sortValue: { ...typography.bodyStrong, flex: 1 },
   filterControl: { minHeight: 48, borderRadius: radius.md, backgroundColor: colors.primarySoft, borderColor: colors.brand },
   sortMenu: { marginHorizontal: spacing.lg, marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.brand, backgroundColor: '#0E1525' },

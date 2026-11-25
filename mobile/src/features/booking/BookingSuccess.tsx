@@ -19,7 +19,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.row} accessible accessibilityLabel={`${label}: ${value}`}>
       <Text style={typography.caption}>{label}</Text>
-      <Text style={typography.bodyStrong}>{value}</Text>
+      <Text style={styles.value}>{value}</Text>
     </View>
   );
 }
@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
   message: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
   card: { alignSelf: 'stretch', marginTop: spacing.md },
   car: { ...typography.heading, marginBottom: spacing.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.xs },
+  value: { ...typography.bodyStrong, flexShrink: 1, textAlign: 'right' },
   button: { alignSelf: 'stretch' },
 });
