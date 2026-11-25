@@ -163,6 +163,8 @@ describe('patvirtinimo ekranas – sėkmė ir kliento ar juodraščio kaita', ()
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Mano rezervacijos' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/rezervacijos');
+    await fireEvent.press(screen.getByTestId('success-open'));
+    expect(mockRouter.replace).toHaveBeenLastCalledWith({ pathname: '/rezervacija/[id]', params: { id: '501' } });
   });
 
   it('atsijungus ir prisijungus kitu klientu ankstesnė sėkmė nerodoma', async () => {

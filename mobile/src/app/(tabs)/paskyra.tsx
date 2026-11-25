@@ -35,6 +35,7 @@ export default function AccountTab() {
           reservations={
             <ReservationsView
               refreshKey={refreshKey}
+              onOpen={(reservation) => router.push({ pathname: '/rezervacija/[id]', params: { id: String(reservation.rezervacijos_id) } })}
               onBrowse={() => router.navigate('/')}
             />
           }

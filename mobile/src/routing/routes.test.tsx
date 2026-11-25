@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import * as supportApi from '@/api/support';
+import * as reservationsApi from '@/api/reservations';
 import * as carsApi from '@/api/cars';
 import * as bookingApi from '@/api/booking';
 import { useAuth } from '@/auth/AuthContext';
 import { deviceToday, monthOf, shiftMonthRef } from '@/features/catalogue/dateRange';
-import { makeCar } from '@/testUtils/fixtures';
+import { makeCar, makeReservation } from '@/testUtils/fixtures';
 import { toIsoDate } from '@/utils/isoDate';
 import AccountTab from '../app/(tabs)/paskyra';
 import CarsTab from '../app/(tabs)/index';
@@ -44,6 +45,7 @@ jest.mock('expo-router', () => {
 jest.mock('@/api/cars');
 jest.mock('@/api/booking');
 jest.mock('@/api/support');
+jest.mock('@/api/reservations');
 jest.mock('@/auth/AuthContext');
 
 const CUSTOMER = {
@@ -57,6 +59,7 @@ const CUSTOMER = {
 };
 
 beforeEach(() => {
+  jest.mocked(reservationsApi.fetchReservations).mockReset().mockResolvedValue([]);
   jest.mocked(supportApi.fetchConversations).mockReset().mockResolvedValue([]);
   mockRouter.push.mockReset();
   mockRouter.navigate.mockReset();
@@ -91,6 +94,20 @@ function routeFiles(dir: string): string[] {
 }
 
 describe('skirtukų aplankas (tabs)', () => {
+  it('rezervacijų kortelė atidaro jos detalę', async () => {
+    jest.mocked(reservationsApi.fetchReservations).mockResolvedValue([makeReservation()]);
+    await render(<ReservationsTab />);
+    await fireEvent.press(await screen.findByTestId('reservation-card-501'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/rezervacija/[id]', params: { id: '501' } });
+  });
+
+  it('paskyros rezervacijų kortelė taip pat atidaro detalę', async () => {
+    jest.mocked(reservationsApi.fetchReservations).mockResolvedValue([makeReservation()]);
+    await render(<AccountTab />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Rezervacijos' }));
+    await fireEvent.press(await screen.findByTestId('reservation-card-501'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/rezervacija/[id]', params: { id: '501' } });
+  });
   it('neprisijungus rezervacijų antraštė nerodoma, rodomas bendras prisijungimo vaizdas', async () => {
     jest.mocked(useAuth).mockReturnValue({ status: 'signedOut', notice: null } as ReturnType<typeof useAuth>);
     await render(<ReservationsTab />);

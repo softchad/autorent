@@ -48,7 +48,11 @@ function ConfirmContent({ draft }: { draft: BookingDraft }) {
     return (
       <>
         <Stack.Screen options={{ title: lt.confirm.successTitle, headerBackVisible: false }} />
-        <BookingSuccess reservation={created} onShowAll={() => router.replace('/rezervacijos')} />
+        <BookingSuccess
+          reservation={created}
+          onShowAll={() => router.replace('/rezervacijos')}
+          onOpen={() => router.replace({ pathname: '/rezervacija/[id]', params: { id: String(created.rezervacijos_id) } })}
+        />
       </>
     );
   }
