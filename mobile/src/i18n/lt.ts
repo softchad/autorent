@@ -164,6 +164,8 @@ export const lt = {
     signedOutMessage: 'Prisijunkite, kad susisiektumėte su klientų aptarnavimu.',
     newConversation: 'Nauja žinutė',
     newTitle: 'Nauja žinutė',
+    newHeading: 'Kaip galime padėti?',
+    subjectPlaceholder: 'Pvz., automobilio atsiėmimas',
     newIntro: 'Parašykite mums – atsakysime čia pat, pašto dėžutėje.',
     conversationTitle: 'Pokalbis',
     emptyTitle: 'Žinučių dar nėra',

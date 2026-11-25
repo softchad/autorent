@@ -20,12 +20,14 @@ type Props = Omit<TextInputProps, 'style'> & {
   // Klaidos tekstas rodomas po lauku.
   error?: string | null;
   hint?: string;
+  minHeight?: number;
 };
 
 export function TextField({
   label,
   error,
   hint,
+  minHeight,
   onFocus,
   onBlur,
   ...inputProps
@@ -58,6 +60,7 @@ export function TextField({
         keyboardAppearance="dark"
         style={[
           styles.input,
+          minHeight !== undefined && { minHeight },
           focused && styles.inputFocused,
           hasError && styles.inputError,
         ]}
