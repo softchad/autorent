@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { CustomerReservation } from '@/api/types';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
 import { lt } from '@/i18n/lt';
 import { colors, radius, spacing, typography } from '@/theme';
 import { getCarPhoto } from '@/theme/images';
@@ -11,7 +12,7 @@ import { STAGE_TONES } from './ReservationCard';
 import { StatusTimeline } from './StatusTimeline';
 import { buildTimeline } from './timeline';
 
-type Props = { reservation: CustomerReservation };
+type Props = { reservation: CustomerReservation; onCancel?: () => void };
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -22,7 +23,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ReservationDetailView({ reservation }: Props) {
+export function ReservationDetailView({ reservation, onCancel }: Props) {
   return (
     <View testID="reservation-detail">
       <LinearGradient colors={[colors.primarySoft, colors.surfaceAlt]} style={styles.hero}>
@@ -59,6 +60,9 @@ export function ReservationDetailView({ reservation }: Props) {
         {reservation.atsaukimo_mokestis !== null ? <Row label={lt.reservationDetail.cancellationFee} value={formatMoney(reservation.atsaukimo_mokestis)} /> : null}
         {reservation.salygu_versija ? <Row label={lt.reservationDetail.terms} value={reservation.salygu_versija} /> : null}
       </Card>
+      {onCancel && reservation.veiksmai.includes('atsaukti') && reservation.atsaukimas !== null ? (
+        <Button label={lt.reservationDetail.cancel} accessibilityHint={lt.reservationDetail.cancelHint} onPress={onCancel} variant="secondary" testID="reservation-cancel" />
+      ) : null}
     </View>
   );
 }

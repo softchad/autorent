@@ -51,7 +51,10 @@ function ConfirmContent({ draft }: { draft: BookingDraft }) {
         <BookingSuccess
           reservation={created}
           onShowAll={() => router.replace('/rezervacijos')}
-          onOpen={() => router.replace({ pathname: '/rezervacija/[id]', params: { id: String(created.rezervacijos_id) } })}
+          onOpen={() => {
+            router.dismissTo('/rezervacijos');
+            router.push({ pathname: '/rezervacija/[id]', params: { id: String(created.rezervacijos_id) } });
+          }}
         />
       </>
     );

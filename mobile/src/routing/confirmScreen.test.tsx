@@ -14,7 +14,7 @@ import ConfirmScreen from '../app/patvirtinimas';
 
 type Params = Record<string, string | string[] | undefined>;
 let mockParams: Params = {};
-const mockRouter = { back: jest.fn(), replace: jest.fn(), push: jest.fn(), canGoBack: jest.fn() };
+const mockRouter = { back: jest.fn(), replace: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), canGoBack: jest.fn() };
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
@@ -164,7 +164,9 @@ describe('patvirtinimo ekranas – sėkmė ir kliento ar juodraščio kaita', ()
     await fireEvent.press(screen.getByRole('button', { name: 'Mano rezervacijos' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/rezervacijos');
     await fireEvent.press(screen.getByTestId('success-open'));
-    expect(mockRouter.replace).toHaveBeenLastCalledWith({ pathname: '/rezervacija/[id]', params: { id: '501' } });
+    expect(mockRouter.dismissTo).toHaveBeenCalledWith('/rezervacijos');
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/rezervacija/[id]', params: { id: '501' } });
+    expect(mockRouter.dismissTo.mock.invocationCallOrder[0]).toBeLessThan(mockRouter.push.mock.invocationCallOrder[0]);
   });
 
   it('atsijungus ir prisijungus kitu klientu ankstesnė sėkmė nerodoma', async () => {

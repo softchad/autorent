@@ -464,4 +464,16 @@ confirm: {
     cancel: 'Atšaukti rezervaciją',
     cancelHint: 'Prieš atšaukiant bus parodyta, ar taikomas mokestis',
   },
+  cancelDialog: {
+    title: 'Atšaukti rezervaciją?',
+    free: 'Atšaukimas nemokamas.',
+    freeUntil: (date: string) => `Nemokamai iki ${date} (Lietuvos laiku).`,
+    fee: (amount: string) => `Atšaukimo mokestis: ${amount}`,
+    irreversible: 'Šio veiksmo atšaukti negalėsite.',
+    confirmFree: 'Atšaukti nemokamai',
+    confirmFee: (amount: string) => `Atšaukti su ${amount} mokesčiu`,
+    keep: 'Palikti rezervaciją',
+    changed: 'Atšaukimo sąlygos pasikeitė. Peržiūrėkite atnaujintą informaciją ir patvirtinkite iš naujo.',
+    unavailable: 'Šios rezervacijos atšaukti negalima.',
+  },
 } as const;

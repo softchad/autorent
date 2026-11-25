@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { ApiError } from '@/api/errors';
-import { fetchReservation } from '@/api/reservations';
+import { cancelReservation, fetchReservation } from '@/api/reservations';
 import { CustomerReservation } from '@/api/types';
 import { useAuth } from '@/auth/AuthContext';
 import { makeReservation } from '@/testUtils/fixtures';
@@ -43,10 +43,56 @@ beforeEach(() => {
   mockRouter.push.mockReset();
   mockRefocus = undefined;
   fetchDetail.mockReset().mockResolvedValue(makeReservation());
+  jest.mocked(cancelReservation).mockReset();
   setCustomer(7);
 });
 
 describe('rezervacijos ekranas', () => {
+  it('po atšaukimo iškart rodo serverio rezultatą, net kai paskesnis GET nepavyksta', async () => {
+    const cancelled = makeReservation({ etapas: 'atsaukta', atsaukimo_tipas: 'klientas', atsaukimas: null, veiksmai: ['perziureti'], atsaukimo_mokestis: 0 });
+    jest.mocked(cancelReservation).mockResolvedValue(cancelled);
+    await render(<ReservationScreen />);
+    await fireEvent.press(await screen.findByTestId('reservation-cancel'));
+    fetchDetail.mockRejectedValueOnce(new ApiError('network'));
+    await fireEvent.press(screen.getByTestId('cancel-confirm'));
+    await waitFor(() => expect(screen.queryByTestId('cancel-dialog')).toBeNull());
+    await screen.findByRole('alert');
+    expect(screen.getByTestId('stage-badge')).toHaveTextContent('Atšaukta');
+    expect(screen.queryByTestId('reservation-cancel')).toBeNull();
+  });
+
+  it('409 uždaro seną dialogą; naują mokestį reikia atskirai patvirtinti', async () => {
+    const refreshed = deferred();
+    jest.mocked(cancelReservation).mockRejectedValueOnce(new ApiError('conflict', 409));
+    await render(<ReservationScreen />);
+    await fireEvent.press(await screen.findByTestId('reservation-cancel'));
+    fetchDetail.mockReturnValueOnce(refreshed.promise);
+    await fireEvent.press(screen.getByTestId('cancel-confirm'));
+    await waitFor(() => expect(screen.queryByTestId('cancel-dialog')).toBeNull());
+    expect(screen.queryByTestId('reservation-cancel')).toBeNull();
+    await act(async () => refreshed.resolve(makeReservation({ atsaukimas: { nemokamai: false, mokestis: 45, nemokamai_iki: '2026-11-29T12:00:00Z' } })));
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(jest.mocked(cancelReservation)).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByTestId('reservation-cancel'));
+    expect(screen.getByRole('button', { name: 'Atšaukti su 45,00 € mokesčiu' })).toBeTruthy();
+    expect(jest.mocked(cancelReservation)).toHaveBeenCalledTimes(1);
+  });
+
+  it('pasikeitus klientui siunčiamas atšaukimas neperrašo naujo kliento ekrano', async () => {
+    const pending = deferred();
+    jest.mocked(cancelReservation).mockReturnValue(pending.promise);
+    const view = await render(<ReservationScreen />);
+    await fireEvent.press(await screen.findByTestId('reservation-cancel'));
+    await fireEvent.press(screen.getByTestId('cancel-confirm'));
+    setCustomer(8);
+    fetchDetail.mockResolvedValue(makeReservation({ marke: 'Audi' }));
+    await view.rerender(<ReservationScreen />);
+    await screen.findByRole('header', { name: 'Audi Corolla' });
+    await act(async () => pending.resolve(makeReservation({ etapas: 'atsaukta' })));
+    expect(screen.getByTestId('stage-badge')).toHaveTextContent('Laukia patvirtinimo');
+    expect(screen.queryByTestId('cancel-dialog')).toBeNull();
+    expect(screen.queryByRole('header', { name: 'Toyota Corolla' })).toBeNull();
+  });
   it.each(['signedOut', 'loading'] as const)('%s būsenoje rezervacijos nekrauna', async (status) => {
     jest.mocked(useAuth).mockReturnValue({ status, notice: null } as ReturnType<typeof useAuth>);
     await render(<ReservationScreen />);

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { makeReservation } from '@/testUtils/fixtures';
 import { ReservationDetailView } from './ReservationDetailView';
 import { StatusTimeline } from './StatusTimeline';
@@ -28,6 +28,16 @@ describe('StatusTimeline', () => {
 });
 
 describe('ReservationDetailView', () => {
+  it('atšaukimo veiksmas reikalauja ir callback, ir serverio leidimo, ir pasekmės', async () => {
+    const onCancel = jest.fn();
+    const view = await render(<ReservationDetailView reservation={makeReservation()} onCancel={onCancel} />);
+    await fireEvent.press(screen.getByTestId('reservation-cancel'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    await view.rerender(<ReservationDetailView reservation={makeReservation({ veiksmai: ['perziureti'] })} onCancel={onCancel} />);
+    expect(screen.queryByTestId('reservation-cancel')).toBeNull();
+    await view.rerender(<ReservationDetailView reservation={makeReservation({ atsaukimas: null })} onCancel={onCancel} />);
+    expect(screen.queryByTestId('reservation-cancel')).toBeNull();
+  });
   it('rodo serverio etapą, užfiksuotus tarifus, paslaugų sumas ir bendrą sumą', async () => {
     await render(<ReservationDetailView reservation={makeReservation()} />);
     expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy();
