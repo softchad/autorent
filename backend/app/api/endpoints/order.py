@@ -10,7 +10,7 @@ from app.models.order import Order
 from app.models.employee import Employee
 from app.models.location import Location
 from app.models.reservation import Reservation
-from app.services import availability_service, discount_code_service  # availability_service.lock_car_row - naudojamas žemiau, prieš tikrinant laisvumą
+from app.services import availability_service, discount_code_service, reservation_service  # availability_service.lock_car_row - naudojamas žemiau, prieš tikrinant laisvumą
 from app.api.deps import get_current_user
 from app.api.permissions import require_perm, Perm
 
@@ -79,9 +79,13 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
         if (order.nuomos_data != converting_reservation.rezervacijos_pradzia
                 or order.grazinimo_data != converting_reservation.rezervacijos_pabaiga):
             raise HTTPException(status_code=400, detail="Užsakymo datos turi sutapti su rezervacija.")
-        rate = converting_reservation.kaina_parai
-        if rate is not None:
-            order.bendra_kaina = round(float(rate) * (order.grazinimo_data - order.nuomos_data).days, 2)
+        # Suma skaičiuojama iš rezervacijoje užfiksuotų automobilio ir paslaugų tarifų, ne iš užklausos ar dabartinių kainų.
+        # Senai rezervacijai be užfiksuoto tarifo paliekamas ankstesnis elgesys.
+        if converting_reservation.kaina_parai is not None:
+            quote = reservation_service.reservation_quote(db, converting_reservation, car)
+            order.bendra_kaina = float(quote.viso)
+            if quote.paslaugos:
+                order.turi_papildomas_paslaugas = True
 
     # Automobilio fizinė būsena tikrinama nepriklausomai nuo datų: servise ar remonte esantis automobilis nerezervuojamas ir neišnuomojamas; tas pats ribojimas taikomas klientų savitarnos API.
     if car and car.automobilio_statusas in availability_service.NOT_BOOKABLE_STATUSES and order.uzsakymo_busena != "atšaukta":
