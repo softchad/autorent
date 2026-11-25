@@ -456,10 +456,10 @@ describe('RoutePanel', () => {
     };
   }
 
-  it('prieš prašydamas leidimo paaiškina, kada ir kam siunčiama buvimo vieta', async () => {
+  it('trumpai nurodo koordinačių perdavimą ir leidžia prašyti maršruto', async () => {
     const route = makeRoute();
     await render(<RoutePanel route={route} />);
-    expect(screen.getByText('Parodykime kelią iki tavo automobilio.')).toBeTruthy();
+    expect(screen.queryByText('Parodykime kelią iki tavo automobilio.')).toBeNull();
     expect(screen.getByText(lt.route.explanationWithService)).toBeTruthy();
     expect(lt.route.explanationWithService).toContain('maršrutų paslaugai');
     await fireEvent.press(screen.getByRole('button', { name: lt.route.show }));

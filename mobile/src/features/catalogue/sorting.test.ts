@@ -8,6 +8,33 @@ const CARS = [car(1, 60, 2021, 110), car(2, 35, 2019, 66), car(3, 90, 2023, 150)
 const ids = (cars: PublicCar[]) => cars.map((item) => item.automobilio_id);
 
 describe('sortCars', () => {
+  it('rekomendacijose pirmiau rodo skirtingus modelius, bet nepraranda likusių automobilių', () => {
+    const cars = [
+      { ...car(1, 30, 2024, 100), marke: 'Honda', modelis: 'Civic' },
+      { ...car(2, 30, 2023, 100), marke: 'Honda', modelis: 'Civic' },
+      { ...car(3, 40, 2023, 100), marke: 'Volkswagen', modelis: 'Golf' },
+      { ...car(4, 30, 2022, 100), marke: 'Honda', modelis: 'Civic' },
+      { ...car(5, 38, 2024, 100), marke: 'Audi', modelis: 'A4' },
+    ];
+    expect(ids(sortCars(cars, 'recommended'))).toEqual([1, 5, 3, 2, 4]);
+    expect(ids(sortCars(cars, 'price_asc'))).toEqual([1, 2, 4, 5, 3]);
+  });
+
+  it('rekomendacija derina kainą ir metus, o ne tik kainą', () => {
+    expect(ids(sortCars(CARS, 'recommended'))).toEqual([4, 2, 1, 3]);
+  });
+
+  it('vienodus rekomendacijos balus skiria ID', () => {
+    expect(ids(sortCars([car(8, 40, 2022, 100), car(3, 40, 2022, 100)], 'recommended'))).toEqual([3, 8]);
+  });
+
+  it('vienodoms kainoms rekomenduoja naujesnį automobilį', () => {
+    expect(ids(sortCars([car(1, 40, 2018, 100), car(2, 40, 2023, 100)], 'recommended'))).toEqual([2, 1]);
+  });
+
+  it('vienodiems metams rekomenduoja pigesnį automobilį', () => {
+    expect(ids(sortCars([car(1, 60, 2022, 100), car(2, 40, 2022, 100)], 'recommended'))).toEqual([2, 1]);
+  });
   it('pigiausi pirmi; vienodą kainą skiria ID', () => {
     expect(ids(sortCars(CARS, 'price_asc'))).toEqual([2, 4, 1, 3]);
   });

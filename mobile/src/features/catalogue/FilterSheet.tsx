@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Location } from '@/api/types';
-import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
+import { Button, IconName } from '@/components/Button';
 import { SheetModal } from '@/components/SheetModal';
 import { lt } from '@/i18n/lt';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import {
   CatalogueFilters,
   EMPTY_FILTERS,
@@ -34,12 +34,15 @@ type Props = {
   onClose: () => void;
 };
 
-function Group({ title, children }: { title: string; children: ReactNode }) {
+function Group({ title, icon, children }: { title: string; icon: IconName; children: ReactNode }) {
   return (
     <View style={styles.group}>
-      <Text style={styles.groupTitle} accessibilityRole="header">
-        {title}
-      </Text>
+      <View style={styles.groupHeading}>
+        <View style={styles.groupIcon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Ionicons name={icon} size={19} color={colors.primary} />
+        </View>
+        <Text style={styles.groupTitle} accessibilityRole="header">{title}</Text>
+      </View>
       <View style={styles.chips}>{children}</View>
     </View>
   );
@@ -105,13 +108,18 @@ export function FilterSheet({
 
   function chip<Key extends keyof CatalogueFilters>(key: Key, value: NonNullable<CatalogueFilters[Key]>, label: string) {
     return (
-      <Chip
+      <Pressable
         key={`${key}-${value}`}
-        label={label}
-        selected={draft[key] === value}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: draft[key] === value }}
         onPress={() => setDraft(toggleFilter(draft, key, value))}
+        style={({ pressed }) => [styles.option, draft[key] === value && styles.optionSelected, pressed && styles.optionPressed]}
         testID={`filter-${key}-${value}`}
-      />
+      >
+        <Text style={[styles.optionText, draft[key] === value && styles.optionTextSelected]}>{label}</Text>
+        {draft[key] === value ? <Ionicons name="checkmark-circle" size={19} color={colors.primary} /> : null}
+      </Pressable>
     );
   }
 
@@ -134,16 +142,19 @@ export function FilterSheet({
           <Button
             label={lt.filterSheet.clear}
             onPress={() => setDraft({ ...EMPTY_FILTERS, date_from: draft.date_from, date_to: draft.date_to })}
-            variant="secondary"
+            variant="ghost"
             testID="filters-clear"
-            style={styles.footerButton}
+            style={styles.clearButton}
           />
-          <Button label={lt.filterSheet.apply} onPress={() => onApply(draft)} variant="accent" testID="filters-apply" style={styles.footerButton} />
+          <Button label={lt.filterSheet.apply} onPress={() => onApply(draft)} variant="accent" testID="filters-apply" style={styles.applyButton} />
         </>
       }
     >
-      <ScrollView contentContainerStyle={styles.content}>
-        <Group title={lt.filterSheet.location}>
+      <ScrollView contentContainerStyle={styles.content} indicatorStyle="white">
+        <Group title={lt.filterSheet.maxPrice} icon="wallet-outline">
+          {MAX_PRICE_OPTIONS.map((price) => chip('max_kaina', price, lt.filterSheet.upTo(price)))}
+        </Group>
+        <Group title={lt.filterSheet.location} icon="location-outline">
           {missingLocation !== null ? chip('vietos_id', missingLocation, lt.filterSheet.locationById(missingLocation)) : null}
           {locationsStatus === 'success' ? locations.map((place) => chip('vietos_id', place.vietos_id, place.pavadinimas)) : null}
           <OptionsState
@@ -154,15 +165,12 @@ export function FilterSheet({
             testID="filter-locations"
           />
         </Group>
-        <Group title={lt.filterSheet.fuel}>{FUEL_OPTIONS.map((fuel) => chip('kuro_tipas', fuel, fuel))}</Group>
-        <Group title={lt.filterSheet.gearbox}>{GEARBOX_OPTIONS.map((gear) => chip('pavaru_deze', gear, gear))}</Group>
-        <Group title={lt.filterSheet.seats}>
+        <Group title={lt.filterSheet.fuel} icon="flash-outline">{FUEL_OPTIONS.map((fuel) => chip('kuro_tipas', fuel, fuel))}</Group>
+        <Group title={lt.filterSheet.gearbox} icon="settings-outline">{GEARBOX_OPTIONS.map((gear) => chip('pavaru_deze', gear, gear))}</Group>
+        <Group title={lt.filterSheet.seats} icon="people-outline">
           {SEAT_OPTIONS.map((seats) => chip('sedimos_vietos', seats, lt.filterSheet.seatsFrom(seats)))}
         </Group>
-        <Group title={lt.filterSheet.maxPrice}>
-          {MAX_PRICE_OPTIONS.map((price) => chip('max_kaina', price, lt.filterSheet.upTo(price)))}
-        </Group>
-        <Group title={lt.filterSheet.brand}>
+        <Group title={lt.filterSheet.brand} icon="car-sport-outline">
           {missingBrand !== null ? chip('marke', missingBrand, missingBrand) : null}
           {optionsStatus === 'success' ? brands.map((brand) => chip('marke', brand, brand)) : null}
           <OptionsState
@@ -173,7 +181,7 @@ export function FilterSheet({
             testID="filter-brands"
           />
         </Group>
-        <Group title={lt.filterSheet.body}>
+        <Group title={lt.filterSheet.body} icon="layers-outline">
           {missingBody !== null ? chip('kebulo_tipas', missingBody, missingBody) : null}
           {optionsStatus === 'success' ? bodyTypes.map((body) => chip('kebulo_tipas', body, body)) : null}
           <OptionsState
@@ -190,12 +198,20 @@ export function FilterSheet({
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl },
-  group: { marginBottom: spacing.xl },
-  groupTitle: { ...typography.label, marginBottom: spacing.sm },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl, gap: spacing.md },
+  group: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt },
+  groupHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  groupIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
+  groupTitle: { ...typography.bodyStrong, flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  option: { flexBasis: '48%', flexGrow: 1, minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  optionSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  optionPressed: { opacity: 0.8 },
+  optionText: { ...typography.caption, color: colors.text, flex: 1 },
+  optionTextSelected: { ...typography.bodyStrong, fontSize: 14 },
   note: { ...typography.caption, alignSelf: 'center' },
   errorRow: { gap: spacing.sm, alignItems: 'flex-start' },
   error: { ...typography.bodyStrong, color: colors.danger },
-  footerButton: { flex: 1 },
+  clearButton: { minHeight: 52, borderRadius: radius.md, paddingHorizontal: spacing.md },
+  applyButton: { flex: 1, minHeight: 52, borderRadius: radius.md },
 });

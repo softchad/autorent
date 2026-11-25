@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { fetchCars, fetchLocations } from '@/api/cars';
+import { fetchBookingRules } from '@/api/booking';
 import { Screen } from '@/components/Screen';
 import { CatalogueView } from '@/features/catalogue/CatalogueView';
 import { FilterSheet } from '@/features/catalogue/FilterSheet';
@@ -15,6 +16,7 @@ export default function CarsTab() {
   // Pasirinkimų sąrašai (padaliniai, markės, kėbulai) užkraunami vieną kartą ir nepriklauso nuo filtrų.
   const locations = useAsync((signal) => fetchLocations(signal), []);
   const allCars = useAsync((signal) => fetchCars({ only_available: false }, signal), []);
+  const rules = useAsync((signal) => fetchBookingRules(signal), []);
 
   function openCar(carId: number) {
     const period = filters.date_from && filters.date_to ? { nuo: filters.date_from, iki: filters.date_to } : {};
@@ -22,9 +24,10 @@ export default function CarsTab() {
   }
 
   return (
-    <Screen scroll={false} padded={false} topInset testID="screen-cars">
+    <Screen scroll={false} padded={false} topInset bottomInset={false} grid testID="screen-cars">
       <CatalogueView
         filters={filters}
+        today={rules.data?.siandien}
         onChangeFilters={setFilters}
         onOpenCar={(car) => openCar(car.automobilio_id)}
         locations={locations.data ?? []}

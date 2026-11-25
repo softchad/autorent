@@ -4,7 +4,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { lt } from '@/i18n/lt';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import { describeLoginError } from './loginErrors';
 import { FieldErrors, hasErrors, LoginValues, validateLogin } from './validation';
 
@@ -75,8 +75,7 @@ export function LoginForm({ onSuccess, onGoRegister }: Props) {
   }
 
   return (
-    <View>
-      <Text style={styles.intro}>{lt.login.intro}</Text>
+    <View style={styles.form}>
       {notice ? (
         <Text style={styles.notice} accessibilityRole="alert" testID="login-notice">
           {notice}
@@ -114,14 +113,15 @@ export function LoginForm({ onSuccess, onGoRegister }: Props) {
           {serverError}
         </Text>
       ) : null}
-      <Button label={lt.login.submit} onPress={handleSubmit} loading={submitting} testID="login-submit" />
+      <Button label={lt.login.submit} onPress={handleSubmit} variant="accent" loading={submitting} testID="login-submit" />
       {onGoRegister ? (
         <View style={styles.registerRow}>
-          <Text style={typography.body}>{lt.login.noAccount}</Text>
+          <Text style={typography.caption}>{lt.login.noAccount}</Text>
           <Button
             label={lt.login.goRegister}
             onPress={onGoRegister}
-            variant="secondary"
+            variant="ghost"
+            style={styles.switchButton}
             disabled={submitting}
             testID="login-go-register"
           />
@@ -132,7 +132,7 @@ export function LoginForm({ onSuccess, onGoRegister }: Props) {
 }
 
 const styles = StyleSheet.create({
-  intro: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
+  form: { backgroundColor: colors.surfaceAlt, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, padding: spacing.lg },
   notice: {
     ...typography.body,
     color: colors.warning,
@@ -142,5 +142,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   serverError: { ...typography.bodyStrong, color: colors.danger, marginBottom: spacing.md },
-  registerRow: { marginTop: spacing.xl, gap: spacing.sm },
+  registerRow: { marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  switchButton: { minHeight: 44, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
 });

@@ -48,6 +48,10 @@ export function useOnboarding(): { status: OnboardingStatus; complete: () => voi
   const [status, setStatus] = useState<OnboardingStatus>('loading');
 
   useEffect(() => {
+    if (__DEV__ && process.env.EXPO_PUBLIC_DEMO_ONBOARDING === '1') {
+      setStatus('needed');
+      return;
+    }
     let active = true;
     isOnboardingDone().then((done) => {
       if (active) setStatus(done ? 'done' : 'needed');

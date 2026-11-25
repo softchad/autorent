@@ -17,13 +17,14 @@ type Props = {
   accessibilityHint?: string;
   // Ženklelis viršutiniame kairiajame kampe (pvz. „Laisvas pasirinktomis dienomis“).
   badge?: ReactNode;
+  highlighted?: boolean;
   // Trumpa žyma viršutiniame dešiniajame kampe (pvz. „2022 · Vilnius“).
   tag?: string;
   testID?: string;
 };
 
 // Didelė automobilio kortelė: nuotrauka per visą plotą, tekstas apačioje ant tamsėjančio fono.
-export function VehicleCard({ title, subtitle, price, priceUnit, image, onPress, accessibilityLabel, accessibilityHint, badge, tag, testID }: Props) {
+export function VehicleCard({ title, subtitle, price, priceUnit, image, onPress, accessibilityLabel, accessibilityHint, badge, highlighted = false, tag, testID }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -31,7 +32,7 @@ export function VehicleCard({ title, subtitle, price, priceUnit, image, onPress,
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       testID={testID}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}
     >
       <View style={styles.image}>
         <Image source={image} style={styles.fill} resizeMode="contain" accessibilityIgnoresInvertColors />
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pressed: { transform: [{ scale: 0.985 }], borderColor: colors.primary },
+  highlighted: { borderColor: colors.accent },
   image: { flex: 1, justifyContent: 'flex-end' },
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   heading: { position: 'absolute', top: spacing.lg, left: spacing.lg, right: spacing.lg, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },

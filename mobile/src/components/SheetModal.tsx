@@ -43,7 +43,7 @@ export function SheetModal({ visible, title, onClose, children, footer, tall = f
             <Text style={styles.title} accessibilityRole="header">
               {title}
             </Text>
-            <IconButton icon="close" accessibilityLabel={lt.common.close} onPress={onClose} size={44} testID={closeTestID} />
+            <IconButton icon="close" accessibilityLabel={lt.common.close} onPress={onClose} size={44} style={styles.close} testID={closeTestID} />
           </View>
           <View style={tall ? styles.bodyTall : undefined}>{children}</View>
           {footer ? <View style={styles.footer}>{footer}</View> : null}
@@ -58,12 +58,12 @@ const styles = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: overlays.scrim },
   sheet: {
     maxHeight: '92%',
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.background,
     borderTopLeftRadius: radius.card,
     borderTopRightRadius: radius.card,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: colors.borderStrong,
+    borderColor: colors.brand,
   },
   tall: { height: '92%' },
   bodyTall: { flex: 1 },
@@ -81,15 +81,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
   },
-  title: { ...typography.heading, flex: 1 },
+  title: { ...typography.title, flex: 1 },
+  close: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md },
   footer: {
     flexDirection: 'row',
     gap: spacing.md,
     padding: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
   },
 });

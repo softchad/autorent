@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import {
   colors,
+  fonts,
   MIN_TOUCH_SIZE,
   radius,
   spacing,
@@ -82,18 +83,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   label: {
-    ...typography.label,
+    ...typography.caption,
+    fontFamily: fonts.medium,
+    color: colors.text,
     marginBottom: spacing.sm,
   },
   input: {
     ...typography.body,
-    minHeight: MIN_TOUCH_SIZE + 10,
+    minHeight: MIN_TOUCH_SIZE + 12,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.background,
   },
   inputFocused: {
     borderColor: colors.primary,

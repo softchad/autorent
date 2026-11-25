@@ -1,12 +1,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import * as supportApi from '@/api/support';
 import * as carsApi from '@/api/cars';
+import * as bookingApi from '@/api/booking';
 import { useAuth } from '@/auth/AuthContext';
 import { deviceToday, monthOf, shiftMonthRef } from '@/features/catalogue/dateRange';
 import { makeCar } from '@/testUtils/fixtures';
 import { toIsoDate } from '@/utils/isoDate';
 import AccountTab from '../app/(tabs)/paskyra';
 import CarsTab from '../app/(tabs)/index';
+import ReservationsTab from '../app/(tabs)/rezervacijos';
+import MessagesTab from '../app/(tabs)/zinutes';
 import DesignPreviewScreen from '../app/perziura';
 
 // Expo Router kiekvieną failą aplanke paverčia ekranu, todėl čia tikrinamas išdėstymas diske
@@ -38,6 +42,7 @@ jest.mock('expo-router', () => {
 });
 // Katalogo ir pagalbos užklausos imituojamos: testai tinklo neliečia.
 jest.mock('@/api/cars');
+jest.mock('@/api/booking');
 jest.mock('@/api/support');
 jest.mock('@/auth/AuthContext');
 
@@ -52,10 +57,12 @@ const CUSTOMER = {
 };
 
 beforeEach(() => {
+  jest.mocked(supportApi.fetchConversations).mockReset().mockResolvedValue([]);
   mockRouter.push.mockReset();
   mockRouter.navigate.mockReset();
   jest.mocked(carsApi.fetchCars).mockReset().mockResolvedValue([]);
   jest.mocked(carsApi.fetchLocations).mockReset().mockResolvedValue([]);
+  jest.mocked(bookingApi.fetchBookingRules).mockReset().mockResolvedValue({ siandien: deviceToday(), min_paru: 1, max_paru: 30, grazinimas_iki_val: 10, paemimas_nuo_val: 12, paemimas_iki_val: 18 });
   jest.mocked(useAuth).mockReturnValue({
     status: 'signedIn',
     notice: null,
@@ -84,8 +91,25 @@ function routeFiles(dir: string): string[] {
 }
 
 describe('skirtukų aplankas (tabs)', () => {
-  it('turi tik tris skirtukų ekranus: automobiliai, rezervacijos, paskyra', () => {
-    expect(routeFiles(TABS_DIR)).toEqual(['index', 'paskyra', 'rezervacijos']);
+  it('neprisijungus rezervacijų antraštė nerodoma, rodomas bendras prisijungimo vaizdas', async () => {
+    jest.mocked(useAuth).mockReturnValue({ status: 'signedOut', notice: null } as ReturnType<typeof useAuth>);
+    await render(<ReservationsTab />);
+    expect(screen.queryByText('Mano rezervacijos')).toBeNull();
+    expect(screen.getByTestId('require-auth')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Prisijungti' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Registruotis' })).toBeTruthy();
+  });
+
+  it('atkuriant sesiją rezervacijų antraštė ir prisijungimo kvietimas nerodomi', async () => {
+    jest.mocked(useAuth).mockReturnValue({ status: 'loading', notice: null } as ReturnType<typeof useAuth>);
+    await render(<ReservationsTab />);
+    expect(screen.queryByText('Mano rezervacijos')).toBeNull();
+    expect(screen.queryByTestId('require-auth')).toBeNull();
+    expect(screen.getByTestId('loading-view')).toBeTruthy();
+  });
+
+  it('turi keturis skirtukų ekranus: automobiliai, rezervacijos, žinutės, paskyra', () => {
+    expect(routeFiles(TABS_DIR)).toEqual(['index', 'paskyra', 'rezervacijos', 'zinutes']);
   });
 
   it('kiekvienas to aplanko failas yra deklaruotas skirtukų išdėstyme', () => {
@@ -257,5 +281,40 @@ describe('automobilių skirtukas', () => {
     await waitFor(() => expect(screen.getByTestId('brands-error')).toBeTruthy());
     await fireEvent.press(screen.getByTestId('search-location'));
     expect(screen.getByText('Padalinių sąrašo užkrauti nepavyko.')).toBeTruthy();
+  });
+});
+
+
+describe('žinučių skirtukas', () => {
+  it.each(['signedOut', 'loading'] as const)('%s būsenoje pokalbiai nekraunami ir antraštė nerodoma', async (status) => {
+    jest.mocked(useAuth).mockReturnValue({ status, notice: null } as ReturnType<typeof useAuth>);
+    await render(<MessagesTab />);
+    expect(screen.queryByText('Žinutės')).toBeNull();
+    expect(supportApi.fetchConversations).not.toHaveBeenCalled();
+    expect(screen.getByTestId(status === 'signedOut' ? 'require-auth' : 'loading-view')).toBeTruthy();
+  });
+
+  it('prisijungus leidžia pradėti naują pokalbį', async () => {
+    await render(<MessagesTab />);
+    expect(await screen.findByTestId('inbox-new')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('inbox-new'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/pokalbis/naujas');
+    expect(supportApi.fetchConversations).toHaveBeenCalledTimes(1);
+  });
+
+  it('atidaro pasirinktą pokalbį, o pakeitus klientą pašalina ankstesnius pokalbius', async () => {
+    jest.mocked(supportApi.fetchConversations).mockResolvedValueOnce([{
+      pokalbio_id: 42, tema: 'Klausimas apie nuomą', kategorija: 'kita', busena: 'atviras',
+      sukurimo_data: '2026-11-25T10:00:00Z', atnaujinimo_data: '2026-11-25T10:00:00Z',
+      paskutine_zinute: null, paskutine_zinute_autorius: null, neperskaityta: false,
+      rezervacija: null, sprendimo_santrauka: null,
+    }]);
+    const view = await render(<MessagesTab />);
+    await fireEvent.press(await screen.findByTestId('conversation-42'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/pokalbis/[id]', params: { id: '42' } });
+    jest.mocked(useAuth).mockReturnValue({ ...useAuth(), customer: { ...CUSTOMER, kliento_id: 8 } });
+    await view.rerender(<MessagesTab />);
+    await waitFor(() => expect(supportApi.fetchConversations).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('conversation-42')).toBeNull();
   });
 });

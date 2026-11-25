@@ -1,14 +1,14 @@
 // AutoRent spalvos: tamsūs fonai, mėlyna ir oranžiniai akcentai.
 export const colors = {
   background: '#0B121F',
-  surfaceAlt: '#101827',
-  surface: '#1A2238',
-  surfaceRaised: '#19243A',
-  neutralSoft: '#232E47',
+  surfaceAlt: '#0E1525',
+  surface: '#102435',
+  surfaceRaised: '#142B3D',
+  neutralSoft: '#17364A',
 
   // Skiriamosios linijos ir ryškesni kontūrai.
   border: '#1C2B3A',
-  borderStrong: '#3B4D6B',
+  borderStrong: '#2B4A60',
 
   text: '#F7F7F7',
   textMuted: '#8FA2BF',
@@ -26,6 +26,7 @@ export const colors = {
 
   // Oranžinė pagrindiniams veiksmams.
   accent: '#FF7A1A',
+  accentHighlight: '#FF831E',
   accentPressed: '#FF8C3D',
   textOnAccent: '#0B121F',
 
@@ -42,7 +43,7 @@ export type ColorName = keyof typeof colors;
 // Permatomi sluoksniai. Jų kontrastas priklausys ir nuo turinio po jais.
 export const overlays = {
   scrim: 'rgba(7, 11, 20, 0.72)',
-  glass: 'rgba(16, 24, 39, 0.82)',
+  glass: 'rgba(10, 35, 52, 0.86)',
   glassLight: 'rgba(247, 247, 247, 0.10)',
   glassBorder: 'rgba(247, 247, 247, 0.16)',
   gridLine: 'rgba(143, 162, 191, 0.07)',

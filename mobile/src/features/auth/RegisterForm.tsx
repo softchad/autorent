@@ -6,7 +6,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { lt } from '@/i18n/lt';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import { toIsoDate } from '@/utils/isoDate';
 import { describeRegisterError } from './registerErrors';
 import { FieldErrors, hasErrors, RegisterValues, validateRegistration } from './validation';
@@ -175,38 +175,43 @@ export function RegisterForm({ onSuccess, onGoLogin }: Props) {
     }
   }
 
+  function renderField(field: FieldConfig) {
+    const last = field.name === FIELDS[FIELDS.length - 1].name;
+    return (
+      <TextField
+        key={field.name}
+        label={field.label}
+        hint={field.hint}
+        value={values[field.name]}
+        onChangeText={(text) => setValues((current) => ({ ...current, [field.name]: text }))}
+        error={errors[field.name]}
+        returnKeyType={last ? 'go' : 'next'}
+        onSubmitEditing={last ? handleSubmit : undefined}
+        testID={`register-${field.name}`}
+        {...field.input}
+      />
+    );
+  }
+
   return (
-    <View>
-      <Text style={styles.intro}>{lt.register.intro}</Text>
-      {FIELDS.map((field, index) => {
-        const last = index === FIELDS.length - 1;
-        return (
-          <TextField
-            key={field.name}
-            label={field.label}
-            hint={field.hint}
-            value={values[field.name]}
-            onChangeText={(text) => setValues((current) => ({ ...current, [field.name]: text }))}
-            error={errors[field.name]}
-            returnKeyType={last ? 'go' : 'next'}
-            onSubmitEditing={last ? handleSubmit : undefined}
-            testID={`register-${field.name}`}
-            {...field.input}
-          />
-        );
-      })}
+    <View style={styles.form}>
+      <View style={styles.nameRow}>
+        {FIELDS.slice(0, 2).map((field) => <View key={field.name} style={styles.nameField}>{renderField(field)}</View>)}
+      </View>
+      {FIELDS.slice(2).map(renderField)}
       {serverError ? (
         <Text style={styles.serverError} accessibilityRole="alert" testID="register-error">
           {serverError}
         </Text>
       ) : null}
-      <Button label={lt.register.submit} onPress={handleSubmit} loading={submitting} testID="register-submit" />
+      <Button label={lt.register.submit} onPress={handleSubmit} variant="accent" loading={submitting} testID="register-submit" />
       <View style={styles.loginRow}>
-        <Text style={typography.body}>{lt.register.haveAccount}</Text>
+        <Text style={typography.caption}>{lt.register.haveAccount}</Text>
         <Button
           label={lt.register.goLogin}
           onPress={onGoLogin}
-          variant="secondary"
+          variant="ghost"
+          style={styles.switchButton}
           disabled={submitting}
           testID="register-go-login"
         />
@@ -216,7 +221,10 @@ export function RegisterForm({ onSuccess, onGoLogin }: Props) {
 }
 
 const styles = StyleSheet.create({
-  intro: { ...typography.body, color: colors.textMuted, marginBottom: spacing.lg },
+  form: { backgroundColor: colors.surfaceAlt, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, padding: spacing.lg },
+  nameRow: { flexDirection: 'row', gap: spacing.md },
+  nameField: { flex: 1 },
   serverError: { ...typography.bodyStrong, color: colors.danger, marginBottom: spacing.md },
-  loginRow: { marginTop: spacing.xl, gap: spacing.sm },
+  loginRow: { marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  switchButton: { minHeight: 44, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
 });

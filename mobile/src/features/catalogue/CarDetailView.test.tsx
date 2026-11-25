@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { makeCar } from '@/testUtils/fixtures';
 import { MIN_TOUCH_SIZE } from '@/theme';
 import { CarDetailView, isBookable, notBookableText, periodBadge, specRows } from './CarDetailView';
@@ -54,10 +54,10 @@ async function expandSheet() {
 }
 
 describe('CarDetailView', () => {
-  it('suskleistame lape matomas pavadinimas, o virš fono – maža kortelė su kaina', async () => {
+  it('suskleistame lape matomas automobilio pavadinimas ir pagrindiniai duomenys', async () => {
     await render(<CarDetailView car={makeCar()} />);
     expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy();
-    expect(screen.getByLabelText('Toyota Corolla. 2022 · Sedanas. 45,00 € / diena')).toBeTruthy();
+    expect(screen.getByText('2022 · automatinė · hibridas')).toBeTruthy();
   });
 
   it('kol lapas suskleistas, jo turinys ekrano skaitytuvui paslėptas', async () => {
@@ -157,30 +157,20 @@ describe('periodBadge', () => {
   });
 });
 
-describe('CarDetailView – judesys', () => {
-  function summaryStyle() {
-    // Animuojamas maža kortelės konteineris (kortelės tėvas).
-    return StyleSheet.flatten(screen.getByTestId('car-summary').parent?.props.style);
-  }
-
-  it('sumažinus judesį kortelė iš karto galutinėje padėtyje, animacija nepaleidžiama', async () => {
-    mockReduced = true;
-    const timing = jest.spyOn(Animated, 'timing');
-    await render(<CarDetailView car={makeCar()} />);
-    expect(summaryStyle()).toMatchObject({ opacity: 1 });
-    expect(timing).not.toHaveBeenCalled();
-    timing.mockRestore();
+describe('CarDetailView – antraštė ir kaina', () => {
+  it('pavadinimas ir kaina nesikartoja', async () => {
+    await render(<CarDetailView car={makeCar()} onReserve={jest.fn()} />);
+    expect(screen.getAllByText('Toyota Corolla')).toHaveLength(1);
+    expect(screen.getAllByText('45,00 €')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Rezervuoti dabar. 45,00 € / diena' })).toBeTruthy();
   });
 
-  it('be sumažinto judesio kortelė įvažiuoja animacija, kuri sustabdoma išmontavus', async () => {
-    mockReduced = false;
-    const stop = jest.fn();
-    const timing = jest.spyOn(Animated, 'timing').mockReturnValue({ start: jest.fn(), stop, reset: jest.fn() });
-    const view = await render(<CarDetailView car={makeCar()} />);
-    expect(summaryStyle()).toMatchObject({ opacity: 0 });
-    expect(timing).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toValue: 1 }));
-    await view.unmount();
-    expect(stop).toHaveBeenCalled();
-    timing.mockRestore();
+  it('pakeitus automobilį antraštė ir rezervavimo kaina atnaujinamos kartu', async () => {
+    const view = await render(<CarDetailView car={makeCar()} onReserve={jest.fn()} />);
+    await view.rerender(<CarDetailView car={makeCar({ automobilio_id: 2, marke: 'Honda', modelis: 'Civic', kaina_parai: 30 })} onReserve={jest.fn()} />);
+    expect(screen.queryByText('Toyota Corolla')).toBeNull();
+    expect(screen.queryByText('45,00 €')).toBeNull();
+    expect(screen.getAllByText('Honda Civic')).toHaveLength(1);
+    expect(screen.getAllByText('30,00 €')).toHaveLength(1);
   });
 });

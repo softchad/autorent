@@ -1,15 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ReactNode, useState } from 'react';
+import { Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PublicCar } from '@/api/types';
 import { Badge } from '@/components/Badge';
 import { IconButton } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ExpandableSheet } from '@/components/ExpandableSheet';
-import { FloatingCarSummary } from '@/components/FloatingCarSummary';
 import { ReservationBar } from '@/components/ReservationBar';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { lt } from '@/i18n/lt';
 import { colors, MIN_TOUCH_SIZE, radius, spacing, typography } from '@/theme';
 import { getCarPhoto } from '@/theme/images';
@@ -52,7 +50,7 @@ const COLLAPSED_HEIGHT = 132;
 // Lapo viršutinis rėmelis.
 const SHEET_BORDER = 1;
 // Kokią ekrano dalį užima išskleistas lapas.
-const EXPANDED_SHARE = 0.55;
+const EXPANDED_SHARE = 0.75;
 
 type Props = {
   car: PublicCar;
@@ -69,19 +67,9 @@ type Props = {
   onReserve?: () => void;
 };
 
-// Automobilio ekranas: fonas per visą ekraną, virš jo – maža automobilio kortelė,
-// ištraukiamas informacijos lapas ir rezervavimo juosta.
+// Automobilio ekranas: fonas, ištraukiamas informacijos lapas ir rezervavimo juosta.
 export function CarDetailView({ car, children, backdrop, pickupExtras, statusBadge, onBack, onReserve }: Props) {
   const window = useWindowDimensions();
-  const reduced = useReducedMotion();
-  const entrance = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    entrance.setValue(reduced ? 1 : 0);
-    if (reduced) return;
-    const animation = Animated.timing(entrance, { toValue: 1, duration: 350, useNativeDriver: true });
-    animation.start();
-    return () => animation.stop();
-  }, [car.automobilio_id, entrance, reduced]);
   // Tikras scenos aukštis sužinomas ją išdėsčius; iki tol naudojamas lango aukštis.
   const [stageHeight, setStageHeight] = useState(window.height);
   // Suskleistas lapas turi sutalpinti visą antraštę, net jei perspėjimas užima kelias eilutes.
@@ -94,7 +82,7 @@ export function CarDetailView({ car, children, backdrop, pickupExtras, statusBad
 
   return (
     <View style={styles.fill}>
-      <View style={styles.fill} onLayout={(event) => setStageHeight(event.nativeEvent.layout.height)}>
+      <View style={styles.stage} onLayout={(event) => setStageHeight(event.nativeEvent.layout.height)}>
         {backdrop ?? (
           <View style={styles.fill} testID="car-photo-backdrop">
             <Image source={photo} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
@@ -108,24 +96,6 @@ export function CarDetailView({ car, children, backdrop, pickupExtras, statusBad
           </SafeAreaView>
         ) : null}
 
-        <Animated.View style={[styles.summary, {
-          bottom: collapsedHeight + spacing.md,
-          opacity: entrance,
-          transform: [
-            { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-stageHeight * 0.35, 0] }) },
-            { scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [1.2, 1] }) },
-          ],
-        }]} pointerEvents="none">
-          <FloatingCarSummary
-            title={title}
-            subtitle={`${car.metai} · ${car.kebulo_tipas}`}
-            price={price}
-            priceUnit={lt.vehicle.perDay}
-            image={photo}
-            testID="car-summary"
-          />
-        </Animated.View>
-
         <ExpandableSheet
           collapsedHeight={collapsedHeight}
           expandedHeight={Math.max(collapsedHeight, Math.round(stageHeight * EXPANDED_SHARE))}
@@ -134,12 +104,19 @@ export function CarDetailView({ car, children, backdrop, pickupExtras, statusBad
           testID="car-sheet"
           header={
             <View style={styles.sheetHeader} onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)} testID="car-sheet-header">
-              <Text style={typography.title} accessibilityRole="header" numberOfLines={1}>
-                {title}
-              </Text>
-              <Text style={typography.caption} numberOfLines={1}>
-                {car.pavaru_deze} · {car.kuro_tipas} · {car.sedimos_vietos} {lt.car.seats}
-              </Text>
+              <View style={styles.imageFrame} pointerEvents="none">
+                <Image source={photo} style={styles.thumbnail} resizeMode="cover" accessible={false} />
+              </View>
+              <View style={styles.headingRow}>
+                <View style={styles.headingText}>
+                  <Text style={typography.heading} accessibilityRole="header">
+                    {title}
+                  </Text>
+                  <Text style={typography.caption}>
+                    {car.metai} · {car.pavaru_deze} · {car.kuro_tipas}
+                  </Text>
+                </View>
+              </View>
               {statusBadge ? <View style={styles.statusBadge}>{statusBadge}</View> : null}
               {/* Antraštėje, ne lapo turinyje: matoma ir ekrano skaitytuvui pasiekiama suskleidus lapą. */}
               {warning ? (
@@ -179,7 +156,7 @@ export function CarDetailView({ car, children, backdrop, pickupExtras, statusBad
 
       {/* Rezervavimo juosta visada matoma ekrano apačioje, po informacijos lapu. */}
       {onReserve && !warning ? (
-        <SafeAreaView edges={['bottom']} style={styles.barArea}>
+        <View style={styles.barArea}>
           <ReservationBar
             label={lt.vehicle.reserveNow}
             price={price}
@@ -188,7 +165,7 @@ export function CarDetailView({ car, children, backdrop, pickupExtras, statusBad
             accessibilityHint={lt.carDetail.chooseDates}
             testID="choose-dates"
           />
-        </SafeAreaView>
+        </View>
       ) : null}
     </View>
   );
@@ -207,11 +184,30 @@ export function periodBadge(car: PublicCar): ReactNode {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.background },
+  stage: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
   photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  // Maža kortelė „plūduriuoja“ kairėje, iškart virš suskleisto lapo.
-  summary: { position: 'absolute', left: spacing.lg, right: spacing.lg, alignItems: 'flex-start' },
   sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: 2 },
+  headingRow: { minHeight: 72, justifyContent: 'center', paddingRight: 136 },
+  imageFrame: {
+    position: 'absolute',
+    right: spacing.lg,
+    top: -MIN_TOUCH_SIZE - 56,
+    width: 128,
+    height: 112,
+    padding: 3,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceAlt,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  thumbnail: { width: '100%', height: '100%', borderRadius: radius.lg - 5, backgroundColor: colors.surface },
+  headingText: { flex: 1, gap: spacing.xs },
   statusBadge: { marginTop: spacing.xs },
   warning: {
     ...typography.bodyStrong,

@@ -7,6 +7,16 @@ const FREE = 'Laisvas pasirinktomis dienomis';
 const BUSY = 'Užimtas pasirinktomis dienomis';
 const BASE_LABEL_START = 'Toyota Corolla, 2022. automatinė · hibridas · 5 vietos · 103 kW. Vilnius';
 
+describe('CarCard – pasiūlymas', () => {
+  it('pasiūlymo žyma išsaugo laisvumo būseną ir patenka į prieinamumo etiketę', async () => {
+    await render(<CarCard car={makeCar({ laisvas_pasirinktu_laikotarpiu: true })} topPick onPress={jest.fn()} />);
+    expect(screen.getByText('Puikus pasiūlymas')).toBeTruthy();
+    expect(screen.getByText(FREE)).toBeTruthy();
+    expect(screen.getByRole('button').props.accessibilityLabel).toContain('Puikus pasiūlymas');
+    expect(screen.getByRole('button').props.accessibilityLabel).toContain(FREE);
+  });
+});
+
 describe('CarCard – laisvumo būsena', () => {
   it('null: ženklelio nėra, etiketėje laisvumo teksto nėra', async () => {
     await render(<CarCard car={makeCar({ laisvas_pasirinktu_laikotarpiu: null })} onPress={jest.fn()} />);

@@ -47,7 +47,7 @@ type Props = {
 // Horizontaliai slenkama gamintojų juosta; paspaudus markę katalogas filtruojamas pagal ją.
 export function ManufacturerBelt({ brands, selected, onSelect, allLabel }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.belt} testID="manufacturer-belt">
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.container} contentContainerStyle={styles.belt} testID="manufacturer-belt">
       <BeltItem label={allLabel} selected={selected === null} onPress={() => onSelect(null)} testID="brand-all" />
       {brands.map((brand) => (
         <BeltItem
@@ -67,18 +67,19 @@ export function ManufacturerBelt({ brands, selected, onSelect, allLabel }: Props
 const CIRCLE = 24;
 
 const styles = StyleSheet.create({
-  belt: { gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs },
-  item: { minHeight: Math.max(46, MIN_TOUCH_SIZE), flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
+  container: { marginHorizontal: spacing.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: '#0E1525' },
+  belt: { gap: spacing.xs, padding: spacing.sm },
+  item: { minHeight: Math.max(46, MIN_TOUCH_SIZE), flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: 'transparent', backgroundColor: '#0E1525' },
   circle: {
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: 'transparent',
     borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circleSelected: { backgroundColor: colors.brand, borderColor: colors.primary, borderWidth: 2 },
+  circleSelected: { backgroundColor: colors.brand, borderColor: colors.brand, borderWidth: 1 },
   label: { ...typography.caption, fontSize: 12, lineHeight: 16 },
   // Tekstas ant colors.brand fono: textOnBrand duoda ~7:1, o colors.primary tik ~4:1 (per mažai 12 px tekstui).
   labelSelected: { color: colors.textOnBrand, fontFamily: fonts.semibold },

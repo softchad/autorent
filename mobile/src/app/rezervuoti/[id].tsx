@@ -62,16 +62,15 @@ function BookingContent({ carId, nuo, iki }: { carId: number; nuo?: string; iki?
     setReady(isReady);
   }, []);
 
-  // Tęsti galima tik su šio automobilio paruoštu juodraščiu ir žinant prisijungimo būseną.
-  // Neprisijungęs klientas po prisijungimo grįžta į šį ekraną su tais pačiais pasirinkimais.
-  const canContinue = status !== 'loading' && ready && draft !== null && draft.carId === carId;
+  // Prisijungimas neatmeta juodraščio; patvirtinimui būtina paruošta šio automobilio kaina.
+  const canContinue = status === 'signedOut' || (status === 'signedIn' && ready && draft !== null && draft.carId === carId);
 
   function handleContinue() {
-    if (!canContinue || draft === null) {
-      return;
-    }
     if (status === 'signedOut') {
       goLogin();
+      return;
+    }
+    if (!canContinue || draft === null) {
       return;
     }
     router.push({ pathname: '/patvirtinimas', params: draftToParams(draft) });

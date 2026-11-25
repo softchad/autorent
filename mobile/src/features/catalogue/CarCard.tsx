@@ -1,13 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
 import { PublicCar } from '@/api/types';
 import { Badge } from '@/components/Badge';
 import { VehicleCard } from '@/components/VehicleCard';
 import { lt } from '@/i18n/lt';
 import { getCarPhoto } from '@/theme/images';
+import { colors, fonts, spacing } from '@/theme';
 import { formatMoney } from '@/utils/format';
 
 type Props = {
   car: PublicCar;
   onPress: () => void;
+  topPick?: boolean;
   // Ką daro paspaudimas; numatytai – atidaro automobilio informaciją.
   accessibilityHint?: string;
 };
@@ -37,7 +41,7 @@ function availabilityBadge(car: PublicCar) {
 }
 
 // Katalogo kortelė: serverio duomenys sudedami į bendrą didelę automobilio kortelę.
-export function CarCard({ car, onPress, accessibilityHint = lt.car.openHint }: Props) {
+export function CarCard({ car, onPress, topPick = false, accessibilityHint = lt.car.openHint }: Props) {
   const title = `${car.marke} ${car.modelis}`;
   const price = formatMoney(car.kaina_parai);
   const place = car.lokacija ? car.lokacija.miestas : '';
@@ -47,6 +51,7 @@ export function CarCard({ car, onPress, accessibilityHint = lt.car.openHint }: P
     `${title}, ${car.metai}`,
     carSummary(car),
     place,
+    topPick ? lt.car.topPick : null,
     availabilityText(car),
     `${price} ${lt.car.perDay}`,
   ]
@@ -61,7 +66,16 @@ export function CarCard({ car, onPress, accessibilityHint = lt.car.openHint }: P
       priceUnit={lt.vehicle.perDay}
       image={getCarPhoto(car.marke)}
       tag={place ? `${car.metai} · ${place}` : String(car.metai)}
-      badge={availabilityBadge(car)}
+      highlighted={topPick}
+      badge={topPick ? (
+        <View style={styles.badges}>
+          <View style={styles.topPick}>
+            <Ionicons name="star" size={13} color={colors.background} />
+            <Text style={styles.topPickText}>{lt.car.topPick}</Text>
+          </View>
+          {availabilityBadge(car)}
+        </View>
+      ) : availabilityBadge(car)}
       onPress={onPress}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
@@ -69,3 +83,9 @@ export function CarCard({ car, onPress, accessibilityHint = lt.car.openHint }: P
     />
   );
 }
+
+const styles = StyleSheet.create({
+  badges: { alignItems: 'flex-start', gap: spacing.xs },
+  topPick: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.accent, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  topPickText: { fontFamily: fonts.bold, fontSize: 12, color: colors.background },
+});

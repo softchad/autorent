@@ -13,6 +13,24 @@ const setSecure = SecureStore.setItemAsync as jest.Mock;
 
 const KEY = 'autorent_onboarding_done';
 
+it('demonstracijoje įžanga rodoma ir su išsaugota žyma, o ją užbaigus atidaroma programėlė', async () => {
+  const previous = process.env.EXPO_PUBLIC_DEMO_ONBOARDING;
+  process.env.EXPO_PUBLIC_DEMO_ONBOARDING = '1';
+  getSecure.mockResolvedValue('1');
+  try {
+    const first = await renderHook(() => useOnboarding());
+    await waitFor(() => expect(first.result.current.status).toBe('needed'));
+    await act(async () => first.result.current.complete());
+    expect(first.result.current.status).toBe('done');
+    await first.unmount();
+    const second = await renderHook(() => useOnboarding());
+    await waitFor(() => expect(second.result.current.status).toBe('needed'));
+  } finally {
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_DEMO_ONBOARDING;
+    else process.env.EXPO_PUBLIC_DEMO_ONBOARDING = previous;
+  }
+});
+
 // Paprasta localStorage imitacija, kurioje matomi visi įrašyti raktai.
 function createStorage() {
   const data = new Map<string, string>();

@@ -117,9 +117,9 @@ describe('paletė', () => {
     ).toBeGreaterThan(0.8);
   });
 
-  it('prekės ženklo spalvos sutampa su svetainės', () => {
+  it('mėlyni fonai ir svetainės prekės ženklo akcentai', () => {
     expect(colors.background).toBe('#0B121F');
-    expect(colors.surface).toBe('#1A2238');
+    expect(colors.surface).toBe('#102435');
     expect(colors.brand).toBe('#0F597B');
     expect(colors.accent).toBe('#FF7A1A');
     expect(colors.accentPressed).toBe('#FF8C3D');

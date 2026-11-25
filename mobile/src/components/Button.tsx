@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import {
   colors,
+  fonts,
   MIN_TOUCH_SIZE,
   overlays,
   radius,
@@ -107,16 +109,26 @@ export function Button({
             : palette.background,
         },
         variant === 'secondary' && styles.secondaryBorder,
+        variant === 'accent' && styles.accent,
         pressed && styles.pressed,
         inactive && styles.inactive,
         style,
       ]}
     >
+      {variant === 'accent' ? (
+        <LinearGradient
+          colors={[colors.accentHighlight, colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          pointerEvents="none"
+          style={[styles.gradient, { borderRadius: style?.borderRadius ?? radius.md }]}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={palette.text} />
       ) : (
         <>
-          <Text style={[typography.button, { color: palette.text }]}>
+          <Text style={[typography.button, styles.text, variant === 'accent' && styles.accentText, { color: palette.text }]}>
             {label}
           </Text>
           {icon ? (
@@ -202,6 +214,10 @@ export function IconButton({
 }
 
 const styles = StyleSheet.create({
+  gradient: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  accent: { minHeight: 56, borderRadius: radius.md },
+  text: { textAlign: 'center', flexShrink: 1 },
+  accentText: { fontFamily: fonts.bold, fontSize: 18, lineHeight: 26 },
   base: {
     minHeight: MIN_TOUCH_SIZE + 10,
     paddingHorizontal: spacing.xl,

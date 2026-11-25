@@ -85,31 +85,26 @@ export function SearchPanel(props: Props) {
           />
         </View>
       </View>
-      <Button label={props.searchLabel} onPress={props.onSearch} variant="accent" icon="search" loading={props.searching} testID="search-submit" />
+      <Button label={props.searchLabel} onPress={props.onSearch} variant="accent" icon="search" loading={props.searching} style={styles.submit} testID="search-submit" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
   field: {
-    minHeight: MIN_TOUCH_SIZE + 16,
+    minHeight: MIN_TOUCH_SIZE + 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: '#0E1525',
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -117,4 +112,5 @@ const styles = StyleSheet.create({
   fieldTexts: { flex: 1 },
   value: { ...typography.bodyStrong },
   placeholder: { color: colors.textMuted },
+  submit: { minHeight: 56, borderRadius: radius.md },
 });

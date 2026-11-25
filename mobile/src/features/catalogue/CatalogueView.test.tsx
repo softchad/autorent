@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import * as carsApi from '@/api/cars';
 import { ApiError } from '@/api/errors';
 import { makeCar } from '@/testUtils/fixtures';
-import { toIsoDate } from '@/utils/isoDate';
+import { addDays, toIsoDate } from '@/utils/isoDate';
+import { formatDateCompact } from '@/utils/format';
 import { CatalogueView } from './CatalogueView';
 import { deviceToday, monthOf, shiftMonthRef } from './dateRange';
 import { EMPTY_FILTERS } from './filters';
@@ -44,12 +45,32 @@ const LOCATIONS = [
   { vietos_id: 2, pavadinimas: 'Kaunas Centras', adresas: 'Laisvės al. 10, Kaunas', miestas: 'Kaunas' },
 ];
 
+it('žymi tris rekomenduojamus pasiūlymus ir nekeičia jų pakeitus rikiavimą', async () => {
+  fetchCars.mockResolvedValueOnce([
+    makeCar({ automobilio_id: 11, marke: 'Toyota', modelis: 'A', kaina_parai: 20, metai: 2024 }),
+    makeCar({ automobilio_id: 12, marke: 'Audi', modelis: 'B', kaina_parai: 30, metai: 2024 }),
+    makeCar({ automobilio_id: 13, marke: 'BMW', modelis: 'C', kaina_parai: 40, metai: 2024 }),
+    makeCar({ automobilio_id: 14, marke: 'Ford', modelis: 'D', kaina_parai: 90, metai: 2020 }),
+  ]);
+  await renderView().view;
+  await screen.findByTestId('car-card-14');
+  for (const id of [11, 12, 13]) {
+    expect(screen.getByTestId(`car-card-${id}`).props.accessibilityLabel).toContain('Puikus pasiūlymas');
+  }
+  expect(screen.getByTestId('car-card-14').props.accessibilityLabel).not.toContain('Puikus pasiūlymas');
+  await fireEvent.press(screen.getByTestId('sort-select'));
+  await fireEvent.press(screen.getByTestId('sort-price_desc'));
+  expect(screen.getByTestId('car-card-11').props.accessibilityLabel).toContain('Puikus pasiūlymas');
+  expect(screen.getByTestId('car-card-14').props.accessibilityLabel).not.toContain('Puikus pasiūlymas');
+});
+
 function renderView(overrides: Partial<Parameters<typeof CatalogueView>[0]> = {}) {
   const props = {
     filters: EMPTY_FILTERS,
     onChangeFilters: jest.fn(),
     onOpenFilters: jest.fn(),
     onOpenCar: jest.fn(),
+    today: deviceToday(),
     ...overrides,
   };
   return { props, view: render(<CatalogueView {...props} />) };
@@ -58,6 +79,15 @@ function renderView(overrides: Partial<Parameters<typeof CatalogueView>[0]> = {}
 beforeEach(() => fetchCars.mockReset());
 
 describe('CatalogueView', () => {
+  it.each([
+    [null, 'Filtrai'],
+    ['elektra', 'Filtrai (1)'],
+  ])('datos į filtrų skaičių neįtraukiamos (%s)', async (kuro_tipas, label) => {
+    fetchCars.mockResolvedValue(CARS);
+    await renderView({ filters: { ...EMPTY_FILTERS, date_from: '2026-11-28', date_to: '2026-12-02', kuro_tipas } }).view;
+    expect(screen.getByRole('button', { name: label })).toBeTruthy();
+  });
+
   it('užkrauna ir parodo automobilius', async () => {
     fetchCars.mockResolvedValue(CARS);
     await renderView().view;
@@ -99,7 +129,11 @@ describe('CatalogueView', () => {
     fetchCars.mockResolvedValue(CARS);
     await renderView().view;
     await waitFor(() => expect(screen.getByText('Toyota Corolla')).toBeTruthy());
-    await fireEvent.press(screen.getByRole('button', { name: 'Brangiausi' }));
+    await fireEvent.press(screen.getByTestId('sort-select'));
+    expect(screen.getByRole('radio', { name: 'Rekomenduojama' }).props.accessibilityState.checked).toBe(true);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Brangiausi' }));
+    expect(screen.queryByRole('radio', { name: 'Brangiausi' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Rikiuoti: Brangiausi' })).toBeTruthy();
     const titles = screen.getAllByText(/Corolla|Model 3/).map((node) => node.props.children);
     expect(titles[0]).toBe('Tesla Model 3');
     expect(fetchCars).toHaveBeenCalledTimes(1);
@@ -113,7 +147,7 @@ describe('CatalogueView', () => {
     for (const skeleton of screen.getByTestId('loading-view').children) {
       expect(skeleton).toHaveStyle({ height: 306 });
     }
-    expect(screen.getByRole('header', { name: 'Rask savo automobilį' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Sveiki sugrįžę' })).toBeTruthy();
     expect(screen.getByTestId('search-panel')).toBeTruthy();
   });
 
@@ -126,7 +160,7 @@ describe('CatalogueView', () => {
     expect(screen.getByRole('button', { name: 'Paėmimo vieta: Kaunas Centras' })).toBeTruthy();
     expect(props.onChangeFilters).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId('search-submit'));
-    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...EMPTY_FILTERS, vietos_id: 2 });
+    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...EMPTY_FILTERS, vietos_id: 2, date_from: deviceToday(), date_to: addDays(deviceToday(), 1) });
   });
 
   it('paieška išlaiko kitus filtrus (markę, kurą)', async () => {
@@ -137,7 +171,7 @@ describe('CatalogueView', () => {
     await fireEvent.press(screen.getByTestId('search-location'));
     await fireEvent.press(screen.getByTestId('location-1'));
     await fireEvent.press(screen.getByTestId('search-submit'));
-    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...filters, vietos_id: 1 });
+    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...filters, vietos_id: 1, date_from: deviceToday(), date_to: addDays(deviceToday(), 1) });
   });
 
   it('skydelyje rodomas jau pritaikytas laikotarpis trumpu formatu', async () => {
@@ -232,6 +266,18 @@ describe('CatalogueView – padalinių ir markių užkrovimas', () => {
 });
 
 describe('CatalogueView – datų juodraštis', () => {
+  it('iš karto rodo šiandieną–rytojų ir pritaiko tik paspaudus paiešką', async () => {
+    fetchCars.mockResolvedValue(CARS);
+    const { props, view } = renderView({ today: '2026-11-30' });
+    await view;
+    expect(screen.getByRole('button', { name: 'Nuo: 30 Lap' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Iki: 1 Gru' })).toBeTruthy();
+    expect(props.onChangeFilters).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Rikiuoti: Rekomenduojama' }).props.accessibilityState.expanded).toBe(false);
+    await fireEvent.press(screen.getByTestId('search-submit'));
+    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...EMPTY_FILTERS, date_from: '2026-11-30', date_to: '2026-12-01' });
+  });
+
   it('patvirtintos datos pritaikomos tik paspaudus „Ieškoti“, kiti filtrai lieka', async () => {
     fetchCars.mockResolvedValue(CARS);
     const filters = { ...EMPTY_FILTERS, marke: 'Tesla' };
@@ -262,8 +308,8 @@ describe('CatalogueView – datų juodraštis', () => {
     await fireEvent.press(screen.getByTestId(`date-${to}`));
     await fireEvent.press(screen.getByTestId('dates-close'));
 
-    expect(screen.getByRole('button', { name: 'Nuo: Pasirinkti' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: `Nuo: ${formatDateCompact(deviceToday())}` })).toBeTruthy();
     await fireEvent.press(screen.getByTestId('search-submit'));
-    expect(props.onChangeFilters).toHaveBeenCalledWith(EMPTY_FILTERS);
+    expect(props.onChangeFilters).toHaveBeenCalledWith({ ...EMPTY_FILTERS, date_from: deviceToday(), date_to: addDays(deviceToday(), 1) });
   });
 });

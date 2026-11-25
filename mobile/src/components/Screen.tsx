@@ -15,13 +15,15 @@ type Props = {
   padded?: boolean;
   // true – ekranas be navigacijos antraštės, todėl pats palieka vietos būsenos juostai.
   topInset?: boolean;
+  bottomInset?: boolean;
   // true – fone rodomas techninis tinklelis.
   grid?: boolean;
 };
 
 // Bendras ekrano rėmas: saugios zonos, tamsus fonas ir vienodi kraštų tarpai.
-export function Screen({ children, scroll = true, footer, testID, padded = true, topInset = false, grid = false }: Props) {
-  const edges: Edge[] = topInset ? ['top', 'left', 'right', 'bottom'] : ['left', 'right', 'bottom'];
+export function Screen({ children, scroll = true, footer, testID, padded = true, topInset = false, bottomInset = true, grid = false }: Props) {
+  const edges: Edge[] = topInset ? ['top', 'left', 'right'] : ['left', 'right'];
+  if (bottomInset) edges.push('bottom');
   return (
     <SafeAreaView style={styles.safeArea} edges={edges} testID={testID}>
       {grid ? <GridBackground /> : null}

@@ -19,8 +19,8 @@ export default function ReservationsTab() {
 
   return (
     <Screen scroll={false} padded={false} topInset grid testID="screen-reservations">
-      <Text style={styles.title} accessibilityRole="header">{lt.reservations.title}</Text>
       <RequireAuth message={lt.reservations.signedOutMessage} onLogin={goLogin} onRegister={goRegister}>
+        <Text style={styles.title} accessibilityRole="header">{lt.reservations.title}</Text>
         <RequireCustomer>
           <ReservationsView
             refreshKey={refreshKey}

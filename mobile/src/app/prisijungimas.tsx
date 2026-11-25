@@ -1,10 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, StyleSheet } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { LoginForm } from '@/features/auth/LoginForm';
+import { AuthHeader } from '@/features/auth/AuthHeader';
 import { lt } from '@/i18n/lt';
-import { spacing } from '@/theme';
-import { brandImages } from '@/theme/images';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -26,15 +24,11 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen grid testID="screen-login">
+    <Screen testID="screen-login">
       <Stack.Screen options={{ title: lt.login.title }} />
-      <Image source={brandImages.logoMark} style={styles.logo} resizeMode="contain" accessibilityLabel={lt.common.appName} />
+      <AuthHeader title={lt.login.heading} subtitle={lt.login.intro} />
       <LoginForm onSuccess={handleSuccess} onGoRegister={goRegister} />
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  // Ženklo failo kraštinių santykis 192:180.
-  logo: { width: 72, height: 68, alignSelf: 'center', marginBottom: spacing.lg },
-});

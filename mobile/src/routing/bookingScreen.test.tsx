@@ -164,17 +164,47 @@ describe('rezervavimo ekranas – tęsimas', () => {
     await renderWith({ id: '12', ...PERIOD });
     await waitForPrice('90,00 €');
     await waitForContinueEnabled();
-    expect(continueButton()).toHaveTextContent(/^Prisijunkite, kad galėtumėte rezervuoti\./);
+    expect(screen.getByRole('button', { name: 'Prisijungti ir tęsti' })).toBeTruthy();
     await fireEvent.press(continueButton());
     expect(mockRouter.push).toHaveBeenCalledTimes(1);
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/prisijungimas', params: { griztiAtgal: '1' } });
   });
 
-  it('be pasirinkto laikotarpio tęsti negalima', async () => {
+  it('prisijungus be pasirinkto laikotarpio tęsti negalima', async () => {
+    setAuth('signedIn');
     await renderWith({ id: '12' });
     await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
     await fireEvent.press(continueButton());
     expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('neprisijungus prisijungimo mygtukas veikia ir dar nepasirinkus datų', async () => {
+    await renderWith({ id: '12' });
+    await waitFor(() => expect(screen.getByRole('header', { name: 'Toyota Corolla' })).toBeTruthy());
+    expect(continueButton().props.accessibilityState.disabled).toBe(false);
+    await fireEvent.press(continueButton());
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/prisijungimas', params: { griztiAtgal: '1' } });
+    expect(api.fetchQuote).not.toHaveBeenCalled();
+  });
+
+  it('grįžus po prisijungimo išlieka automobilis, datos, valanda ir paslaugos', async () => {
+    const view = await renderWith({ id: '12', ...PERIOD });
+    await waitForPrice('90,00 €');
+    await fireEvent.press(screen.getByTestId('pickup-hour-14'));
+    await fireEvent.press(screen.getByTestId('extra-pilna_apsauga'));
+    await waitForPrice('114,00 €');
+    await fireEvent.press(continueButton());
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/prisijungimas', params: { griztiAtgal: '1' } });
+
+    mockRouter.push.mockClear();
+    setAuth('signedIn');
+    await view.rerender(<BookingScreen />);
+    expect(screen.getByTestId('pickup-hour-14').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('extra-pilna_apsauga').props.accessibilityState.checked).toBe(true);
+    expect(screen.getByTestId('selected-period')).toHaveTextContent('Pasirinkta: gruodžio 1 d. – gruodžio 3 d. (2 paros)');
+    await waitForContinueEnabled();
+    await fireEvent.press(continueButton());
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/patvirtinimas', params: { carId: '12', from: PERIOD.nuo, to: PERIOD.iki, pickupHour: '14', extras: 'pilna_apsauga' } });
   });
 
   it('kol prisijungimo būsena kraunasi, kvietimo prisijungti nėra ir paspaudimas nieko nedaro', async () => {
@@ -226,6 +256,7 @@ describe('rezervavimo ekranas – tęsimas', () => {
 
 describe('rezervavimo ekranas – automobilio keitimas', () => {
   it('kitam automobiliui ankstesnis juodraštis ir pasirinktos paslaugos nepersikelia', async () => {
+    setAuth('signedIn');
     const view = await renderWith({ id: '12', ...PERIOD });
     await waitForPrice('90,00 €');
     await fireEvent.press(screen.getByRole('checkbox', { name: /Pilna apsauga/ }));
@@ -247,6 +278,7 @@ describe('rezervavimo ekranas – automobilio keitimas', () => {
   });
 
   it('A → B → A: grįžus prie pirmo automobilio ankstesnis „galima tęsti“ neatgyja', async () => {
+    setAuth('signedIn');
     const view = await renderWith({ id: '12', ...PERIOD });
     await waitForPrice('90,00 €');
     await waitForContinueEnabled();

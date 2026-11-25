@@ -141,7 +141,7 @@ export function ExpandableSheet({ header, children, collapsedHeight, expandedHei
         {header}
       </View>
       <ScrollView
-        style={styles.body}
+        style={[styles.body, !expanded && styles.hiddenBody]}
         contentContainerStyle={styles.bodyContent}
         indicatorStyle="white"
         // Suskleisto lapo turinys nepasiekiamas nei pirštu, nei ekrano skaitytuvu.
@@ -166,10 +166,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: colors.borderStrong,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   handleArea: { minHeight: MIN_TOUCH_SIZE, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 44, height: 5, borderRadius: radius.pill, backgroundColor: colors.borderStrong },
   body: { flex: 1 },
+  hiddenBody: { opacity: 0 },
   bodyContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
 });

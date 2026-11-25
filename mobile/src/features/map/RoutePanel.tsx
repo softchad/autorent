@@ -31,13 +31,12 @@ export function routeNote(route: Pick<PickupRoute, 'phase' | 'route' | 'routingC
   }
 }
 
-// Maršruto iki paėmimo vietos valdikliai: leidimo paaiškinimas, mygtukas ir išorinės navigacijos nuoroda.
+// Maršruto iki paėmimo vietos valdikliai ir būsena.
 export function RoutePanel({ route, mapSupported = true }: Props) {
   const canAsk = mapSupported && (route.phase === 'idle' || route.phase === 'failed' || route.phase === 'asking');
 
   return (
     <View style={styles.panel} testID="route-panel">
-      <Text style={typography.bodyStrong}>{lt.route.title}</Text>
       <Text style={styles.note} accessibilityLiveRegion="polite" testID="route-note">
         {routeNote(route, mapSupported)}
       </Text>

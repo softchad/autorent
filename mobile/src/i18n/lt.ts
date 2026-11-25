@@ -15,6 +15,7 @@ export const lt = {
   tabs: {
     cars: 'Automobiliai',
     reservations: 'Rezervacijos',
+    messages: 'Žinutės',
     account: 'Paskyra',
   },
   // Kalendorių pavadinimai.
@@ -35,7 +36,7 @@ export const lt = {
   },
   // Paieškos skydelis ir automobilių kortelės.
   search: {
-    heading: 'Rask savo automobilį',
+    heading: 'Sveiki sugrįžę',
     location: 'Paėmimo vieta',
     from: 'Nuo',
     to: 'Iki',
@@ -83,7 +84,8 @@ export const lt = {
   },
   login: {
     title: 'Prisijungimas',
-    intro: 'Prisijunkite, kad galėtumėte rezervuoti automobilį ir matyti savo rezervacijas.',
+    heading: 'Sveiki sugrįžę',
+    intro: 'Prisijunkite ir tęskite kelionę.',
     email: 'El. paštas',
     password: 'Slaptažodis',
     submit: 'Prisijungti',
@@ -96,7 +98,8 @@ export const lt = {
   },
   register: {
     title: 'Registracija',
-    intro: 'Prašome tik tų duomenų, kurių reikia nuomos sutarčiai sudaryti.',
+    heading: 'Keliaukime kartu',
+    intro: 'Susikurkite paskyrą ir rezervuokite patogiau.',
     vardas: 'Vardas',
     pavarde: 'Pavardė',
     el_pastas: 'El. paštas',
@@ -157,6 +160,8 @@ export const lt = {
   },
   // Pašto dėžutė – pokalbiai su AutoRent pagalba.
   support: {
+    service: 'Klientų aptarnavimas',
+    signedOutMessage: 'Prisijunkite, kad susisiektumėte su klientų aptarnavimu.',
     newConversation: 'Nauja žinutė',
     newTitle: 'Nauja žinutė',
     newIntro: 'Parašykite mums – atsakysime čia pat, pašto dėžutėje.',
@@ -200,6 +205,7 @@ export const lt = {
     },
   },
   car: {
+    topPick: 'Puikus pasiūlymas',
     perDay: 'už parą',
     seats: 'vietos',
     kw: 'kW',
@@ -211,6 +217,7 @@ export const lt = {
     filters: 'Filtrai',
     sortLabel: 'Rikiuoti',
     sort: {
+      recommended: 'Rekomenduojama',
       price_asc: 'Pigiausi',
       price_desc: 'Brangiausi',
       newest: 'Naujausi',
@@ -297,10 +304,8 @@ export const lt = {
   },
   // Maršrutas iki paėmimo vietos.
   route: {
-    title: 'Parodykime kelią iki tavo automobilio.',
-    explanation: 'Paspaudus „Rodyti maršrutą“, nustatysime tavo buvimo vietą ir parodysime ją žemėlapyje. Vieta neišsaugoma.',
-    explanationWithService:
-      'Paspaudus „Rodyti maršrutą“, nustatysime tavo buvimo vietą. Maršrutui apskaičiuoti tavo ir atsiėmimo vietos koordinatės bus išsiųstos maršrutų paslaugai. Vieta neišsaugoma.',
+    explanation: 'Naudojama jūsų buvimo vieta.',
+    explanationWithService: 'Koordinatės perduodamos maršrutų paslaugai.',
     webFallback: 'Maršrutą iki automobilio atsiėmimo vietos gali atidaryti navigacijoje.',
     openFailed: 'Navigacijos atidaryti nepavyko. Paėmimo vietos adresas nurodytas aukščiau.',
     show: 'Rodyti maršrutą',
@@ -367,7 +372,7 @@ booking: {
     continue: 'Tęsti',
     loginHint: 'Atidaro prisijungimą; po jo grįšite į šį ekraną su tais pačiais pasirinkimais.',
     notFree: 'Pasirinktu laikotarpiu automobilis užimtas.',
-    loginToContinue: 'Prisijunkite, kad galėtumėte rezervuoti.',
+    loginToContinue: 'Prisijungti ir tęsti',
   },
 holdTimer: {
     remaining: (minutes: number, seconds: number) => `Liko ${minutes} min. ${seconds} sek.`,
