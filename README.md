@@ -1,240 +1,216 @@
 # AutoRent
 
-Automobilių nuomos valdymo sistema su dviem sąsajomis:
+Automobilių nuomos sistema su vieša svetaine, darbuotojų portalu ir mobiliąja programėle. Visos trys sąsajos naudoja bendrą FastAPI API ir MySQL duomenų bazę.
 
-- **Darbuotojų administravimo sistema** - automobiliai, klientai, rezervacijos, užsakymai, sąskaitos ir klientų aptarnavimas, apsaugoti vaidmenimis (RBAC).
-- **Vieša kliento svetainė** - automobilių paieška/rezervavimas, kliento paskyra, lojalumo programa ir pagalbos pokalbiai su darbuotojais, be prisijungimo arba su atskira kliento paskyra (slaptažodis arba Google/GitHub).
-
----
+Svetainėje klientas gali ieškoti automobilio, sukurti rezervaciją ir naudotis lojalumo programa. Programėlėje įgyvendintas rezervavimas su užimtumo kalendoriumi, laikinu automobilio laikymu, papildomomis paslaugomis ir sąlygų priėmimu. Darbuotojų portalas skirtas nuomos, klientų, automobilių ir aptarnavimo valdymui.
 
 ## Ekrano vaizdai
 
-| | |
+### Mobilioji programėlė
+
+| Katalogas | Automobilio informacija | Rezervavimo patvirtinimas |
+|:---:|:---:|:---:|
+| <img src="docs/ekrano_nuotraukos/mobile/01-katalogas.png" alt="Automobilių katalogas" width="230"> | <img src="docs/ekrano_nuotraukos/mobile/03-automobilio-zemelapis.png" alt="Automobilis ir paėmimo vieta žemėlapyje" width="230"> | <img src="docs/ekrano_nuotraukos/mobile/08-patvirtinimas.png" alt="Laikymo laikmatis, rezervacijos duomenys ir kaina" width="230"> |
+| Rezervacijos | Rezervacijos eiga | Pagalbos pokalbis |
+| <img src="docs/ekrano_nuotraukos/mobile/10-rezervacijos.png" alt="Esamos ir buvusios rezervacijos" width="230"> | <img src="docs/ekrano_nuotraukos/mobile/11-rezervacijos-detale.png" alt="Patvirtintos rezervacijos laiko juosta" width="230"> | <img src="docs/ekrano_nuotraukos/mobile/15-pokalbis.png" alt="Kliento ir darbuotojo susirašinėjimas" width="230"> |
+
+[Visi mobiliosios programėlės vaizdai](docs/ekrano_nuotraukos/mobile/). Nuotraukos užfiksuotos Android emuliatoriuje su atskirais demonstraciniais duomenimis.
+
+### Svetainė ir darbuotojų portalas
+
+| Viešas katalogas | Kliento paskyra |
 |---|---|
-| **Automobilių katalogas** | **Automobilio informacija ir rezervavimas** |
-| ![Automobilių katalogas](docs/ekrano_nuotraukos/04_automobiliu_katalogas.png) | ![Automobilio informacija ir rezervavimas](docs/ekrano_nuotraukos/05_automobilio_puslapis.png) |
-| **Kliento paskyra ir lojalumo programa** | **Kliento susirašinėjimas su darbuotoju** |
-| ![Kliento paskyra ir lojalumo programa](docs/ekrano_nuotraukos/06_kliento_paskyra.png) | ![Kliento susirašinėjimas su darbuotoju](docs/ekrano_nuotraukos/12_kliento_susirasinejimas.png) |
-| **Darbuotojų informacinis skydelis** | **Rezervacijų valdymas** |
+| ![Svetainės automobilių katalogas](docs/ekrano_nuotraukos/04_automobiliu_katalogas.png) | ![Kliento paskyra ir lojalumo programa](docs/ekrano_nuotraukos/06_kliento_paskyra.png) |
+| Darbuotojų informacinis skydelis | Rezervacijų valdymas |
 | ![Darbuotojų informacinis skydelis](docs/ekrano_nuotraukos/14_informacinis_skydelis.png) | ![Rezervacijų valdymas](docs/ekrano_nuotraukos/17_rezervaciju_valdymas.png) |
-| **Sąskaitos PDF** | **Pokalbio tvarkymas darbuotojų portale** |
-| ![Sąskaitos PDF](docs/ekrano_nuotraukos/24_saskaitos_pdf.png) | ![Pokalbio tvarkymas darbuotojų portale](docs/ekrano_nuotraukos/26_darbuotojo_susirasinejimas.png) |
 
----
+[Daugiau svetainės ir portalo vaizdų](docs/ekrano_nuotraukos/).
 
-## Technologijos
+## Sistemos dalys
 
-| Sluoksnis | Technologija |
-|-----------|-------------|
-| **Backend** | FastAPI · SQLAlchemy · MySQL · Pydantic v2 · slowapi (rate limiting) |
-| **Frontend** | Next.js 15 (App Router) · TypeScript · Redux Toolkit (RTK Query, darbuotojų sąsajai) · Tailwind CSS |
-| **Autentifikacija** | JWT · bcrypt · OAuth 2.0 (Google, GitHub) - atskiri darbuotojo ir kliento tokenai |
-| **Kiti** | Leaflet · react-pdf · Nominatim |
+| Dalis | Pagrindinės funkcijos |
+|---|---|
+| **Vieša svetainė** | Automobilių paieška, filtrai, žemėlapis, laisvumo tikrinimas, rezervacijos kūrimas, kliento profilis, lojalumo atlygiai ir pagalbos pokalbiai. |
+| **Mobilioji programėlė** | Registracija ir prisijungimas, katalogas, paėmimo vieta, užimtumo kalendorius, paslaugos, kainos pasiūlymas, laikymas su laikmačiu, rezervacijos patvirtinimas, istorija, laiko juosta, atšaukimas ir žinutės. |
+| **Darbuotojų portalas** | Automobiliai, klientai, darbuotojai, rezervacijų patvirtinimas, pavertimas užsakymu, nuomos būsenos, sąskaitų PDF, nuolaidų kodai ir pagalbos pokalbių tvarkymas. |
+| **Backend** | Autentifikacija, vaidmenų teisės, užimtumo tikrinimas, rezervavimo taisyklės, kainos skaičiavimas, sąlygų versijos, pakartotinių patvirtinimų atpažinimas ir duomenų saugojimas. |
 
-Adresų paieška abiejuose portaluose naudoja Nominatim per backend, be API rakto. Žinomi padaliniai turi iš anksto įrašytas koordinates. Kitų adresų rezultatai saugomi proceso atmintyje, išorinės užklausos siunčiamos ne dažniau kaip kas 1,1 sekundės. Vieša paieška vykdoma tik vartotojui ją pasirinkus, ne kiekvieno simbolio įvedimo metu.
+### Rezervavimas programėlėje
 
-Viešojo [Nominatim naudojimo taisyklės](https://operations.osmfoundation.org/policies/nominatim/) riboja visos programos srautą iki 1 užklausos per sekundę. Dabartinė eilė skirta vienam backend procesui (vienam `uvicorn` paleidimui); keliems procesams ar serveriams reikėtų bendro ribotuvo arba kito tiekėjo. Tiekėjo adresą galima pakeisti per `NOMINATIM_URL`. Nesiųskite konfidencialių adresų ar kitų asmens duomenų į viešą servisą.
+1. Klientas pasirenka automobilį ir laisvą 1–30 parų laikotarpį. Datos vertinamos pagal Vilniaus laiką.
+2. Pasirenka paėmimo valandą nuo 12:00 iki 18:00 ir papildomas paslaugas. Grąžinimas numatytas iki 10:00 paskutinę dieną.
+3. Serveris pateikia kainą pagal automobilio ir paslaugų tarifus. Pereinant į patvirtinimą automobilis laikomas 10 minučių.
+4. Klientas priima nuomos sąlygas ir patvirtina rezervaciją. Užfiksuojami tarifai bei priimta sąlygų versija; idempotencijos raktas leidžia kartoti tą patį patvirtinimą nesukuriant antros rezervacijos.
+5. Darbuotojas portale patvirtina rezervaciją. Klientas jos būseną ir eigą mato programėlėje.
+6. Paverčiant rezervaciją užsakymu, suma apskaičiuojama iš užfiksuotų automobilio ir papildomų paslaugų tarifų.
 
----
+Atšaukimo galimybę nustato serveris pagal rezervacijos etapą ir paėmimo laiką. Šiuo metu savarankiškas nemokamas atšaukimas galimas likus bent 48 valandoms, jei rezervacijos etapas tai leidžia. Vėlyvo atšaukimo mokestis neįjungtas; tokiais atvejais reikia kreiptis į padalinį.
+
+### Dabartinės ribos
+
+- Svetainė naudoja paprastesnį rezervavimo srautą: laikymai, papildomos paslaugos, sąlygų priėmimas ir savarankiškas atšaukimas joje neprijungti.
+- Lojalumo programa ir Google / GitHub prisijungimas veikia svetainėje, bet programėlėje neprijungti.
+- Darbuotojų portalas dar nerodo rezervacijos paslaugų detalizacijos. Užsakymo suma apima užfiksuotas paslaugų kainas, tačiau atskiros paslaugų eilutės į užsakymą neperkeliamos.
+- Nuomos sąlygų atšaukimo tekstas dar nurodo kreiptis į padalinį; jį reikia suderinti su programėlėje veikiančiu nemokamu atšaukimu.
+- Android ekranai tikrinti emuliatoriuje. Tai nėra iOS veikimo ar tikro MySQL lygiagretumo patvirtinimas.
+
+## Technologijos ir architektūra
+
+```mermaid
+flowchart LR
+    Web["Vieša svetainė · Next.js"] --> API["FastAPI · /api/v1"]
+    Staff["Darbuotojų portalas · Next.js"] --> API
+    Mobile["Programėlė · Expo / React Native"] --> API
+    API --> Services["Verslo taisyklės · SQLAlchemy"]
+    Services --> DB[(MySQL)]
+```
+
+| Sritis | Technologijos |
+|---|---|
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, PyMySQL, slowapi |
+| Svetainė ir portalas | Next.js 15, React 19, TypeScript, Tailwind CSS, Redux Toolkit / RTK Query |
+| Mobilioji programėlė | Expo SDK 58, React Native 0.88, Expo Router, SecureStore, React Native WebView |
+| Žemėlapiai | Leaflet, OpenStreetMap, Nominatim; pasirinktinis OSRM formato maršrutų tiekėjas |
+| Patikros | pytest, Jest, TypeScript, Ruff, GitHub Actions |
+
+Kliento ir darbuotojo JWT žetonai atskirti. Slaptažodžiai maišomi su bcrypt, darbuotojų prieiga ribojama pagal vaidmenis. Administratorius turi VIEW, EDIT ir ADMIN teises; vadybininkas, mechanikas ir klientų aptarnavimas – VIEW bei EDIT. Pagalbos pokalbiams taikomos papildomos vaidmenų patikros. Kliento sesija galioja 1 valandą, darbuotojo – 12 valandų.
+
+Adresai geokoduojami per backend, naudojant Nominatim. Žemėlapio plytelėms ir išorinėms maršrutų paslaugoms reikia interneto. Viešo Nominatim užklausos ribojamos viename backend procese; keliems procesams reikėtų bendro ribotuvo arba kito tiekėjo. Daugiau – [Nominatim naudojimo taisyklėse](https://operations.osmfoundation.org/policies/nominatim/).
 
 ## Paleidimas
 
 ### Reikalavimai
 
-- Python 3.12+
-- Node.js 20+
-- MySQL 9+ (paslauga turi būti paleista)
-- DBeaver (DB valdymui)
+- Python 3.12 ir Node.js 22 (nuo 22.13) arba 24 (nuo 24.3), atitinkantis Expo SDK 58 priklausomybių reikalavimus.
+- Veikiantis MySQL serveris su CHECK apribojimų palaikymu; projekto vietinėje aplinkoje naudojamas MySQL 9.
+- Mobiliajai daliai – Expo Go suderinamame telefone arba Android Emulator su Android SDK Platform-Tools.
+- SQL failams vykdyti tinka MySQL klientas arba DBeaver.
 
----
+Komandos skirtos PowerShell. Kiekvienos dalies diegimą pradėkite iš repozitorijos šaknies. Backend, web ir Expo paleiskite atskiruose terminaluose.
 
-### 1. Duomenų bazė (DBeaver)
+### Duomenų bazė
 
-> Kiekvieną kartą prieš paleidžiant — įsitikink kad MySQL paslauga veikia:  
-> `Win + R` → `services.msc` → **MySQL** → Start
+Sukurkite `autorent` bazę ir joje vykdykite:
 
-**Pirmą kartą (schemos sukūrimas):**
+1. [database/schema.sql](database/schema.sql) – lentelės, apribojimai ir paslaugų katalogas.
+2. [database/seed.sql](database/seed.sql) – demonstraciniai duomenys.
+3. [database/triggers.sql](database/triggers.sql) – datų patikros. DBeaver aplinkoje kiekvieną `CREATE TRIGGER ... END` bloką vykdykite atskirai.
 
-1. Atidaryк DBeaver → prisijunk prie `localhost` MySQL
-2. Dešiniu pelės mygtuku ant ryšio → **Create New Database** → pavadink `autorent`
-3. Atsidaryk failus iš `database/` aplanko ir vykdyk tokia tvarka:
+Naujam diegimui `schema.sql` jau apima migracijas 001–004. Jų pakartotinai netaikykite. Atnaujinant senesnę bazę, taikomos tik trūkstamos [migracijos](database/migrations/) eilės tvarka.
 
-| Failas | Kaip vykdyti |
-|--------|-------------|
-| `schema.sql` | Atidaryк → `Ctrl+A` → `Ctrl+Enter` |
-| `seed.sql` | Atidaryк → `Ctrl+A` → `Ctrl+Enter` |
-| `triggers.sql` | Kiekvieną `CREATE TRIGGER ... END` bloką **pažymėk atskirai** → `Ctrl+Enter` |
+**`seed.sql` išvalo duomenų lenteles ir įrašo pradinius duomenis. Jo nevykdykite bazėje, kurios įrašus norite išsaugoti.** Demonstracinė administratoriaus paskyra: `admin@autorent.lt` / `Admin123!`.
 
-> **Admin paskyra:** `admin@autorent.lt` / `Admin123!`
+### Backend
 
----
-
-Naujam diegimui naudok dabartinį `database/schema.sql`, kuris jau turi visus reikalingus laukus.
-
-### 2. Backend
-
-**Pirmą kartą:**
-```bash
+```powershell
 cd backend
 py -3.12 -m venv .venv
-pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-Sukurk `backend/.env` failą (nukopijuok iš `backend/.env.example` ir užpildyk):
-```env
-SECRET_KEY=pakeisk_siuos_zenklus_savo_atsitiktiniu_raktu
-DATABASE_URL=mysql+pymysql://root:tavo_slaptazodis@localhost:3306/autorent
-FRONTEND_URL=http://localhost:3000
+Užpildykite naują `backend/.env`: `DATABASE_URL`, `SECRET_KEY`, `SESSION_SECRET_KEY`, `FRONTEND_URL` ir Google OAuth nustatymus. Abu pasirašymo raktai turi būti bent 32 simbolių. Dabartinė konfigūracija reikalauja netuščio `GOOGLE_CLIENT_ID` ir `GOOGLE_CLIENT_SECRET`; GitHub OAuth neprivalomas. Kintamųjų pavyzdžiai pateikti [backend/.env.example](backend/.env.example). Kopijavimo komanda skirta pirmajam diegimui – esamo `.env` neperrašykite.
 
-# Privalomas - OAuth sesijos cookie pasirašymui (min. 32 simboliai)
-SESSION_SECRET_KEY=pakeisk_siuos_zenklus_kitu_atsitiktiniu_raktu
-
-# Google OAuth - privalomas (žr. GOOGLE_CLIENT_ID/SECRET žemiau), GitHub neprivalomas
-GOOGLE_CLIENT_ID=raktas_is_google_cloud_console
-GOOGLE_CLIENT_SECRET=raktas_is_google_cloud_console
-GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/google/callback
-
-# GitHub OAuth - neprivalomas, be šių GitHub prisijungimas tiesiog neaktyvus
-GITHUB_CLIENT_ID=raktas_is_github_developer_settings
-GITHUB_CLIENT_SECRET=raktas_is_github_developer_settings
-GITHUB_REDIRECT_URL=http://localhost:8000/api/v1/github/callback
-
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Kiekvieną kartą:**
-```bash
-cd backend
-.venv\Scripts\activate
-uvicorn app.main:app --reload
-```
-→ veikia adresu `http://localhost:8000/docs`
+API dokumentacija: [localhost:8000/docs](http://localhost:8000/docs).
 
----
+### Svetainė ir darbuotojų portalas
 
-### 3. Frontend
-
-**Pirmą kartą:**
-```bash
+```powershell
 cd frontend
-npm install
-```
-
-Sukurk `frontend/.env.local` failą (nukopijuok iš `frontend/.env.local.example`):
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-**Kiekvieną kartą:**
-```bash
-cd frontend
+npm ci
+Copy-Item .env.local.example .env.local
 npm run dev
 ```
-→ veikia adresu `http://localhost:3000`
 
----
+Pirmajam diegimui skirtame `.env.local` nustatykite `NEXT_PUBLIC_API_URL=http://localhost:8000` ir `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Esamo konfigūracijos failo neperrašykite. Svetainė veikia [localhost:3000](http://localhost:3000).
 
-## Funkcionalumas
+Production režimui iš `frontend` katalogo:
 
-### Darbuotojų administravimo sistema (`/dashboard`, `/fleet`, `/clients`, ...)
+```powershell
+npm run build
+npm run start
+```
 
-| Modulis | Aprašymas |
-|---------|-----------|
-| **Automobiliai** | CRUD, statusų valdymas, žemėlapis, panaudojimo statistika |
-| **Rezervacijos** | Datų rezervavimas, SELECT ... FOR UPDATE apsauga nuo persidengimo lenktynių |
-| **Užsakymai** | Nuomos valdymas, kainos įvedimas, būsenų valdymas |
-| **Klientai** | Registras, lojalumo (bonus) taškai (keisti gali tik administratorius) |
-| **Sąskaitos** | Generavimas, PDF atsisiuntimas |
-| **Darbuotojai** | Valdymas, rolės, prisijungimo paskyros |
-| **Klientų aptarnavimas** | Pokalbių eilė, priskyrimas, atsakymai, vidinės pastabos |
-| **Profilis** | Paskyros peržiūra ir keitimas |
+`NEXT_PUBLIC_*` reikšmės įtraukiamos kuriant build. Pakeitus API adresą reikia naujo build.
 
-Darbuotojo sesija galioja **12 valandų nuo prisijungimo**, kliento – **1 valandą**. Darbuotojo profilyje rodoma tikroji išduoto tokeno galiojimo pabaiga. Pakeista trukmė taikoma naujiems prisijungimams; jau išduoti tokenai automatiškai nepratęsiami.
+### Mobilioji programėlė
 
-Darbuotojų lentelės rūšiuojamos paspaudus duomenų stulpelio antraštę: pirmas paspaudimas rikiuoja didėjančiai, kitas – mažėjančiai. Kainos ir atlyginimai lyginami skaitmeniškai, datos chronologiškai, tekstas pagal lietuvišką tvarką. Rūšiavimas taikomas visam įkeltam sąrašui prieš puslapiavimą; tuščios reikšmės lieka gale abiem kryptimis. Antraštes galima valdyti klaviatūra, o veiksmų mygtukų stulpelis nerūšiuojamas.
+```powershell
+cd mobile
+npm ci
+Copy-Item .env.example .env
+npm start
+```
 
-### Vieša kliento svetainė (`/`, `/automobiliai`, `/paskyra`, ...)
+API adresą nustatykite naujame `mobile/.env`; esamo failo neperrašykite:
 
-| Modulis | Aprašymas |
-|---------|-----------|
-| **Automobilių paieška** | Filtrai, rikiavimas, žemėlapis, laisvumo tikrinimas pasirinktam laikotarpiui |
-| **Rezervavimas** | Kliento paskyra (slaptažodis arba Google/GitHub) → rezervacijos kūrimas |
-| **Kliento paskyra** | Profilis, rezervacijų istorija, lojalumo progresas ir atlygiai |
-| **Pagalbos pokalbiai** | Klientas rašo darbuotojams, susietas su konkrečia rezervacija |
+| Aplinka | `EXPO_PUBLIC_API_URL` |
+|---|---|
+| Android emuliatorius | `http://10.0.2.2:8000` |
+| Fizinis telefonas tame pačiame vietiniame tinkle | `http://KOMPIUTERIO_IP:8000` |
+| Galutinė programėlės versija | Pasiekiamas `https://` API adresas |
 
----
+Terminale paspauskite `a`, kad atidarytumėte Android emuliatoriuje, arba nuskaitykite QR kodą su Expo Go. Telefonas turi pasiekti kompiuterio API; jo `localhost` nurodo patį telefoną. Vietiniame tinkle backend turi klausytis `0.0.0.0`, o ugniasienė leisti ryšį.
 
-## Rolės (darbuotojų sąsaja)
+Maršrutui programėlės žemėlapyje reikia `EXPO_PUBLIC_ROUTING_URL`. Jo nenustačius siūloma išorinė navigacija. Pasirinktinių žemėlapio plytelių ir autorystės nustatymai aprašyti [mobile/.env.example](mobile/.env.example). `EXPO_PUBLIC_*` reikšmės yra viešos ir negali turėti paslapčių.
 
-| Rolė | Skaityti | Redaguoti | Trinti | Administravimas |
-|------|:--------:|:---------:|:------:|:---------------:|
-| **Administratorius** | ✓ | ✓ | ✓ | ✓ |
-| **Vadybininkas** | ✓ | ✓ | — | — |
-| **Mechanikas** | ✓ | ✓ | — | — |
-| **Klientų aptarnavimas** | ✓ | ✓ | — | — |
+## Testai ir kodo patikros
 
-Klientų aptarnavimo pokalbiai (ne bendras EDIT) matomi tik Administratorius/Vadybininkas/Klientų aptarnavimas rolėms - žr. `backend/app/api/endpoints/staff_support.py`.
+### Backend
 
----
+Iš `backend` katalogo:
 
-## DB diagrama
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+$env:DATABASE_URL = 'mysql+pymysql://tests-must-not-connect@127.0.0.1:1/none'
+Remove-Item Env:AUTORENT_MYSQL_TEST_URL -ErrorAction SilentlyContinue
+.\.venv\Scripts\python.exe -m pytest tests -q
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\ruff.exe check app/api/endpoints/customer_holds.py app/services/rental_terms.py --extend-select I
+```
 
-[DB ryšių diagrama](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.svg) · [Redaguojamas XML](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.xml)
+Testams taip pat reikalingi konfigūracijos pasirašymo ir OAuth kintamieji. `DATABASE_URL` apsauga nustatoma prieš importuojant programą; API testai DB priklausomybę pakeičia atskira SQLite baze. MySQL integracijos testai be atskiro `AUTORENT_MYSQL_TEST_URL` praleidžiami. SQLite nepatvirtina MySQL užraktų ir lygiagrečių transakcijų elgsenos. Testų terminalo nenaudokite įprastam backend paleidimui negrąžinę jo DB konfigūracijos.
 
-Tiksli lentelių, laukų ir apribojimų struktūra aprašyta [database/schema.sql](database/schema.sql).
+[Ruff patikrų aprašas](docs/python-checks.md). GitHub Actions šiuo metu vykdo abi Ruff komandas; automatiniai testai ir build į šį workflow dar neįtraukti.
 
----
+### Mobilioji programėlė
+
+Iš `mobile` katalogo:
+
+```powershell
+npm run typecheck
+npm test -- --runInBand
+```
+
+Testai apima API klientą, rezervavimo taisykles, komponentus ir ekranų srautus su imituotais API atsakymais. Jie nepakeičia bandymo tikrame įrenginyje. Apkrautame kompiuteryje pastebėti 5 s laiko limito viršijimai; diagnostikai galima paleisti `npm test -- --runInBand --testTimeout=30000`. Vien sėkmingas paleidimas su ilgesniu limitu neįrodo ankstesnių timeoutų priežasties.
+
+Web build patikrai naudokite `npm run build` iš `frontend` katalogo.
 
 ## Projekto struktūra
 
-Aukšto lygio apžvalga - tiksli failų struktūra keičiasi dažniau nei šis README, tad
-žemiau tik aplankų paskirtis. Pilną sąrašą žr. tiesiai repo.
+```text
+backend/
+  app/api/           Maršrutai, autentifikacijos priklausomybės ir teisės
+  app/models/        SQLAlchemy modeliai
+  app/schemas/       API įvesties ir atsakymų schemos
+  app/services/      Užimtumas, laikymai, kaina, rezervavimas, atšaukimas, pokalbiai
+  tests/             API, servisų, modelių ir MySQL integracijos testai
+frontend/src/
+  app/(public)/      Vieša svetainė ir kliento paskyra
+  app/(staff)/       Darbuotojų portalas
+  hooks/ · store/    Užklausos ir darbuotojų API būsena
+mobile/src/
+  app/               Expo Router ekranai
+  features/          Katalogas, rezervavimas, rezervacijos, paskyra ir žinutės
+  api/ · auth/       API klientas ir sesijos valdymas
+  components/        Bendri sąsajos komponentai
+database/            SQL schema, migracijos, demonstraciniai duomenys ir trigeriai
+docs/                Diagramos, patikrų aprašai ir ekrano nuotraukos
+.github/workflows/   Automatinės Ruff patikros
+```
 
-```
-autorent/
-├── backend/
-│   ├── app/
-│   │   ├── main.py                    FastAPI app, middleware, rate limiter, routeriai
-│   │   ├── rate_limit.py              bendras slowapi Limiter (main.py + endpoint'ai)
-│   │   ├── api/
-│   │   │   ├── deps.py                get_current_user / get_current_customer / get_db
-│   │   │   ├── permissions.py         RBAC: Perm enum, ROLE_PERMS, require_perm
-│   │   │   └── endpoints/             darbuotojų endpoint'ai (auth, car, client, employee,
-│   │   │                              order, reservation, invoice, staff_support, geocode)
-│   │   │                              IR kliento endpoint'ai (customer_auth, customer,
-│   │   │                              customer_loyalty, customer_support, public)
-│   │   ├── models/ · schemas/          SQLAlchemy modeliai, Pydantic schemos - DB užklausos
-│   │   │                               atskiro sluoksnio neturi, rašomos tiesiog endpoint'uose
-│   │   └── services/                  verslo logika: auth_service, availability_service
-│   │                                   (SELECT ... FOR UPDATE rezervacijų persidengimui),
-│   │                                   support_service, discount_code_service, geocode_service
-│   ├── tests/                         pytest - api/ (endpoint'ai, SQLite TestClient) ir
-│   │                                   services/ (vienetų testai)
-│   └── utils/config.py                pydantic Settings, .env skaitymas
-├── frontend/
-│   └── src/
-│       ├── app/                       Next.js App Router
-│       │   ├── (staff)/               dashboard/, fleet/, clients/, employees/, invoices/,
-│       │   │                          orders/, reservations/, support/, profile/
-│       │   ├── (public)/              page.tsx, automobiliai/, paskyra/, login/, apie-mus/,
-│       │   │                          kontaktai/, karjera/, kelioniu-patarimai/, ...
-│       │   ├── components/            bendri UI (DataTable, ActionButtons, ...)
-│       │   │   ├── staff/             darbuotojų specifiniai (EntityModal, Sidebar, ...)
-│       │   │   └── public/            viešos svetainės komponentai (AutomobiliaiClient,
-│       │   │                          AccountClient, SupportInbox, ...)
-│       │   ├── sitemap.ts / robots.ts
-│       │   └── providers/             AuthGuard (darbuotojas), CustomerAuthProvider
-│       ├── hooks/                     RTK Query hook'ai (darbuotojams) + paprasti fetch
-│       │                              hook'ai (klientui): usePublicCars, useCustomerLoyalty,
-│       │                              useCustomerReservations, useCustomerConversations,
-│       │                              useStaffSupport, ...
-│       ├── store/                     Redux Toolkit + RTK Query (darbuotojų API)
-│       └── utils/                     formatLt, formatApiError, carPhoto, locations, ...
-├── database/
-│   ├── schema.sql · seed.sql          DDL ir pradiniai duomenys
-│   ├── triggers.sql                   duomenų vientisumo trigeriai
-│   └── reset_demo_data.py             atstato DB į švarią pradinę demo būseną
-└── docs/
-    ├── diagramos/
-    └── ekrano_nuotraukos/
-```
+[Duomenų bazės schema](database/schema.sql) yra tikslus lentelių ir apribojimų šaltinis. [ER diagrama](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.svg) ir [redaguojamas XML](docs/diagramos/priedas_4_autorent_sistemos_esybiu_rysiu_diagrama.xml) pateikia ankstesnį modelio vaizdą; naujausiems rezervavimo papildymams tikrinti remkitės SQL schema.
