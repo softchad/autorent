@@ -16,6 +16,7 @@ from app.services import pricing_service
 from app.services import calendar_service
 from app.services import booking_rules
 from app.services import rental_terms
+from app.services import alternatives_service
 from app.services.availability_service import get_busy_car_ids, get_busy_ranges_for_car, NOT_BOOKABLE_STATUSES  # bendra laisvumo logika - ta pati, kurią naudoja IR customer.py kliento rezervacijos kūrimas, kad abi vietos neišsiskirtų, kas yra "laisvas" automobilis
 
 router = APIRouter(prefix="/public", tags=["Public"])
@@ -350,3 +351,78 @@ class TermsOut(BaseModel):
 @router.get("/terms", response_model=TermsOut, operation_id="getPublicTerms")
 def get_public_terms():
     return rental_terms.get_terms()
+
+
+class AlternativePeriodOut(BaseModel):
+    date_from: date_type
+    date_to: date_type
+
+
+class SimilarCarOut(BaseModel):
+    automobilis: PublicCarOut
+    balas: int
+    priezastys: List[str]
+
+
+class CarAlternativesOut(BaseModel):
+    automobilio_id: int
+    date_from: date_type
+    date_to: date_type
+    laisvas: bool
+    artimiausias_laikotarpis: Optional[AlternativePeriodOut]
+    panasus_automobiliai: List[SimilarCarOut]
+
+
+@router.get("/cars/{automobilio_id}/alternatives", response_model=CarAlternativesOut, operation_id="getPublicCarAlternatives")
+@limiter.limit("60/minute")
+def get_public_car_alternatives(
+    automobilio_id: int,
+    date_from: date_type,
+    date_to: date_type,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    today = booking_rules.today_vilnius()
+    try:
+        booking_rules.validate_period(date_from, date_to, today)
+    except booking_rules.BookingRuleError as error:
+        raise HTTPException(status_code=400, detail=error.message)
+
+    car = db.query(Car).filter(Car.automobilio_id == automobilio_id).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Automobilis nerastas")
+
+    busy_ids = get_busy_car_ids(db, date_from, date_to)
+    bookable = car.automobilio_statusas not in NOT_BOOKABLE_STATUSES
+    period = None
+    if bookable:
+        window = alternatives_service.SEARCH_WINDOW_DAYS
+        window_from = max(today, date_from - timedelta(days=window))
+        window_to = date_type.fromordinal(min(date_type.max.toordinal(), date_to.toordinal() + window))
+        ranges = get_busy_ranges_for_car(db, automobilio_id, window_from, window_to)
+        period = alternatives_service.nearest_free_period(date_from, date_to, ranges, today)
+
+    candidates = db.query(Car).options(joinedload(Car.lokacija)).filter(
+        Car.dabartine_vieta_id == car.dabartine_vieta_id,
+        Car.automobilio_id != automobilio_id,
+        ~Car.automobilio_statusas.in_(NOT_BOOKABLE_STATUSES),
+    )
+    if busy_ids:
+        candidates = candidates.filter(~Car.automobilio_id.in_(busy_ids))
+    matches = alternatives_service.rank_similar_cars(car, candidates.all())
+
+    return CarAlternativesOut(
+        automobilio_id=automobilio_id,
+        date_from=date_from,
+        date_to=date_to,
+        laisvas=bookable and automobilio_id not in busy_ids,
+        artimiausias_laikotarpis=AlternativePeriodOut(date_from=period[0], date_to=period[1]) if period else None,
+        panasus_automobiliai=[
+            SimilarCarOut(
+                automobilis=PublicCarOut.model_validate(match.car).model_copy(update={"laisvas_pasirinktu_laikotarpiu": True}),
+                balas=match.score,
+                priezastys=list(match.reasons),
+            )
+            for match in matches
+        ],
+    )

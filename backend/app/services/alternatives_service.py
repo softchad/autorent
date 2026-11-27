@@ -56,9 +56,10 @@ def nearest_free_period(
     for distance in range(SEARCH_WINDOW_DAYS + 1):
         shifts = (0,) if distance == 0 else (distance, -distance)
         for shift in shifts:
-            start = date_from + timedelta(days=shift)
-            if start < today:
+            ordinal = date_from.toordinal() + shift
+            if not today.toordinal() <= ordinal <= date.max.toordinal() - days:
                 continue
+            start = date.fromordinal(ordinal)
             end = start + duration
             if not any(start < busy_end and end > busy_start for busy_start, busy_end in ranges):
                 return start, end
