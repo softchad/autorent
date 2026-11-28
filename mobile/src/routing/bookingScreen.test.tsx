@@ -125,6 +125,22 @@ async function settleEffects() {
 }
 
 describe('rezervavimo ekranas – maršruto parametrai', () => {
+  it('opens a suggested car with the same dates and disables continuation before navigation', async () => {
+    setAuth('signedIn');
+    api.fetchQuote.mockImplementation(async (input) => ({ ...await quoteFor(input), laisvas: false }));
+    api.fetchAlternatives.mockResolvedValue({
+      automobilio_id: 12, date_from: PERIOD.nuo, date_to: PERIOD.iki, laisvas: false,
+      artimiausias_laikotarpis: null,
+      panasus_automobiliai: [{ automobilis: makeCar({ automobilio_id: 99 }), balas: 6, priezastys: ['kebulo_tipas'] }],
+    });
+    await renderWith({ id: '12', ...PERIOD });
+    await waitFor(() => expect(screen.getByTestId('alternative-car-99')).toBeTruthy());
+    await fireEvent.press(screen.getByTestId('alternative-car-99'));
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/rezervuoti/[id]', params: { id: '99', ...PERIOD } });
+    expect(continueButton().props.accessibilityState.disabled).toBe(true);
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
   it.each<[string, string | string[] | undefined]>([
     ['raidės', 'abc'],
     ['nulis', '0'],

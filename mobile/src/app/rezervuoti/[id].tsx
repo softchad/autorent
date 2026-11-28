@@ -102,6 +102,11 @@ function BookingContent({ carId, nuo, iki }: { carId: number; nuo?: string; iki?
           onDraftChange={handleDraftChange}
           // Kataloge pasirinktos datos iškart pažymimos kalendoriuje.
           initialSelection={selectionFromSearch(nuo, iki, data.data.rules)}
+          onChooseCar={(id, from, to) => {
+            setDraft(null);
+            setReady(false);
+            router.replace({ pathname: '/rezervuoti/[id]', params: { id: String(id), nuo: from, iki: to } });
+          }}
         />
       ) : null}
     </Screen>

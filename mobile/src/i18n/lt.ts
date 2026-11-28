@@ -478,4 +478,18 @@ confirm: {
     changed: 'Atšaukimo sąlygos pasikeitė. Peržiūrėkite atnaujintą informaciją ir patvirtinkite iš naujo.',
     unavailable: 'Šios rezervacijos atšaukti negalima.',
   },
+  alternatives: {
+    title: 'Galimi pasirinkimai',
+    loading: 'Ieškoma alternatyvų…',
+    sameCar: 'Šio automobilio laisvas laikotarpis',
+    choosePeriod: 'Rinktis šį laikotarpį',
+    selectPeriod: (period: string) => `Rinktis laikotarpį: ${period}`,
+    openCar: 'Atidaryti šio automobilio rezervavimą tomis pačiomis datomis',
+    empty: 'Alternatyvų nerasta. Pakeiskite datas arba paėmimo vietą.',
+    reasons: {
+      kebulo_tipas: 'Toks pats kėbulo tipas',
+      pavaru_deze: 'Tokia pati pavarų dėžė',
+      sedimos_vietos: 'Tiek pat sėdimų vietų',
+    },
+  },
 } as const;

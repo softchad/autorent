@@ -1,5 +1,6 @@
 import { CalendarDay } from '@/features/booking/calendarLogic';
 import { apiRequest } from './client';
+import { PublicCar } from './types';
 
 export type CarCalendar = {
   automobilio_id: number;
@@ -66,5 +67,22 @@ export function fetchQuote(
     method: 'POST',
     body: { automobilio_id: input.carId, date_from: input.from, date_to: input.to, paslaugos: input.extras },
     signal,
+  });
+}
+
+export type AlternativePeriod = { date_from: string; date_to: string };
+export type SimilarityReason = 'kebulo_tipas' | 'pavaru_deze' | 'sedimos_vietos';
+export type CarAlternatives = {
+  automobilio_id: number;
+  date_from: string;
+  date_to: string;
+  laisvas: boolean;
+  artimiausias_laikotarpis: AlternativePeriod | null;
+  panasus_automobiliai: { automobilis: PublicCar; balas: number; priezastys: SimilarityReason[] }[];
+};
+
+export function fetchAlternatives(carId: number, from: string, to: string, signal?: AbortSignal): Promise<CarAlternatives> {
+  return apiRequest<CarAlternatives>(`/public/cars/${carId}/alternatives`, {
+    query: { date_from: from, date_to: to }, signal,
   });
 }

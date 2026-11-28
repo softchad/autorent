@@ -29,6 +29,7 @@ type Props = {
   rules: BookingRules;
   selection: Selection;
   onChange: (selection: Selection) => void;
+  onBusyRange?: (from: string, to: string) => void;
   // Padidinus skaičių kalendorius užimtumą užkrauna iš naujo (pvz. po nepavykusio laikymo).
   refreshKey?: number;
 };
@@ -64,7 +65,7 @@ export function dayLabel(day: CalendarDay, role: DayRole): string {
   return parts.join(', ');
 }
 
-export function AvailabilityCalendar({ carId, rules, selection, onChange, refreshKey = 0 }: Props) {
+export function AvailabilityCalendar({ carId, rules, selection, onChange, onBusyRange, refreshKey = 0 }: Props) {
   const [visible, setVisible] = useState<YearMonth>(yearMonthOf(selection.from ?? rules.siandien));
   // Dienos galioja tik tam automobiliui ir refreshKey kartai, kuriai buvo užkrautos.
   const cacheKey = `${carId}:${refreshKey}`;
@@ -112,6 +113,9 @@ export function AvailabilityCalendar({ carId, rules, selection, onChange, refres
   function handlePress(day: CalendarDay) {
     const result = selectDay(selection, day.data, days, rules);
     setProblem(result.problem);
+    if (result.problem === 'busy_inside' && selection.from) {
+      onBusyRange?.(selection.from, day.data);
+    }
     if (result.selection !== selection) {
       onChange(result.selection);
     }

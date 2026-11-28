@@ -52,10 +52,82 @@ beforeEach(() => {
   jest.useFakeTimers();
   api.fetchCalendar.mockReset().mockImplementation(freeMonth);
   api.fetchQuote.mockReset().mockImplementation((input) => quoteFor(input));
+  api.fetchAlternatives.mockReset().mockResolvedValue({
+    automobilio_id: 12, date_from: '2026-11-28', date_to: '2026-11-30', laisvas: false,
+    artimiausias_laikotarpis: { date_from: '2026-12-01', date_to: '2026-12-03' }, panasus_automobiliai: [],
+  });
 });
 afterEach(() => jest.useRealTimers());
 
 describe('BookingView', () => {
+  it('shows alternatives for a rejected busy range without requesting its price', async () => {
+    api.fetchCalendar.mockImplementation(async (...args) => {
+      const month = await freeMonth(args[0], args[1], args[2]);
+      return { ...month, dienos: month.dienos.map((day) => day.data === '2026-11-29'
+        ? { ...day, busena: 'uzimta' as const, galima_pradeti: false } : day) };
+    });
+    const onDraftChange = jest.fn();
+    const onChooseCar = jest.fn();
+    api.fetchAlternatives.mockResolvedValue({
+      automobilio_id: 12, date_from: '2026-11-28', date_to: '2026-11-30', laisvas: false,
+      artimiausias_laikotarpis: { date_from: '2026-12-01', date_to: '2026-12-03' },
+      panasus_automobiliai: [{ automobilis: makeCar({ automobilio_id: 99 }), balas: 6, priezastys: [] }],
+    });
+    await render(<BookingView car={makeCar()} rules={RULES} extras={[]} onDraftChange={onDraftChange} onChooseCar={onChooseCar} />);
+    await selectPeriod();
+    await waitFor(() => expect(screen.getByTestId('alternative-period')).toBeTruthy());
+    expect(api.fetchAlternatives).toHaveBeenLastCalledWith(12, '2026-11-28', '2026-11-30', expect.anything());
+    expect(api.fetchQuote).not.toHaveBeenCalled();
+    expect(onDraftChange).toHaveBeenLastCalledWith(null, false);
+    await fireEvent.press(screen.getByTestId('alternative-car-99'));
+    expect(onChooseCar).toHaveBeenCalledWith(99, '2026-11-28', '2026-11-30');
+    await fireEvent.press(screen.getByTestId('day-2026-11-28'));
+    expect(screen.queryByTestId('booking-alternatives')).toBeNull();
+    await fireEvent.press(screen.getByTestId('day-2026-11-30'));
+    await waitFor(() => expect(screen.getByTestId('alternative-period')).toBeTruthy());
+    await fireEvent.press(screen.getByTestId('alternative-period'));
+    await act(async () => jest.advanceTimersByTime(QUOTE_DEBOUNCE_MS));
+    expect(onDraftChange.mock.calls.at(-1)?.[1]).toBe(true);
+    expect(api.fetchQuote.mock.calls.at(-1)?.[0]).toMatchObject({ from: '2026-12-01', to: '2026-12-03' });
+  });
+
+  it('requests a fresh price when the suggested period equals the current period', async () => {
+    api.fetchQuote.mockImplementationOnce((input) => quoteFor(input, false));
+    api.fetchAlternatives.mockResolvedValue({
+      automobilio_id: 12, date_from: '2026-11-28', date_to: '2026-11-30', laisvas: true,
+      artimiausias_laikotarpis: { date_from: '2026-11-28', date_to: '2026-11-30' }, panasus_automobiliai: [],
+    });
+    const onDraftChange = jest.fn();
+    await render(<BookingView car={makeCar()} rules={RULES} extras={[]} onDraftChange={onDraftChange} />);
+    await selectPeriod();
+    await waitFor(() => expect(screen.getByTestId('alternative-period')).toBeTruthy());
+    await fireEvent.press(screen.getByTestId('alternative-period'));
+    expect(onDraftChange.mock.calls.at(-1)?.[1]).toBe(false);
+    await act(async () => jest.advanceTimersByTime(QUOTE_DEBOUNCE_MS));
+    expect(api.fetchQuote).toHaveBeenCalledTimes(2);
+    expect(onDraftChange.mock.calls.at(-1)?.[1]).toBe(true);
+    expect(screen.queryByTestId('not-free')).toBeNull();
+  });
+
+  it('applies suggested dates, keeps extras and pickup hour, and requests a new price', async () => {
+    api.fetchQuote.mockImplementation((input) => quoteFor(input, input.from === '2026-12-01'));
+    const onDraftChange = jest.fn();
+    await render(<BookingView car={makeCar()} rules={RULES} extras={EXTRAS} onDraftChange={onDraftChange} />);
+    await selectPeriod();
+    await fireEvent.press(screen.getByRole('checkbox', { name: /Pilna apsauga/ }));
+    await fireEvent.press(screen.getByRole('button', { name: '15:00' }));
+    await act(async () => jest.advanceTimersByTime(QUOTE_DEBOUNCE_MS));
+    await waitFor(() => expect(screen.getByTestId('alternative-period')).toBeTruthy());
+    await fireEvent.press(screen.getByTestId('alternative-period'));
+    expect(screen.queryByLabelText('Iš viso: 114,00 €')).toBeNull();
+    expect(onDraftChange.mock.calls.at(-1)?.[1]).toBe(false);
+    await act(async () => jest.advanceTimersByTime(QUOTE_DEBOUNCE_MS));
+    expect(api.fetchQuote.mock.calls.at(-1)?.[0]).toEqual({ carId: 12, from: '2026-12-01', to: '2026-12-03', extras: ['pilna_apsauga'] });
+    expect(onDraftChange).toHaveBeenLastCalledWith({ carId: 12, from: '2026-12-01', to: '2026-12-03', pickupHour: 15, extras: ['pilna_apsauga'] }, true);
+    expect(screen.getByTestId('day-2026-12-01')).toBeTruthy();
+    expect(screen.queryByTestId('booking-alternatives')).toBeNull();
+  });
+
   it('pasirinkus laikotarpį parodo kainą ir praneša, kad galima tęsti', async () => {
     const onDraftChange = jest.fn();
     await render(<BookingView car={makeCar()} rules={RULES} extras={EXTRAS} onDraftChange={onDraftChange} />);

@@ -12,6 +12,7 @@ import { getCarPhoto } from '@/theme/images';
 import { formatDateRange, formatDays, formatMoney } from '@/utils/format';
 import { diffDays } from '@/utils/isoDate';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
+import { Alternatives } from './Alternatives';
 import { BookingDraft, canContinue, pickupHours, toggleExtra } from './bookingDraft';
 import { EMPTY_SELECTION, Selection } from './calendarLogic';
 import { PriceBreakdown } from './PriceBreakdown';
@@ -27,13 +28,16 @@ type Props = {
   refreshKey?: number;
   // Laikotarpis, pasirinktas dar kataloge; klientui jo nereikia rinktis iš naujo.
   initialSelection?: Selection;
+  onChooseCar?: (carId: number, from: string, to: string) => void;
 };
 
 export function BookingView(props: Props) {
-  const { car, rules, extras, onDraftChange, refreshKey, initialSelection } = props;
+  const { car, rules, extras, onDraftChange, refreshKey, initialSelection, onChooseCar } = props;
   const [selection, setSelection] = useState<Selection>(initialSelection ?? EMPTY_SELECTION);
   const [pickupHour, setPickupHour] = useState(rules.paemimas_nuo_val);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [busyRange, setBusyRange] = useState<{ from: string; to: string } | null>(null);
+  const [calendarRevision, setCalendarRevision] = useState(0);
 
   const quoteInput: QuoteInput | null = useMemo(
     () =>
@@ -47,7 +51,8 @@ export function BookingView(props: Props) {
   const price = usePriceQuote(quoteInput, (refreshKey ?? 0) + priceRetry);
 
   // Apie kiekvieną pasikeitimą pranešama ekranui; „ready“ – tik kai serveris patvirtino kainą laisvam automobiliui.
-  const ready = canContinue(selection, price);
+  const unavailable = busyRange ?? (price.status === 'ready' && price.quote && !price.quote.laisvas ? quoteInput : null);
+  const ready = !busyRange && canContinue(selection, price);
   const draft: BookingDraft | null = quoteInput
     ? { carId: quoteInput.carId, from: quoteInput.from, to: quoteInput.to, pickupHour, extras: selectedExtras }
     : null;
@@ -75,10 +80,12 @@ export function BookingView(props: Props) {
           <Text style={styles.sectionTitle} accessibilityRole="header">{lt.booking.period}</Text>
         </View>
         <AvailabilityCalendar
+          key={calendarRevision}
           carId={car.automobilio_id}
           rules={rules}
           selection={selection}
-          onChange={setSelection}
+          onChange={(next) => { setBusyRange(null); setSelection(next); }}
+          onBusyRange={(from, to) => setBusyRange({ from, to })}
           refreshKey={refreshKey}
         />
         {selection.from && selection.to ? (
@@ -159,10 +166,26 @@ export function BookingView(props: Props) {
           testID="price-retry"
         />
       ) : null}
-      {price.status === 'ready' && price.quote && !price.quote.laisvas ? (
-        <Text style={styles.notFree} accessibilityRole="alert" testID="not-free">
-          {lt.booking.notFree}
-        </Text>
+      {unavailable ? (
+        <>
+          <Text style={styles.notFree} accessibilityRole="alert" testID="not-free">{lt.booking.notFree}</Text>
+          {unavailable ? (
+            <Alternatives
+              carId={car.automobilio_id}
+              from={unavailable.from}
+              to={unavailable.to}
+              refreshKey={(refreshKey ?? 0) + priceRetry}
+              onSelectPeriod={(period) => {
+                onDraftChange(null, false);
+                setBusyRange(null);
+                setPriceRetry((count) => count + 1);
+                setSelection({ from: period.date_from, to: period.date_to });
+                setCalendarRevision((revision) => revision + 1);
+              }}
+              onSelectCar={onChooseCar ? (id) => onChooseCar(id, unavailable.from, unavailable.to) : undefined}
+            />
+          ) : null}
+        </>
       ) : null}
     </View>
   );
