@@ -49,8 +49,8 @@ type Props = {
 // „Visi padaliniai“ galima pasirinkti visada, net kai sąrašo užkrauti nepavyko.
 export function LocationSheet({ visible, locations, status = 'success', onRetry, selectedId, onSelect, onClose }: Props) {
   return (
-    <SheetModal visible={visible} title={lt.locationSheet.title} onClose={onClose} closeTestID="location-close" testID="location-sheet">
-      <ScrollView contentContainerStyle={styles.list} accessibilityRole="radiogroup">
+    <SheetModal visible={visible} tall title={lt.locationSheet.title} onClose={onClose} closeTestID="location-close" testID="location-sheet">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.list} accessibilityRole="radiogroup">
         <Option title={lt.search.anyLocation} selected={selectedId === null} onPress={() => onSelect(null)} testID="location-any" />
         {status === 'loading' ? <LoadingView message={lt.locationSheet.loading} /> : null}
         {status === 'error' ? <ErrorView message={lt.locationSheet.failed} onRetry={onRetry} /> : null}
@@ -70,6 +70,7 @@ export function LocationSheet({ visible, locations, status = 'success', onRetry,
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   list: { padding: spacing.lg, gap: spacing.sm },
   option: {
     minHeight: MIN_TOUCH_SIZE + 12,
